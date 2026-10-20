@@ -421,6 +421,9 @@ td.r, th.r { text-align: right; }
 
 .g-btn { height: 54px; border-radius: 27px; gap: 12px; font-size: 15px; font-weight: 500; background: #FFFFFF; color: #1F1F1F; border: 0; box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 10px 24px -14px rgba(0,0,0,.8); }
 .g-btn:hover { background: #F4F4F4; }
+.gbtn { display: none; min-height: 44px; justify-content: center; }
+.gbtn.on { display: flex; }
+.gbtn.on + .g-fallback { display: none; }
 .demo-chip { flex: none; }
 .lp-prices.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 760px; }
 #features .lp-feats { margin-top: 0; }
@@ -495,6 +498,7 @@ td.r, th.r { text-align: right; }
 <div id="root"><div class="boot"><div><span class="mark">FM</span>Loading your accounts</div></div></div>
 <noscript>FundedMentor needs JavaScript.</noscript>
 <script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="engine.js"></script>
 <script src="firms-data.js"></script>

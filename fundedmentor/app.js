@@ -102,6 +102,41 @@
     sb.auth.getSession().then(({ data }) => { if (data && data.session) adoptUser(data.session.user); });
     sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_IN' && session && (!cloudUser || cloudUser.id !== session.user.id)) adoptUser(session.user); if (ev === 'SIGNED_OUT') { cloudUser = null; } });
   }
+  // Google's own button (Google Identity Services): the popup names fundedmentor.com, then Supabase verifies the token.
+  const GOOGLE_CLIENT_ID = '852273401682-h0n9vdraeet99lk9iqdtgk6f79f6r857.apps.googleusercontent.com';
+  let gisReady = null;
+  function setupGIS() {
+    if (gisReady || !sb) return gisReady;
+    gisReady = new Promise((resolve) => {
+      let tries = 0;
+      const wait = () => { if (window.google && google.accounts && google.accounts.id) go(); else if (++tries < 40) setTimeout(wait, 150); else resolve(false); };
+      const go = async () => {
+        try {
+          const raw = Array.from(crypto.getRandomValues(new Uint8Array(24)), (b) => b.toString(16).padStart(2, '0')).join('');
+          const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))), (b) => b.toString(16).padStart(2, '0')).join('');
+          google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, nonce: hash, ux_mode: 'popup', auto_select: false, itp_support: true, use_fedcm_for_button: true,
+            callback: async (resp) => {
+              ui.authBusy = true; ui.authErr = null; render();
+              const { data, error } = await sb.auth.signInWithIdToken({ provider: 'google', token: resp.credential, nonce: raw });
+              ui.authBusy = false;
+              if (error) { ui.authErr = error.message; render(); return; }
+              if (data && data.user) adoptUser(data.user);
+            } });
+          resolve(true);
+        } catch (e) { resolve(false); }
+      };
+      wait();
+    });
+    return gisReady;
+  }
+  function mountGoogleButton() {
+    const host = document.getElementById('gbtn'); if (!host || host.dataset.mounted) return;
+    setupGIS() && gisReady.then((ok) => {
+      const h = document.getElementById('gbtn'); if (!ok || !h || h.dataset.mounted) return;
+      h.dataset.mounted = '1'; h.classList.add('on');
+      google.accounts.id.renderButton(h, { type: 'standard', theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with', logo_alignment: 'left', width: Math.min(400, h.clientWidth || 320) });
+    });
+  }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* storage unavailable: app still works for this session */ } pushCloud(); }
 
   function demoTrades(rows, now) {
@@ -216,6 +251,7 @@
       childrenOnly: true,
       onBeforeElUpdated(from, to) {
         if (from.isEqualNode(to)) return false;
+        if (from.id === 'gbtn' && from.dataset.mounted) return false;
         if (from.type === 'file') return false;
         if (from === document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(from.tagName)) {
           for (const { name, value } of to.attributes) if (name !== 'value' && from.getAttribute(name) !== value) from.setAttribute(name, value);
@@ -227,7 +263,7 @@
   }
   function render() {
     applyTheme();
-    if (!state.session) { paint(ui.route === 'auth' ? authPage() : landing()); return; }
+    if (!state.session) { paint(ui.route === 'auth' ? authPage() : landing()); if (ui.route === 'auth') mountGoogleButton(); return; }
     const acct = active();
     const c = acct ? compute(acct) : null;
     const v = state.view;
@@ -1301,7 +1337,8 @@
         <button type="button" class="lp-brand auth-mobile-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
         <h1>Sign in</h1>
         <p class="muted">One tap with Google. New here? The same button creates your free account.</p>
-        <button class="btn g-btn" data-act="google" ${ui.authBusy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${ui.authBusy ? 'Opening Google…' : 'Continue with Google'}</button>
+        <div id="gbtn" class="gbtn" aria-label="Sign in with Google"></div>
+        <button class="btn g-btn g-fallback" data-act="google" ${ui.authBusy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${ui.authBusy ? 'Opening Google…' : 'Continue with Google'}</button>
         ${ui.authErr ? `<div class="alert bad" role="alert">${icon('warn')}<span>${esc(ui.authErr)}</span></div>` : ''}
         <div class="auth-or"><span>or</span></div>
         <button type="button" class="btn lg" data-act="demo">Explore the demo</button>
