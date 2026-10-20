@@ -62,7 +62,7 @@
       const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
       if (!db) {
         // Hosted site (fundedmentor.com): read the daily news file published next to the app.
-        try { const r = await fetch('news.json', { cache: 'no-store' }); if (!r.ok) throw 0; const j = await r.json(); for (const d of j.days || []) NEWS[d.date] = (d.events || []).slice().sort((p, q) => String(p.t).localeCompare(String(q.t))); newsState = 'ready'; }
+        try { if (sb) { const { data, error } = await sb.from('news_days').select('date,events').gte('date', new Date(Date.now() - 40 * 86400000).toISOString().slice(0, 10)); if (error) throw error; for (const d of data || []) NEWS[d.date] = (d.events || []).slice().sort((p, q) => String(p.t).localeCompare(String(q.t))); newsState = 'ready'; render(); return; } const r = await fetch('news.json', { cache: 'no-store' }); if (!r.ok) throw 0; const j = await r.json(); for (const d of j.days || []) NEWS[d.date] = (d.events || []).slice().sort((p, q) => String(p.t).localeCompare(String(q.t))); newsState = 'ready'; }
         catch (e) { newsState = 'off'; }
         render(); return;
       }
@@ -76,7 +76,33 @@
   const ui = { route: 'landing', authMode: 'signup', authErr: null, menu: false, more: false, wizard: null, copilot: false, chat: [], toast: null, ruleSearch: '', ruleFirm: 'ftmo', edit: null, confirm: null, csv: null, consWhatIf: '', calc: null, check: null };
 
   function load() { try { const s = JSON.parse(localStorage.getItem(STORE)); return s && s.v === 1 ? s : null; } catch (e) { return null; } }
-  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* storage unavailable: app still works for this session */ } }
+  // Cloud: Supabase handles Google sign-in and keeps each user's data in sync across devices (fundedmentor.com only).
+  const SB_URL = 'https://zikowizjdkzgexgdjhuw.supabase.co', SB_KEY = 'sb_publishable_QjqBW1ApA4GGKW9kP7tuIQ_92MDDAnM';
+  const onSite = !/claude|claudeusercontent/.test(location.hostname) && location.protocol === 'https:';
+  const sb = onSite && window.supabase && window.supabase.createClient ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }) : null;
+  let cloudUser = null, cloudTimer = null;
+  function pushCloud() {
+    if (!sb || !cloudUser) return;
+    clearTimeout(cloudTimer);
+    cloudTimer = setTimeout(() => { const body = Object.assign({}, state, { session: undefined }); sb.from('user_state').upsert({ user_id: cloudUser.id, state: body, updated_at: new Date().toISOString() }).then(() => {}, () => {}); }, 800);
+  }
+  async function adoptUser(user) {
+    cloudUser = user; const meta = user.user_metadata || {};
+    state.profile = Object.assign({}, state.profile || {}, { name: meta.full_name || meta.name || (user.email || '').split('@')[0], email: user.email, avatar: meta.avatar_url || null });
+    state.session = { email: user.email, google: true, ts: Date.now() };
+    try {
+      const { data } = await sb.from('user_state').select('state').eq('user_id', user.id).maybeSingle();
+      if (data && data.state && Array.isArray(data.state.accounts)) { const keep = { session: state.session, profile: state.profile }; state = Object.assign({}, data.state, keep); }
+      else { state.accounts = state.accounts.filter((a) => !a.example); state.activeId = state.accounts[0] ? state.accounts[0].id : null; pushCloud(); }
+    } catch (e) { /* offline: keep local copy */ }
+    if (ui.route === 'auth') ui.route = 'landing';
+    save(); render();
+  }
+  if (sb) {
+    sb.auth.getSession().then(({ data }) => { if (data && data.session) adoptUser(data.session.user); });
+    sb.auth.onAuthStateChange((ev, session) => { if (ev === 'SIGNED_IN' && session && (!cloudUser || cloudUser.id !== session.user.id)) adoptUser(session.user); if (ev === 'SIGNED_OUT') { cloudUser = null; } });
+  }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* storage unavailable: app still works for this session */ } pushCloud(); }
 
   function demoTrades(rows, now) {
     return rows.map(([daysAgo, hoursAgo, symbol, side, lots, profit, commission], i) => {
@@ -216,10 +242,11 @@
         <main class="main">
           <div class="top">
             <div class="mark top-mark" aria-hidden="true">FM</div><div class="grow">${acct ? acctPill(acct, c) : '<b>FundedMentor</b>'}</div>
+            ${state.session && state.session.demo ? `<span class="chip info nodot demo-chip">Demo</span><button class="btn sm primary" data-act="to-auth" data-mode="signup">Sign in</button>` : ''}
             ${acct ? `<button class="btn sm top-cal" data-act="go" data-v="calendar" ${v === 'calendar' ? 'aria-current="page"' : ''} aria-label="Performance calendar">${icon('calendar', 'width="16" height="16"')}<span class="hide-sm">Performance</span></button>` : ''}
             <button class="btn sm hide-sm" data-act="wizard">${icon('plus', 'width="14" height="14"')}Add account</button>
           </div>
-          ${state.accounts.some((a) => a.example) ? `<div class="banner"><span>You are looking at example accounts with sample trades. ${state.profile ? '' : 'Create your profile and add the account you bought.'}</span><span class="row"><button class="btn sm primary" data-act="wizard">Set up my account</button><button class="btn sm ghost" data-act="clear-examples">Remove examples</button></span></div>` : ''}
+          ${state.accounts.some((a) => a.example) && !(state.session && state.session.demo) ? `<div class="banner"><span>You are looking at example accounts with sample trades. ${state.profile ? '' : 'Create your profile and add the account you bought.'}</span><span class="row"><button class="btn sm primary" data-act="wizard">Set up my account</button><button class="btn sm ghost" data-act="clear-examples">Remove examples</button></span></div>` : ''}
           ${body}
           <p class="disclaimer">FundedMentor is a planning and risk-management tool. It does not execute trades, guarantee that you pass an evaluation, or guarantee a payout. Rules marked “Needs verification” are sample values; always confirm with your firm’s official rules.</p>
         </main>
@@ -1220,8 +1247,8 @@
   function lpNav() {
     return `<header class="lp-nav"><div class="lp-wrap lp-nav-in">
       <button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
-      <nav class="lp-links" aria-label="Sections"><button data-act="lp-jump" data-to="how">How it works</button><button data-act="lp-jump" data-to="features">Features</button><button data-act="lp-jump" data-to="firms">Firms</button><button data-act="lp-jump" data-to="pricing">Pricing</button></nav>
-      <div class="row lp-nav-cta"><button class="btn ghost sm" data-act="to-auth" data-mode="login">Log in</button><button class="btn primary sm" data-act="to-auth" data-mode="signup">Start free</button></div>
+      <nav class="lp-links" aria-label="Sections"><button data-act="lp-jump" data-to="features">Features</button><button data-act="lp-jump" data-to="pricing">Pricing</button></nav>
+      <div class="row lp-nav-cta"><button class="btn ghost sm" data-act="demo">Demo</button><button class="btn primary sm" data-act="to-auth" data-mode="signup">Sign in</button></div>
     </div></header>`;
   }
   function demoCard() {
@@ -1237,97 +1264,49 @@
     </div>`;
   }
   function landing() {
-    const firms = FIRMS.filter((f) => !f.custom).map((f) => f.name);
+    const n = FIRMS.filter((f) => !f.custom).length;
     const F = [
-      ['check', 'Daily loss guard', 'See exactly how much you can still lose today, measured the way your firm measures it: balance or equity, server-time reset.'],
-      ['consistency', 'Drawdown floor', 'Static, trailing end-of-day or intraday trailing. The floor moves with your account so you know the real line.'],
-      ['calc', 'Position size', 'Lots for forex, gold and indices, contracts for futures. Risk in dollars or percent, commission included.'],
-      ['plan', 'Pre-trade check', 'Enter your entry and stop. Get a clear go or no-go against every rule before you click buy.'],
-      ['payout', 'Consistency & payouts', 'Best-day share, profitable-day counts and payout eligibility, tracked as you trade.'],
-      ['finder', 'Firm finder', 'Answer a few questions about how you trade. Get the firms and account sizes that fit your style.'],
+      ['spark', 'Your next trade, sized', 'Lots, stop and target for the next trade, from your target, compounding or consistency rule.'],
+      ['check', 'Live loss limits', 'Daily loss and drawdown left, measured the way your firm measures them.'],
+      ['warn', 'News guard', 'High-impact releases on your calendar, with a warning before you enter.'],
     ];
     return `<div class="lp">${lpNav()}
       <section class="lp-hero"><div class="lp-wrap lp-hero-in">
         <div class="lp-copy">
-          <span class="lp-eyebrow"><i></i>For forex, gold and futures prop traders</span>
-          <h1 class="lp-h1">Stop failing challenges on <em>rule breaks.</em></h1>
-          <p class="lp-lede">FundedMentor turns your prop firm's rules into a live daily plan: how much you can lose today, how big your next trade can be, and how close you are to a payout.</p>
-          <div class="row lp-cta"><button class="btn primary lg" data-act="to-auth" data-mode="signup">Start free</button><button class="btn lg" data-act="demo">Try the demo</button></div>
-          <p class="hint">Free plan includes the position size calculator and one account. No card needed.</p>
+          <span class="lp-eyebrow"><i></i>For prop firm traders · ${n} firms loaded</span>
+          <h1 class="lp-h1">Pass your challenge. <em>Keep your account.</em></h1>
+          <p class="lp-lede">FundedMentor turns your firm’s rules into one clear plan: what you can lose today and exactly how big your next trade should be.</p>
+          <div class="row lp-cta"><button class="btn primary lg" data-act="to-auth" data-mode="signup">Start free with Google</button><button class="btn lg" data-act="demo">Try the demo</button></div>
         </div>
         ${demoCard()}
       </div></section>
-
-      <section class="lp-stats"><div class="lp-wrap lp-stats-in">
-        <div><b class="num">5–14%</b><span>of prop challenges are passed industry-wide</span></div>
-        <div><b class="num">~12M</b><span>challenges bought a year across retail prop firms</span></div>
-        <div><b class="num">${firms.length}</b><span>firms loaded with rules, prices and payout terms</span></div>
-      </div><p class="lp-wrap lp-src">Industry figures are 2026 estimates from published firm disclosures and industry analyses.</p></section>
-
-      <section class="lp-sec" id="how"><div class="lp-wrap">
-        <span class="lp-kicker">How it works</span><h2 class="lp-h2">Three steps between you and a funded account</h2>
-        <ol class="lp-steps">
-          <li><span class="num">01</span><h3>Pick your firm and account</h3><p>Choose your firm, program and size. Its daily loss, drawdown, targets and consistency rules load automatically.</p></li>
-          <li><span class="num">02</span><h3>Get today's plan</h3><p>Risk per trade, daily risk budget and max trades, sized to what your account can actually absorb today.</p></li>
-          <li><span class="num">03</span><h3>Check every trade first</h3><p>Run each setup through the pre-trade check. If it could breach a rule, you know before the order goes in.</p></li>
-        </ol>
-      </div></section>
-
-      <section class="lp-sec alt" id="features"><div class="lp-wrap">
-        <span class="lp-kicker">Features</span><h2 class="lp-h2">Built around how prop firms actually fail you</h2>
-        <div class="lp-feats">${F.map(([ic, t, d]) => `<div class="lp-feat"><span class="lp-ic">${icon(ic)}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}</div>
-      </div></section>
-
-      <section class="lp-sec" id="firms"><div class="lp-wrap">
-        <span class="lp-kicker">Firm library</span><h2 class="lp-h2">Your firm is probably already loaded</h2>
-        <p class="lp-sub">Every rule shows where it came from and when it was checked. Verified rules carry a badge and a link to the firm's official page.</p>
-        <div class="lp-firms">${firms.map((n) => `<span>${esc(n)}</span>`).join('')}<span class="more">+ add any firm with a custom template</span></div>
-      </div></section>
-
+      <section class="lp-sec" id="features"><div class="lp-wrap"><div class="lp-feats">${F.map(([ic, t, d]) => `<div class="lp-feat"><span class="lp-ic">${icon(ic)}</span><h3>${t}</h3><p>${d}</p></div>`).join('')}</div></div></section>
       <section class="lp-sec alt" id="pricing"><div class="lp-wrap">
-        <span class="lp-kicker">Pricing</span><h2 class="lp-h2">Less than one challenge reset</h2>
-        <div class="lp-prices">
-          <div class="lp-price"><h3>Free</h3><div class="lp-amt"><b class="num">$0</b></div><p>For trying it on your next challenge.</p><ul><li>Position size calculator</li><li>1 account</li><li>Daily loss and drawdown tracking</li></ul><button class="btn" data-act="to-auth" data-mode="signup">Start free</button></div>
-          <div class="lp-price pro"><span class="chip info nodot">Most popular</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><p>For traders running real challenges.</p><ul><li>All ${firms.length} firms and every program</li><li>Unlimited accounts</li><li>Daily plan and pre-trade check</li><li>Consistency and payout tracking</li><li>Copilot answers from your numbers</li></ul><button class="btn primary" data-act="to-auth" data-mode="signup">Go Pro</button></div>
-          <div class="lp-price"><h3>Pro Annual</h3><div class="lp-amt"><b class="num">$199</b><span>/year</span></div><p>Everything in Pro. Two months free and more.</p><ul><li>Everything in Pro</li><li>Save $149 a year</li><li>Early access to new firms</li></ul><button class="btn" data-act="to-auth" data-mode="signup">Choose annual</button></div>
+        <h2 class="lp-h2">Less than one challenge reset</h2>
+        <div class="lp-prices two">
+          <div class="lp-price"><h3>Free</h3><div class="lp-amt"><b class="num">$0</b></div><ul><li>1 account</li><li>Position size and loss limits</li><li>News calendar</li></ul><button class="btn" data-act="to-auth" data-mode="signup">Start free</button></div>
+          <div class="lp-price pro"><span class="chip info nodot">Pro</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><ul><li>Unlimited accounts, all ${n} firms</li><li>Next trade planner</li><li>Live MT5 sync (coming soon)</li></ul><button class="btn primary" data-act="to-auth" data-mode="signup">Go Pro</button></div>
         </div>
       </div></section>
-
-      <section class="lp-sec" id="faq"><div class="lp-wrap lp-faq">
-        <h2 class="lp-h2">Questions</h2>
-        <div>
-          <details><summary>Does FundedMentor place trades for me?</summary><p>No. It plans and checks your risk. You trade on your own platform, and FundedMentor tells you what your rules allow.</p></details>
-          <details><summary>How accurate are the firm rules?</summary><p>Each rule is tagged with its source and check date. Rules matched against the firm's official page are marked Verified. Always confirm with your firm before relying on a number.</p></details>
-          <details><summary>Will it guarantee I pass?</summary><p>No tool can. It removes the most common way traders fail: breaking a loss or consistency rule they didn't track.</p></details>
-          <details><summary>Which platforms does it work with?</summary><p>Any. Enter trades by hand or import a CSV export from MT4, MT5, cTrader, DXtrade or Tradovate.</p></details>
-        </div>
-      </div></section>
-
-      <section class="lp-final"><div class="lp-wrap lp-final-in"><h2 class="lp-h2">Your next challenge, planned before it starts.</h2><button class="btn primary lg" data-act="to-auth" data-mode="signup">Create free account</button></div></section>
       <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><span class="hint">fundedmentor.com</span></div>
-        <p class="disclaimer">FundedMentor is a planning and risk-management tool. It does not execute trades, provide investment advice, or guarantee that you pass an evaluation or receive a payout. Trading involves substantial risk of loss.</p></div></footer>
+        <p class="disclaimer">FundedMentor is a planning and risk tool. It does not place trades, give investment advice, or guarantee a pass or payout. Trading involves substantial risk of loss.</p></div></footer>
     </div>`;
   }
   function authPage() {
-    const su = ui.authMode === 'signup';
     return `<div class="auth">
       <aside class="auth-side"><button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
         <div class="auth-side-mid"><h2 class="lp-h2">Know your limit before the market finds it.</h2>${demoCard()}</div>
         <p class="hint">Rules for ${FIRMS.filter((f) => !f.custom).length} prop firms, sized to your account.</p></aside>
-      <main class="auth-main"><form class="auth-card" id="auth-form" novalidate>
+      <main class="auth-main"><div class="auth-card">
         <button type="button" class="lp-brand auth-mobile-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
-        <h1>${su ? 'Create your account' : 'Welcome back'}</h1>
-        <p class="muted">${su ? 'Free plan. Set up your first challenge in two minutes.' : 'Log in to see today’s plan.'}</p>
-        <div class="seg auth-tabs" role="tablist"><button type="button" role="tab" data-act="auth-tab" data-mode="signup" aria-pressed="${su}">Sign up</button><button type="button" role="tab" data-act="auth-tab" data-mode="login" aria-pressed="${!su}">Log in</button></div>
-        ${su ? `<label class="field"><span>Full name</span><input class="input" id="au-name" name="name" autocomplete="name" placeholder="Your name"></label>` : ''}
-        <label class="field"><span>Email</span><input class="input" id="au-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
-        <label class="field"><span class="row between">Password${su ? '' : '<button type="button" class="link" data-act="auth-forgot">Forgot?</button>'}</span><input class="input" id="au-pass" name="password" type="password" autocomplete="${su ? 'new-password' : 'current-password'}" placeholder="${su ? 'At least 8 characters' : 'Your password'}"></label>
+        <h1>Sign in</h1>
+        <p class="muted">One tap with Google. New here? The same button creates your free account.</p>
+        <button class="btn g-btn" data-act="google" ${ui.authBusy ? 'disabled' : ''}><svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>${ui.authBusy ? 'Opening Google…' : 'Continue with Google'}</button>
         ${ui.authErr ? `<div class="alert bad" role="alert">${icon('warn')}<span>${esc(ui.authErr)}</span></div>` : ''}
-        <button class="btn primary lg" type="submit">${su ? 'Create account' : 'Log in'}</button>
         <div class="auth-or"><span>or</span></div>
         <button type="button" class="btn lg" data-act="demo">Explore the demo</button>
-        <p class="hint auth-fine">${su ? 'By creating an account you agree to the Terms and Privacy Policy. ' : ''}In this preview your account and data stay on this device.</p>
-      </form></main>
+        <p class="hint auth-fine">By continuing you agree to the Terms and Privacy Policy. We use your Google name and email for your account only.</p>
+      </div></main>
     </div>`;
   }
   function signIn(e) {
@@ -1360,13 +1339,14 @@
       case 'next-close': ui.next = false; break;
       case 'nt-mode': ui.ntMode = el.dataset.k; break;
       case 'next-check': ui.next = false; state.view = 'check'; ui.check = null; save(); render(); window.scrollTo(0, 0); return;
-      case 'to-auth': ui.route = 'auth'; ui.authMode = el.dataset.mode || 'signup'; ui.authErr = null; render(); window.scrollTo(0, 0); return;
+      case 'to-auth': if (state.session && state.session.demo) { state.session = null; save(); } ui.route = 'auth'; ui.authMode = el.dataset.mode || 'signup'; ui.authErr = null; render(); window.scrollTo(0, 0); return;
       case 'to-landing': ui.route = 'landing'; render(); window.scrollTo(0, 0); return;
       case 'auth-tab': ui.authMode = el.dataset.mode; ui.authErr = null; break;
       case 'auth-forgot': ui.authErr = 'Password reset arrives with live accounts. In this preview, log in with any password of 8+ characters.'; break;
       case 'lp-jump': { const t = document.getElementById(el.dataset.to); if (t) t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); return; }
       case 'demo': state.session = { email: '', demo: true, ts: Date.now() }; if (!state.accounts.length) { const s0 = seed(); state.accounts = s0.accounts; state.activeId = s0.activeId; } state.view = 'overview'; save(); render(); window.scrollTo(0, 0); return;
-      case 'logout': state.session = null; ui.route = 'landing'; ui.menu = false; ui.more = false; ui.copilot = false; save(); render(); window.scrollTo(0, 0); return;
+      case 'google': if (!sb) { ui.authErr = 'Google sign-in works on fundedmentor.com. Open the site there to sign in.'; break; } ui.authBusy = true; render(); sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/', queryParams: { prompt: 'select_account' } } }).then(({ error }) => { if (error) { ui.authBusy = false; ui.authErr = /not enabled|provider/i.test(error.message) ? 'Google sign-in is being switched on. Try again shortly or explore the demo.' : error.message; render(); } }); return;
+      case 'logout': if (sb && cloudUser) { sb.auth.signOut().catch(() => {}); cloudUser = null; } state.session = null; ui.route = 'landing'; ui.menu = false; ui.more = false; ui.copilot = false; save(); render(); window.scrollTo(0, 0); return;
       case 'go': state.view = el.dataset.v; ui.more = false; ui.menu = false; ui.confirm = null; save(); render(); window.scrollTo(0, 0); return;
       case 'more': ui.more = true; break;
       case 'close-more': ui.more = false; break;
