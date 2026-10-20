@@ -1289,7 +1289,7 @@
         </div>
       </div></section>
       <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><span class="hint">fundedmentor.com</span></div>
-        <p class="disclaimer">FundedMentor is a planning and risk tool. It does not place trades, give investment advice, or guarantee a pass or payout. Trading involves substantial risk of loss.</p></div></footer>
+        <p class="disclaimer">FundedMentor is a planning and risk tool. It does not place trades, give investment advice, or guarantee a pass or payout. Trading involves substantial risk of loss.</p><p class="hint" style="margin-top:12px"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p></div></footer>
     </div>`;
   }
   function authPage() {
@@ -1305,7 +1305,7 @@
         ${ui.authErr ? `<div class="alert bad" role="alert">${icon('warn')}<span>${esc(ui.authErr)}</span></div>` : ''}
         <div class="auth-or"><span>or</span></div>
         <button type="button" class="btn lg" data-act="demo">Explore the demo</button>
-        <p class="hint auth-fine">By continuing you agree to the Terms and Privacy Policy. We use your Google name and email for your account only.</p>
+        <p class="hint auth-fine">By continuing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>. We use your Google name and email for your account only.</p>
       </div></main>
     </div>`;
   }
