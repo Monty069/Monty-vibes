@@ -1,0 +1,666 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Unity Alpha Network · Websites + AI front desk for GTA businesses</title><meta name="description" content="A new website and an AI front desk that answers, books and follows up on every call, for Brampton and Mississauga businesses."><meta property="og:title" content="Unity Alpha Network"><meta property="og:description" content="Your city never stops calling. Website + AI front desk for GTA businesses."><meta name="theme-color" content="#070A16"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23070A16%27/%3E%3Ctext x=%2716%27 y=%2722%27 font-size=%2716%27 text-anchor=%27middle%27 fill=%27%235EE6FF%27 font-family=%27Arial%27 font-weight=%27900%27%3EU%3C/text%3E%3C/svg%3E"></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a night in the GTA told in scroll. 6 PM to 7 AM. A live 3D city behind real text; each act moves differently; the peak is a press-and-hold that answers every ringing call in the city. Deliberately dark (night), ending at dawn. */
+:root{
+  --night:#05070F;
+  --deep:#0B1024;
+  --panel:rgba(12,17,38,.78);
+  --line:rgba(140,160,230,.18);
+  --ink:#EEF1FF;
+  --soft:#9AA6CF;
+  --amber:#FFA040;   /* a ringing phone */
+  --miss:#FF4D5E;    /* a missed call */
+  --ai:#5EE6FF;      /* answered by the AI */
+  --ok:#55E6A5;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--night)}
+body{background:var(--night);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;margin:0;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--night)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;font-weight:700;letter-spacing:-.025em}
+p{margin:0}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--ai);outline-offset:4px;border-radius:8px}
+.g{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--mono)}
+
+/* the city */
+#city{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+main{position:relative;z-index:2}
+
+/* header */
+.top{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding-block:16px;pointer-events:none}
+.mark{font-family:var(--display);font-weight:700;font-size:.82rem;letter-spacing:.02em;display:flex;align-items:center;gap:10px;pointer-events:auto}
+.mark i{width:22px;height:22px;border-radius:6px;background:conic-gradient(from 200deg,var(--amber),var(--ai),var(--amber));display:block}
+.clock{font-family:var(--mono);font-size:.82rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(5,7,15,.55);backdrop-filter:blur(8px);font-variant-numeric:tabular-nums;display:flex;gap:8px;align-items:center}
+.clock i{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.clock.dawn i{background:var(--ok)}
+
+/* ---------- ACT 1 · hero, layered ---------- */
+.hero{height:190vh;position:relative}
+.hero .stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:grid;align-items:center}
+.hero .copy{position:relative;z-index:2;max-width:1180px;margin:0 auto;width:100%;display:grid;grid-template-columns:1.25fr .75fr;gap:20px;align-items:center}
+.hero h1{font-size:clamp(2.5rem,7.6vw,6.6rem);line-height:.92;font-weight:900;letter-spacing:-.04em;will-change:transform}
+.hero h1 span{display:block}
+.hero h1 .o{color:transparent;-webkit-text-stroke:1.5px var(--ink)}
+.hero .lede{margin-top:26px;max-width:46ch;color:var(--soft);font-size:1.12rem;will-change:transform,opacity}
+.hero .lede b{color:var(--ink);font-weight:600}
+.phone{position:relative;justify-self:end;width:min(300px,100%);aspect-ratio:9/18.5;border-radius:44px;padding:20px 16px;background:linear-gradient(165deg,#1A2350,#070A18 70%);border:1px solid rgba(160,180,255,.25);box-shadow:0 60px 120px -30px #000,0 0 0 7px #04060E inset;display:flex;flex-direction:column;align-items:center;gap:8px;will-change:transform;z-index:3}
+.phone .nt{width:84px;height:22px;border-radius:12px;background:#02030A;margin-bottom:22px}
+.phone .k{font-family:var(--mono);font-size:.72rem;color:var(--soft);letter-spacing:.08em}
+.phone .who{font-family:var(--display);font-size:1.25rem;text-align:center}
+.phone .why{font-size:.86rem;color:var(--soft);text-align:center}
+.ring{position:relative;width:84px;height:84px;border-radius:50%;background:var(--amber);display:grid;place-items:center;margin-top:auto;margin-bottom:6px}
+.ring::before,.ring::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--amber);animation:pulse 2s ease-out infinite}
+.ring::after{animation-delay:1s}
+.ring svg{width:34px;height:34px;fill:#1B0D00;animation:wig 1.3s ease-in-out infinite}
+.phone .bottom{font-family:var(--mono);font-size:.7rem;color:var(--soft);margin-bottom:6px}
+@keyframes pulse{from{transform:scale(1);opacity:.85}to{transform:scale(2.2);opacity:0}}
+@keyframes wig{0%,100%{transform:rotate(0)}10%,30%{transform:rotate(-15deg)}20%,40%{transform:rotate(15deg)}55%{transform:rotate(0)}}
+.haze{position:absolute;left:0;right:0;bottom:-10%;height:55%;z-index:4;pointer-events:none;background:linear-gradient(to top,var(--night) 8%,rgba(5,7,15,.0));will-change:transform}
+.hero .scrim{position:absolute;inset:0;z-index:1;background:radial-gradient(70% 60% at 25% 50%,rgba(5,7,15,.62),transparent 70%)}
+
+/* ---------- ACT 2 · tension, pinned kinetic ---------- */
+.tension{height:330vh;position:relative}
+.tension .stage{position:sticky;top:0;height:100vh;height:100svh;display:flex;align-items:center}
+.tension .col{max-width:1180px;margin:0 auto;width:100%}
+.lines{display:flex;flex-direction:column;gap:22px;max-width:760px;padding:34px 30px;border-radius:26px;background:linear-gradient(90deg,rgba(5,7,15,.82),rgba(5,7,15,.55) 70%,rgba(5,7,15,0));}
+.ln{display:grid;grid-template-columns:110px 1fr;gap:18px;align-items:baseline;opacity:.12;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.ln.on{opacity:1;transform:none}
+.ln time{font-family:var(--mono);font-size:.9rem;color:var(--amber);font-variant-numeric:tabular-nums}
+.ln p{font-family:var(--display);font-size:clamp(1.15rem,2.6vw,1.9rem);line-height:1.18;font-weight:500;letter-spacing:-.02em}
+.ln.bad time{color:var(--miss)}
+.ln.bad p em{font-style:normal;color:var(--miss)}
+.verdict{margin-top:10px;font-size:1.08rem;color:var(--soft);max-width:52ch;opacity:0;transition:opacity .6s}
+.verdict.on{opacity:1}
+
+/* ---------- ACT 3 · the peak: hold to answer ---------- */
+.peak{height:300vh;position:relative}
+.peak .stage{position:sticky;top:0;height:100vh;height:100svh;display:grid;place-items:center;text-align:center}
+.peak .inner{display:flex;flex-direction:column;align-items:center;gap:26px;max-width:900px;padding:30px 20px;border-radius:40px;background:radial-gradient(closest-side,rgba(5,7,15,.78),rgba(5,7,15,0))}
+.peak h2{font-size:clamp(2rem,5.6vw,4.6rem);line-height:.98;letter-spacing:-.04em;font-weight:900}
+.peak .sub{color:var(--soft);max-width:44ch;font-size:1.1rem}
+.hold{position:relative;width:min(340px,86vw);height:76px;border-radius:999px;border:1px solid rgba(94,230,255,.55);background:rgba(8,14,32,.8);overflow:hidden;font-family:var(--display);font-size:1rem;font-weight:700;letter-spacing:.01em;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.hold .fill{position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--hp,0));background:linear-gradient(90deg,#1EA9CF,var(--ai))}
+.hold span{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:12px;height:100%}
+.hold.done{border-color:var(--ok)}
+.hold.done .fill{background:linear-gradient(90deg,#1FAF77,var(--ok))}
+.hold.done span,.hold.fillhalf span{color:#03121A}
+.tally{font-family:var(--mono);font-size:.92rem;color:var(--soft);font-variant-numeric:tabular-nums;display:flex;gap:22px;flex-wrap:wrap;justify-content:center}
+.tally b{font-weight:600}
+.tally .r b{color:var(--miss)}
+.tally .a b{color:var(--ai)}
+.after{font-family:var(--display);font-size:clamp(1.1rem,2.6vw,1.7rem);font-weight:500;max-width:28ch;opacity:0;transform:translateY(10px);transition:opacity .7s,transform .7s}
+.after.on{opacity:1;transform:none}
+
+/* ---------- ACT 4 · the conversation ---------- */
+.talk{padding-block:18vh 14vh;position:relative}
+.talk .wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;align-items:start}
+.talk .left{display:flex;flex-direction:column;gap:22px;min-width:0;padding:28px;border-radius:26px;background:rgba(5,7,15,.72);backdrop-filter:blur(6px)}
+.talk h2{font-size:clamp(1.8rem,3.8vw,3rem);line-height:1}
+.talk .left p{color:var(--soft)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:rgba(16,22,48,.8);padding:9px 14px;border-radius:999px;font-size:.92rem;transition:background .2s,border-color .2s,color .2s}
+.chip:hover{border-color:var(--soft)}
+.chip[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:#1B0D00;font-weight:600}
+.console{border-radius:26px;overflow:hidden;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px);min-width:0;clip-path:inset(0 0 100% 0 round 26px);transition:clip-path 1s cubic-bezier(.7,0,.2,1)}
+.console.open{clip-path:inset(0 0 0 0 round 26px)}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.live{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.76rem;color:var(--ai)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--ai);animation:blip 1.6s infinite}
+@keyframes blip{0%{box-shadow:0 0 0 0 rgba(94,230,255,.6)}100%{box-shadow:0 0 0 10px rgba(94,230,255,0)}}
+.replay{border:1px solid var(--line);background:transparent;border-radius:9px;padding:6px 10px;font-family:var(--mono);font-size:.72rem;color:var(--soft)}
+.thread{padding:20px 18px;display:flex;flex-direction:column;gap:12px;min-height:440px}
+.msg{max-width:84%;padding:11px 14px;border-radius:16px;font-size:.96rem;line-height:1.45;animation:pop .35s ease-out both}
+.msg .w{display:block;font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:3px}
+.msg.c{align-self:flex-start;background:rgba(32,42,86,.9);border-bottom-left-radius:4px}
+.msg.a{align-self:flex-end;background:rgba(94,230,255,.13);border:1px solid rgba(94,230,255,.35);border-bottom-right-radius:4px}
+.msg.s{align-self:center;max-width:100%;font-family:var(--mono);font-size:.78rem;color:var(--ok);background:rgba(85,230,165,.1);border:1px solid rgba(85,230,165,.4);border-radius:10px}
+.typing{align-self:flex-end;display:flex;gap:4px;padding:12px 14px;border-radius:16px;background:rgba(94,230,255,.1)}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ai);animation:dot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- ACT 5 · range, horizontal ---------- */
+.range{height:360vh;position:relative}
+.range .stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:34px}
+.range .head{max-width:1180px;margin:0 auto;width:100%;display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap}
+.range h2{font-size:clamp(1.8rem,4.2vw,3.4rem);line-height:1;max-width:16ch}
+.range .head p{color:var(--soft);max-width:38ch}
+.track{display:flex;gap:26px;padding-left:max(18px,calc((100vw - 1180px)/2));will-change:transform}
+.site{flex:0 0 min(460px,80vw);border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#070A18;box-shadow:0 40px 80px -30px #000}
+.site .bar{display:flex;align-items:center;gap:6px;padding:10px 12px;background:#11183A}
+.site .bar i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18)}
+.site .bar span{margin-left:8px;font-family:var(--mono);font-size:.7rem;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.site .body{position:relative;padding:26px 22px 22px;min-height:330px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.site .body::before{content:"";position:absolute;inset:0;background:var(--bg);opacity:1;z-index:0}
+.site .body > *{position:relative;z-index:1}
+.site .kind{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--tint)}
+.site h3{font-size:1.6rem;line-height:1.02;max-width:14ch;font-weight:900;letter-spacing:-.03em}
+.site .s{font-size:.86rem;color:#C9D0EE;max-width:32ch}
+.site .bt{display:flex;gap:8px;flex-wrap:wrap}
+.site .bt b{font-size:.76rem;padding:8px 12px;border-radius:9px;background:var(--tint);color:#0A0A10;font-weight:600}
+.site .bt b+b{background:transparent;border:1px solid rgba(255,255,255,.25);color:var(--ink);font-weight:500}
+.site .svc{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.site .svc div{border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px;font-size:.7rem;color:#C9D0EE;background:rgba(0,0,0,.28)}
+.site .svc div em{display:block;font-style:normal;font-family:var(--mono);color:var(--ink);font-size:.78rem;margin-top:2px}
+.site .bot{position:absolute;right:16px;bottom:96px;z-index:2;font-family:var(--mono);font-size:.68rem;padding:7px 10px;border-radius:12px 12px 2px 12px;background:rgba(94,230,255,.16);border:1px solid rgba(94,230,255,.4);color:var(--ai)}
+
+/* ---------- ACT 6 · money ---------- */
+.money{padding-block:16vh}
+.money .wrap{max-width:1180px;margin:0 auto}
+.money h2{font-size:clamp(1.8rem,4.2vw,3.4rem);line-height:1;max-width:18ch;margin-bottom:34px}
+.calc{display:grid;grid-template-columns:1fr 1fr;border-radius:28px;overflow:hidden;border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(14px)}
+.cin{padding:34px;display:flex;flex-direction:column;gap:28px;min-width:0}
+.f{display:flex;flex-direction:column;gap:10px}
+.ft{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.f label{color:var(--soft);font-size:.96rem}
+.f output{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--amber);height:30px}
+.cout{padding:34px;display:flex;flex-direction:column;justify-content:center;gap:12px;background:radial-gradient(110% 90% at 100% 0,rgba(255,160,64,.25),transparent 60%),rgba(16,22,48,.9);border-left:1px solid var(--line);min-width:0}
+.cout .lbl{color:var(--soft)}
+.big{font-family:var(--display);font-weight:900;font-size:clamp(2.6rem,6.6vw,4.8rem);line-height:1;letter-spacing:-.04em;color:var(--amber);font-variant-numeric:tabular-nums}
+.cout .vs{font-family:var(--mono);font-size:.84rem;border-top:1px solid var(--line);padding-top:14px;margin-top:4px}
+.cout .vs b{color:var(--ok)}
+.fine{font-size:.8rem;color:var(--soft)}
+
+/* ---------- ACT 7 · dawn, the offer ---------- */
+.dawn{padding-block:24vh 10vh}
+.dawn .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:46px}
+.dawn h2{font-size:clamp(2.2rem,6.4vw,5.4rem);line-height:.94;letter-spacing:-.04em;font-weight:900;max-width:14ch}
+.dawn h2 em{font-style:normal;color:var(--ok)}
+.offer{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
+.plan{border-radius:26px;padding:32px;display:flex;flex-direction:column;gap:18px;border:1px solid var(--line);background:rgba(8,12,28,.82);backdrop-filter:blur(14px);min-width:0}
+.plan.main{border-color:rgba(255,160,64,.55)}
+.plan .tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ai)}
+.amt{font-family:var(--display);font-weight:900;font-size:3.3rem;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.amt small{font-family:var(--body);font-size:1rem;font-weight:500;color:var(--soft);letter-spacing:0}
+.plan ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:11px}
+.plan li{display:flex;gap:12px;align-items:flex-start}
+.plan li::before{content:"";flex:0 0 15px;height:15px;margin-top:5px;border-radius:5px;border:1px solid var(--ok);background:rgba(85,230,165,.2)}
+.plan .note{font-size:.84rem;color:var(--soft)}
+.reach{display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;padding:26px 30px;border-radius:24px;background:linear-gradient(100deg,rgba(255,160,64,.18),rgba(94,230,255,.12));border:1px solid var(--line)}
+.reach .who{display:flex;flex-direction:column;gap:4px;min-width:0}
+.reach .who strong{font-family:var(--display);font-size:1.3rem}
+.reach .num{font-family:var(--mono);font-size:1.15rem;user-select:all}
+.copy{border:1px solid var(--line);background:rgba(5,7,15,.6);border-radius:12px;padding:12px 18px;font-weight:600}
+footer{position:relative;z-index:2;padding-block:24px 34px;color:var(--soft);font-size:.8rem;border-top:1px solid var(--line);background:rgba(5,7,15,.85)}
+footer .wrap{max-width:1180px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+
+/* ---------- phone widths ---------- */
+@media (max-width:860px){
+  .hero .copy{grid-template-columns:1fr;gap:28px}
+  .phone{justify-self:start;width:min(220px,62vw);aspect-ratio:9/15;padding:14px 12px}
+  .phone .nt{margin-bottom:10px}
+  .ring{width:62px;height:62px}
+  .ring svg{width:26px;height:26px}
+  .hero .stage{align-items:start;padding-top:90px}
+  .talk .wrap,.calc,.offer{grid-template-columns:1fr}
+  .cout{border-left:0;border-top:1px solid var(--line)}
+  .ln{grid-template-columns:1fr;gap:4px}
+  .lines{padding:24px 20px}
+}
+@media (max-width:520px){
+  .hero h1{font-size:2.45rem}
+  .cin,.cout,.plan{padding:24px}
+  .thread{min-height:400px}
+  .site .body{min-height:300px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .ln{opacity:1;transform:none}
+  .verdict,.after{opacity:1;transform:none}
+  .console{clip-path:none}
+}
+</style>
+
+<canvas id="city" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="top g">
+  <div class="mark"><i aria-hidden="true"></i>Unity Alpha Network</div>
+  <div class="clock" id="clock" aria-label="Story time"><i></i><span id="clockT">6:00 PM</span></div>
+</header>
+
+<main>
+  <!-- ACT 1 -->
+  <section class="hero">
+    <div class="stage g">
+      <div class="scrim" aria-hidden="true"></div>
+      <div class="copy">
+        <div>
+          <h1 id="h1"><span>Your city</span><span class="o">never stops</span><span>calling.</span></h1>
+          <p class="lede" id="lede">Every night, people across Brampton and Mississauga search, call and try to book. <b>We give your business a website and an AI front desk that answers every single one of them.</b></p>
+        </div>
+        <div class="phone" id="phone" aria-label="A phone ringing after hours">
+          <div class="nt"></div>
+          <span class="k" id="pk">INCOMING · AFTER HOURS</span>
+          <span class="who" id="pwho">New customer</span>
+          <span class="why" id="pwhy">Furnace not turning on</span>
+          <div class="ring" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg></div>
+          <span class="bottom">Your shop closed at 6:00</span>
+        </div>
+      </div>
+      <div class="haze" id="haze" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ACT 2 -->
+  <section class="tension" id="tension">
+    <div class="stage g">
+      <div class="col">
+        <div class="lines">
+          <div class="ln"><time>6:04 PM</time><p>You lock the door and go home.</p></div>
+          <div class="ln"><time>7:18 PM</time><p>A furnace dies. A tooth cracks. Brakes start grinding.</p></div>
+          <div class="ln bad"><time>8:41 PM</time><p>They call you. It <em>rings out</em>.</p></div>
+          <div class="ln bad"><time>8:42 PM</time><p>They call the next name on Google. <em>That one picks up.</em></p></div>
+          <p class="verdict" id="verdict">You earned that customer with years of good work and five-star reviews. Then voicemail handed them to someone else. Look at the city: every red light is a call like that.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT 3 · PEAK -->
+  <section class="peak" id="peak">
+    <div class="stage g">
+      <div class="inner">
+        <h2>Now answer<br>every one of them.</h2>
+        <p class="sub">Press and hold. This is what your AI front desk does every night while you sleep.</p>
+        <button class="hold" id="hold" type="button" aria-describedby="tally">
+          <div class="fill"></div>
+          <span id="holdTxt">Hold to answer</span>
+        </button>
+        <div class="tally" id="tally" aria-live="polite">
+          <span class="r">Ringing <b id="tR">0</b></span>
+          <span class="a">Answered <b id="tA">0</b></span>
+        </div>
+        <p class="after" id="after">Booked. Quoted. Followed up. And you were home with your family the whole time.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT 4 -->
+  <section class="talk g" id="talk">
+    <div class="wrap">
+      <div class="left">
+        <h2>Hear exactly what your caller hears.</h2>
+        <p>Pick your business. This is a real conversation flow, trained on your services, prices, hours and calendar.</p>
+        <div class="chips" id="chips" role="group" aria-label="Choose your type of business"></div>
+      </div>
+      <div class="console" id="console" aria-live="polite">
+        <div class="chead">
+          <span class="live"><i></i><span id="cname">AI front desk</span></span>
+          <button class="replay" id="replay" type="button">Replay</button>
+        </div>
+        <div class="thread" id="thread"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT 5 -->
+  <section class="range" id="range">
+    <div class="stage">
+      <div class="head g">
+        <h2>A website that feels like your business.</h2>
+        <p>Every site ships with the AI built in: booking, chat and call answering on every page.</p>
+      </div>
+      <div class="track" id="track"></div>
+    </div>
+  </section>
+
+  <!-- ACT 6 -->
+  <section class="money g" id="money">
+    <div class="wrap">
+      <h2>What are the missed calls costing you?</h2>
+      <div class="calc">
+        <div class="cin">
+          <div class="f"><div class="ft"><label for="missed">Calls you miss each week (after hours, busy, lunch)</label><output id="oM" for="missed">8</output></div><input type="range" id="missed" min="1" max="40" value="8"></div>
+          <div class="f"><div class="ft"><label for="ticket">What one new customer is worth to you</label><output id="oT" for="ticket">$300</output></div><input type="range" id="ticket" min="50" max="5000" step="50" value="300"></div>
+          <div class="f"><div class="ft"><label for="conv">How many of those callers would have booked</label><output id="oC" for="conv">30%</output></div><input type="range" id="conv" min="5" max="80" step="5" value="30"></div>
+          <p class="fine">Calculated only from your numbers. No industry averages, no made-up stats.</p>
+        </div>
+        <div class="cout">
+          <span class="lbl">Walking to your competitors every year</span>
+          <span class="big" id="lost">$37,440</span>
+          <span class="vs" id="pay">The full build pays for itself in about <b>4 weeks</b> of calls you'd normally miss.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT 7 -->
+  <section class="dawn g" id="dawn">
+    <div class="wrap">
+      <h2>7:00 AM. You wake up to a <em>full calendar.</em></h2>
+      <div class="offer">
+        <div class="plan main">
+          <span class="tag">Website + AI front desk</span>
+          <div class="amt">$2,500 <small>one-time build</small></div>
+          <ul>
+            <li>Custom mobile website built for your business</li>
+            <li>AI front desk on your calls, texts and website chat</li>
+            <li>Online booking synced to your calendar</li>
+            <li>Google Business profile cleanup and automatic review requests</li>
+            <li>Live in 48 hours</li>
+          </ul>
+          <p class="note">Hosting and AI phone usage are quoted upfront, before you pay anything.</p>
+        </div>
+        <div class="plan">
+          <span class="tag">Add-on · Reels</span>
+          <div class="amt">$500<small> to $800 / month</small></div>
+          <ul>
+            <li>12 short videos a month for Instagram, TikTok and YouTube</li>
+            <li>You film on your phone. We edit everything.</li>
+            <li>Hooks, captions and music done for you</li>
+          </ul>
+          <p class="note">Month to month. Cancel any time.</p>
+        </div>
+      </div>
+      <div class="reach">
+        <div class="who">
+          <span class="fine">Live by <span id="liveBy">Saturday</span> if we talk today</span>
+          <strong id="cName">Gagan · Unity Alpha Network</strong>
+          <span class="num" id="cNum" hidden></span>
+          <span class="fine" id="cHint">Reply to the message you got from us to book your 15-minute call.</span>
+        </div>
+        <button class="copy" id="copyBtn" type="button" hidden>Copy number</button>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="g"><div class="wrap"><span>Unity Alpha Network · Ontario</span><span>Conversations and websites shown are demos for your type of business.</span></div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ====== EDIT: add your number and it appears at the bottom ====== */
+const CONTACT={name:"Gagan · Unity Alpha Network",phone:""}; // e.g. "(647) 555-0123"
+
+const $=s=>document.querySelector(s);
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const mobile=innerWidth<760;
+function prog(el){const r=el.getBoundingClientRect();const span=r.height-innerHeight;return span<=0?clamp(-r.top/innerHeight):clamp(-r.top/span)}
+
+/* ========== THE CITY ========== */
+let renderer,scene,camera,beacons=[],bGeo,bCol,winMats=[],peakDone=false,holdP=0;
+const HAS3=typeof THREE!=="undefined";
+const NIGHT=HAS3&&new THREE.Color("#05070F"),DAWN=HAS3&&new THREE.Color("#2A2244"),DAWN2=HAS3&&new THREE.Color("#5A3E58");
+function windowTex(cols,rows,seed){
+  const c=document.createElement("canvas");c.width=128;c.height=256;const g=c.getContext("2d");
+  g.fillStyle="#0A0F22";g.fillRect(0,0,128,256);
+  let s=seed;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  const cw=128/cols,rh=256/rows;
+  for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+    const r=rnd();
+    if(r<.38){const warm=rnd()<.8;g.fillStyle=warm?`rgba(255,${170+rnd()*60|0},${90+rnd()*50|0},${.55+rnd()*.45})`:`rgba(150,210,255,${.5+rnd()*.4})`;}
+    else g.fillStyle="rgba(30,38,70,.9)";
+    g.fillRect(x*cw+cw*.22,y*rh+rh*.24,cw*.56,rh*.5);
+  }
+  const t=new THREE.CanvasTexture(c);t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipMapLinearFilter;return t;
+}
+function dotTex(){const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,"rgba(255,255,255,1)");gr.addColorStop(.25,"rgba(255,255,255,.9)");gr.addColorStop(.5,"rgba(255,255,255,.25)");gr.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)}
+
+function initCity(){
+  const cv=$("#city");
+  try{renderer=new THREE.WebGLRenderer({canvas:cv,antialias:!mobile,powerPreference:"high-performance"});}catch(e){cv.style.background="radial-gradient(80% 60% at 50% 70%,#1A2350,#05070F)";return false}
+  renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.4:1.8));
+  renderer.setSize(innerWidth,innerHeight);
+  scene=new THREE.Scene();scene.background=NIGHT.clone();
+  scene.fog=new THREE.FogExp2(NIGHT.clone(),.0105);
+  camera=new THREE.PerspectiveCamera(mobile?62:48,innerWidth/innerHeight,.5,600);
+
+  // ground with streets
+  const gc=document.createElement("canvas");gc.width=gc.height=512;const g=gc.getContext("2d");
+  g.fillStyle="#04060D";g.fillRect(0,0,512,512);
+  g.strokeStyle="rgba(255,170,80,.22)";g.lineWidth=3;
+  for(let i=0;i<=512;i+=64){g.beginPath();g.moveTo(i,0);g.lineTo(i,512);g.stroke();g.beginPath();g.moveTo(0,i);g.lineTo(512,i);g.stroke()}
+  const gt=new THREE.CanvasTexture(gc);gt.wrapS=gt.wrapT=THREE.RepeatWrapping;gt.repeat.set(14,14);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(900,900),new THREE.MeshBasicMaterial({map:gt}));
+  ground.rotation.x=-Math.PI/2;scene.add(ground);
+
+  // buildings: three height classes so windows stay square-ish
+  const classes=[{h:[3,8],tex:windowTex(4,6,7)},{h:[8,18],tex:windowTex(5,14,19)},{h:[18,42],tex:windowTex(6,30,31)}];
+  const geo=new THREE.BoxGeometry(1,1,1);geo.translate(0,.5,0);
+  const cells=[];const N=mobile?26:34;const step=900/14/4.6; // align roughly to street grid
+  for(let gx=-N;gx<=N;gx++)for(let gz=-N;gz<=N;gz++){
+    if(gx%4===0||gz%4===0)continue; // streets
+    const d=Math.hypot(gx,gz);
+    if(Math.random()<.18+d/90)continue;
+    const centre=Math.max(0,1-d/N);
+    const h=3+Math.pow(Math.random(),2.2)*14+centre*centre*30*Math.random();
+    cells.push({x:gx*step,z:gz*step,h,w:step*(.62+Math.random()*.28),dd:step*(.62+Math.random()*.28)});
+  }
+  classes.forEach((cl,ci)=>{
+    const list=cells.filter(c=>c.h>=cl.h[0]&&c.h<cl.h[1]||(ci===2&&c.h>=42)||(ci===0&&c.h<3));
+    const mat=new THREE.MeshBasicMaterial({map:cl.tex,color:new THREE.Color(.62,.6,.66)});
+    winMats.push(mat);
+    const mesh=new THREE.InstancedMesh(geo,mat,list.length);
+    const m=new THREE.Matrix4();
+    list.forEach((c,i)=>{m.makeScale(c.w,c.h,c.dd);m.setPosition(c.x,0,c.z);mesh.setMatrixAt(i,m)});
+    scene.add(mesh);
+  });
+
+  // ringing calls: beacons on building faces
+  const pick=cells.filter(c=>Math.hypot(c.x,c.z)<step*N*.75).sort(()=>Math.random()-.5).slice(0,mobile?44:64);
+  const pos=new Float32Array(pick.length*3);bCol=new Float32Array(pick.length*3);
+  pick.forEach((c,i)=>{pos[i*3]=c.x+(Math.random()-.5)*c.w*.4;pos[i*3+1]=c.h*(.35+Math.random()*.55)+.8;pos[i*3+2]=c.z+c.dd*.52;beacons.push({state:0,d:Math.hypot(c.x,c.z),phase:Math.random()*6.28})});
+  // answered order: ripple from centre outward
+  const order=beacons.map((b,i)=>i).sort((a,b)=>beacons[a].d-beacons[b].d);order.forEach((idx,rank)=>beacons[idx].rank=rank);
+  bGeo=new THREE.BufferGeometry();bGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));bGeo.setAttribute("color",new THREE.BufferAttribute(bCol,3));
+  const pm=new THREE.PointsMaterial({size:mobile?3.2:2.6,map:dotTex(),vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});
+  scene.add(new THREE.Points(bGeo,pm));
+  window.__pm=pm;
+  $("#tR").textContent=0;
+  return true;
+}
+
+const AMBER=HAS3&&new THREE.Color("#FFA040"),RED=HAS3&&new THREE.Color("#FF4D5E"),CYAN=HAS3&&new THREE.Color("#5EE6FF");
+// camera keyframes along the whole page (fraction of total scroll)
+const KEYS=[
+  {t:0.00,p:[0,120,190],l:[0,0,0]},
+  {t:0.10,p:[18,36,92],l:[0,8,0]},
+  {t:0.24,p:[-40,22,60],l:[0,10,-10]},
+  {t:0.42,p:[0,150,150],l:[0,0,0]},   // peak: whole city
+  {t:0.55,p:[60,40,80],l:[0,6,0]},
+  {t:0.72,p:[-70,30,40],l:[10,8,-20]},
+  {t:0.86,p:[0,70,120],l:[0,4,0]},
+  {t:1.00,p:[0,190,230],l:[0,0,0]}
+];
+function camAt(t){
+  let i=0;while(i<KEYS.length-2&&t>KEYS[i+1].t)i++;
+  const a=KEYS[i],b=KEYS[i+1],k=ease(clamp((t-a.t)/(b.t-a.t)));
+  return {p:a.p.map((v,j)=>lerp(v,b.p[j],k)),l:a.l.map((v,j)=>lerp(v,b.l[j],k))};
+}
+let camCur=null,mx=0,my=0;
+addEventListener("pointermove",e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5},{passive:true});
+
+/* ========== STORY CLOCK ========== */
+function storyTime(f){ // 6:00 PM -> 7:00 AM
+  const mins=18*60+f*13*60;const m=Math.round(mins)%(24*60);
+  let h=Math.floor(m/60),mm=m%60;const ap=h>=12?"PM":"AM";h=h%12||12;
+  return h+":"+String(mm).padStart(2,"0")+" "+ap;
+}
+
+/* ========== SCROLL-DRIVEN ACTS ========== */
+const lines=[...document.querySelectorAll(".ln")];
+function tick(now){
+  const total=document.documentElement.scrollHeight-innerHeight;
+  const f=clamp(scrollY/total);
+  $("#clockT").textContent=storyTime(f);
+  $("#clock").classList.toggle("dawn",f>.86);
+
+  // act 1 layered parallax: phone (front) moves fastest, headline mid, haze in front
+  const p1=prog($(".hero"));
+  if(!reduce){
+    $("#h1").style.transform=`translate3d(0,${-p1*90}px,0)`;
+    $("#lede").style.transform=`translate3d(0,${-p1*130}px,0)`;$("#lede").style.opacity=1-clamp((p1-.55)*2.4);
+    $("#phone").style.transform=`translate3d(${mx*-14}px,${-p1*260+my*-10}px,0) rotate(${-4+p1*10}deg)`;
+    $("#haze").style.transform=`translate3d(0,${-p1*180}px,0)`;
+  }
+
+  // act 2 kinetic lines + calls turn red
+  const p2=prog($("#tension"));
+  lines.forEach((l,i)=>l.classList.toggle("on",reduce||p2>i*.17+.04));
+  $("#verdict").classList.toggle("on",reduce||p2>.74);
+  const redShare=clamp((p2-.36)/.5);
+
+  // act 3 peak
+  const p3=prog($("#peak"));
+  if(!peakDone&&p3>=.995&&holdP<1){holdP=1;finishPeak(true)}
+
+  // act 4 reveal
+  if(!opened&&$("#console").getBoundingClientRect().top<innerHeight*.8){opened=true;$("#console").classList.add("open");playChat()}
+
+  // act 5 horizontal pan
+  const p5=prog($("#range"));const tr=$("#track");
+  const max=tr.scrollWidth-innerWidth+40;tr.style.transform=`translate3d(${-Math.max(0,max)*ease(p5)}px,0,0)`;
+
+  // beacons
+  if(bGeo){
+    const t=now/1000;let ring=0,ans=0;
+    const answeredN=Math.floor(holdP*beacons.length);
+    beacons.forEach((b,i)=>{
+      let col;
+      if(b.rank<answeredN){b.state=2;col=CYAN;ans++}
+      else if(f<.08){col=AMBER;b.state=0}
+      else if(b.rank/beacons.length>1-redShare){b.state=1;col=RED;ring++}
+      else {col=AMBER;b.state=0;ring++}
+      const pulse=b.state===2?.9:.55+.45*Math.sin(t*5+b.phase);
+      bCol[i*3]=col.r*pulse;bCol[i*3+1]=col.g*pulse;bCol[i*3+2]=col.b*pulse;
+    });
+    bGeo.attributes.color.needsUpdate=true;
+    $("#tR").textContent=ring;$("#tA").textContent=ans;
+
+    // city warms as calls get answered; dawn at the end
+    const warm=.62+holdP*.38;
+    winMats.forEach(m=>m.color.setRGB(warm,warm*.96,warm*.92));
+    const dawnK=clamp((f-.8)/.2);
+    const sky=NIGHT.clone().lerp(DAWN,dawnK).lerp(DAWN2,clamp((f-.93)/.07)*.6);
+    scene.background.copy(sky);scene.fog.color.copy(sky);
+    scene.fog.density=lerp(.0105,.0062,clamp((f-.34)/.1)*(1-clamp((f-.5)/.1)))+dawnK*-.002;
+
+    const c=camAt(reduce?0.1:f);
+    if(!camCur)camCur={p:c.p.slice(),l:c.l.slice()};
+    const k=reduce?1:.075;
+    camCur.p=camCur.p.map((v,j)=>lerp(v,c.p[j],k));camCur.l=camCur.l.map((v,j)=>lerp(v,c.l[j],k));
+    camera.position.set(camCur.p[0]+mx*6,camCur.p[1]-my*4,camCur.p[2]);
+    camera.lookAt(camCur.l[0],camCur.l[1],camCur.l[2]);
+    renderer.render(scene,camera);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ========== THE PEAK: hold to answer ========== */
+let holding=false,last=0;
+const hb=$("#hold");
+function holdLoop(ts){
+  if(!holding||peakDone)return;
+  const dt=last?(ts-last)/1000:0;last=ts;
+  holdP=clamp(holdP+dt/2.6);
+  hb.style.setProperty("--hp",holdP);
+  hb.classList.toggle("fillhalf",holdP>.45);
+  $("#holdTxt").textContent=holdP<1?"Answering… keep holding":"";
+  if(holdP>=1){finishPeak(false);return}
+  requestAnimationFrame(holdLoop);
+}
+function startHold(e){if(peakDone)return;e&&e.preventDefault();holding=true;last=0;requestAnimationFrame(holdLoop)}
+function stopHold(){holding=false;if(!peakDone&&holdP>0)$("#holdTxt").textContent="Hold to keep answering"}
+function finishPeak(auto){
+  peakDone=true;holding=false;holdP=1;
+  hb.style.setProperty("--hp",1);hb.classList.add("done");
+  $("#holdTxt").textContent="Every call answered";
+  $("#after").classList.add("on");
+}
+hb.addEventListener("pointerdown",e=>{hb.setPointerCapture?.(e.pointerId);startHold(e)});
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>hb.addEventListener(ev,stopHold));
+hb.addEventListener("contextmenu",e=>e.preventDefault());
+hb.addEventListener("keydown",e=>{if((e.key===" "||e.key==="Enter")&&!e.repeat){startHold(e)}});
+hb.addEventListener("keyup",e=>{if(e.key===" "||e.key==="Enter")stopHold()});
+if(reduce)hb.addEventListener("click",()=>{if(!peakDone)finishPeak(false)});
+
+/* ========== CONVERSATIONS ========== */
+const N={
+ hvac:{l:"HVAC",who:"Homeowner, Brampton",why:"Furnace not turning on",chat:[["c","Hi, my furnace just stopped and it's getting cold. Are you open?"],["a","Sorry to hear that. We have a technician on call tonight, or a guaranteed slot tomorrow at 8:00 AM. Is the thermostat screen on?"],["c","Screen is on, no heat. Tomorrow 8 works."],["a","You're booked for 8:00 AM. What's the address and best number to reach you?"],["c","42 Sandalwood Pkwy, 647 number"],["s","Booked · Tomorrow 8:00 AM · Summary texted to owner"]]},
+ dental:{l:"Dental",who:"New patient",why:"Bad tooth pain",chat:[["c","Hi, I have bad tooth pain. Are you taking new patients?"],["a","Yes, we are. There's an emergency opening tomorrow at 10:30 AM. Do you have dental insurance?"],["c","Yes, through work. Sun Life."],["a","We bill Sun Life directly. I've reserved 10:30 AM for you. What's your full name?"],["c","Harpreet Gill"],["s","New patient booked · 10:30 AM · Intake form texted"]]},
+ auto:{l:"Auto repair",who:"Driver, Malton",why:"Brakes grinding",chat:[["c","My brakes are grinding. Can you look at it tomorrow?"],["a","Yes. Grinding usually means worn pads. We have a 9:00 AM drop-off. Pad replacement starts at $189 per axle. What car is it?"],["c","2017 Civic"],["a","Booked for 9:00 AM. We'll text you photos and the exact price before any work starts."],["s","Drop-off booked · 9:00 AM · Owner notified"]]},
+ salon:{l:"Salon",who:"Client, Mississauga",why:"Balayage this weekend",chat:[["c","Hey, any spots for balayage Saturday?"],["a","Saturday at 11:00 AM is open with our colour specialist. About 3 hours, from $180. Want it?"],["c","Yes please!"],["a","Done. I'll remind you Friday. Feel free to send reference photos here."],["s","Booked · Sat 11:00 AM · Deposit link sent"]]},
+ plumbing:{l:"Plumbing",who:"Homeowner",why:"Basement drain backing up",chat:[["c","Water is coming up from my basement drain!"],["a","Let's get you help fast. Stop running water and don't flush for now. Our on-call plumber can be there around 11:15 PM. Should I send them?"],["c","Yes please"],["a","Dispatched. Please confirm your address and number. I'm texting the owner right now."],["s","Emergency dispatched · Owner alerted · ETA 11:15 PM"]]},
+ physio:{l:"Physio",who:"New patient",why:"Back injury at work",chat:[["c","I hurt my back at work. Do you take WSIB?"],["a","Yes, we handle WSIB claims. An assessment is open Monday at 4:30 PM. Do you have a claim number yet?"],["c","Not yet"],["a","No problem, bring it when you have it. You're booked for Monday 4:30 PM and I've texted the intake form."],["s","Assessment booked · WSIB flagged for front desk"]]},
+ reno:{l:"Renovation",who:"Homeowner",why:"Legal basement quote",chat:[["c","Looking for a quote on a legal basement apartment."],["a","We handle drawings, permits and the full build. Free on-site quotes are open Saturday at 10:00 AM or 2:00 PM. Which works?"],["c","2 PM"],["a","Booked for Saturday at 2:00 PM. Roughly how big is the basement?"],["c","About 900 sq ft"],["s","Site visit booked · Details sent to owner"]]},
+ barber:{l:"Barber",who:"Client",why:"Fade before Saturday",chat:[["c","yo any chairs open friday evening"],["a","Friday at 6:40 PM is open. Fade and beard is $55. Want it?"],["c","yes"],["a","Locked in. You'll get a reminder 2 hours before."],["s","Booked · Fri 6:40 PM"]]},
+ driving:{l:"Driving school",who:"Student",why:"G2 test in 3 weeks",chat:[["c","Hi, my G2 test is in 3 weeks. I need lessons."],["a","We can fit 6 lessons before your test, plus our car on test day. Which area are you in?"],["c","Brampton, Sandalwood"],["a","First lesson booked Tuesday at 4:00 PM with pickup from home. Would you like a Punjabi-speaking instructor?"],["c","Yes"],["s","Lesson booked · Punjabi-speaking instructor assigned"]]},
+ electric:{l:"Electrician",who:"Homeowner",why:"EV charger install",chat:[["c","How much to install an EV charger in my garage?"],["a","Most garage installs need a 240V circuit and an ESA permit. We'll quote exactly on a free visit. Wednesday at 5:00 PM is open."],["c","Wednesday works"],["a","Booked. Send a photo of your electrical panel so we come prepared."],["s","Quote visit booked · Wed 5:00 PM"]]}
+};
+const ORDER=["hvac","dental","auto","salon","plumbing","physio","reno","barber","driving","electric"];
+let cur="hvac",timers=[],opened=false;
+function playChat(){
+  timers.forEach(clearTimeout);timers=[];
+  const th=$("#thread");th.innerHTML="";let t=reduce?0:400;
+  N[cur].chat.forEach(([w,txt])=>{
+    if(w==="a"&&!reduce){timers.push(setTimeout(()=>{const d=document.createElement("div");d.className="typing";d.innerHTML="<i></i><i></i><i></i>";th.appendChild(d)},t));t+=850}
+    timers.push(setTimeout(()=>{th.querySelector(".typing")?.remove();const m=document.createElement("div");m.className="msg "+w;m.innerHTML=(w==="s"?"✓ ":`<span class="w">${w==="c"?"Caller":"Your AI"}</span>`)+txt.replace(/</g,"&lt;");th.appendChild(m)},t));
+    t+=reduce?0:(w==="c"?1250:1450);
+  });
+}
+function setNiche(k){
+  cur=k;const n=N[k];
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.k===k?"true":"false"));
+  $("#pwho").textContent=n.who;$("#pwhy").textContent=n.why;$("#cname").textContent="AI front desk · "+n.l;
+  if(opened)playChat();
+}
+ORDER.forEach(k=>{const b=document.createElement("button");b.type="button";b.className="chip";b.dataset.k=k;b.id="chip-"+k;b.textContent=N[k].l;b.addEventListener("click",()=>setNiche(k));$("#chips").appendChild(b)});
+$("#replay").addEventListener("click",playChat);
+
+/* ========== SITE GALLERY ========== */
+const SITES=[
+ {k:"Dental",u:"yourfamilydental.ca",h:"New patients welcome this week.",s:"Gentle family care. Direct insurance billing. Book any hour.",v:[["Cleaning","Insurance billed"],["Emergency","Same day"],["Invisalign","Free consult"]],bg:"linear-gradient(160deg,#0F3A3E,#071318 70%)",tint:"#7FF0D8",bot:"AI: You're booked for 10:30"},
+ {k:"HVAC",u:"yourheatingpros.ca",h:"Heat back on tonight.",s:"Furnace and AC repair across Peel. 24/7 booking.",v:[["Furnace","from $129"],["AC tune-up","from $99"],["New install","Free quote"]],bg:"linear-gradient(160deg,#4A2A12,#120A06 70%)",tint:"#FFB15C",bot:"AI: Tech arriving 8:00 AM"},
+ {k:"Auto repair",u:"yourautoshop.ca",h:"Honest repairs. Prices up front.",s:"Brakes, tires and diagnostics. Photos before any work.",v:[["Brake pads","from $189"],["Tire swap","$60"],["Diagnostic","$99"]],bg:"linear-gradient(160deg,#28331A,#0A0D06 70%)",tint:"#C6F26B",bot:"AI: Drop-off booked 9 AM"},
+ {k:"Salon & spa",u:"yoursalon.ca",h:"Your best hair, booked tonight.",s:"Colour, cuts and bridal. See open chairs live.",v:[["Balayage","from $180"],["Cut & style","from $55"],["Bridal","Packages"]],bg:"linear-gradient(160deg,#4A1A3E,#120712 70%)",tint:"#FF9AD8",bot:"AI: Saturday 11 AM is yours"},
+ {k:"Renovation",u:"yourrenos.ca",h:"Legal basements, done on time.",s:"Drawings, permits and build handled for you.",v:[["Basements","Permits"],["Kitchens","Design + build"],["Bathrooms","2 to 3 weeks"]],bg:"linear-gradient(160deg,#3A3018,#0E0B06 70%)",tint:"#F2D46B",bot:"AI: Site visit Sat 2 PM"},
+ {k:"Driving school",u:"yourdrivingschool.ca",h:"Pass your G2 the first time.",s:"Patient instructors. Test-route practice. Car for test day.",v:[["10 lessons","Package"],["Test car","Included"],["Languages","EN · PB · HI"]],bg:"linear-gradient(160deg,#16304A,#060B12 70%)",tint:"#8CC8FF",bot:"AI: Lesson Tue 4 PM"}
+];
+$("#track").innerHTML=SITES.map(x=>`<article class="site" style="--bg:${x.bg};--tint:${x.tint}"><div class="bar"><i></i><i></i><i></i><span>${x.u}</span></div><div class="body"><span class="kind">${x.k}</span><h3>${x.h}</h3><p class="s">${x.s}</p><div class="bt"><b>Book now</b><b>Call</b></div><div class="svc">${x.v.map(([a,b])=>`<div>${a}<em>${b}</em></div>`).join("")}</div><span class="bot">${x.bot}</span></div></article>`).join("");
+
+/* ========== CALCULATOR ========== */
+const fmt=n=>"$"+Math.round(n).toLocaleString("en-CA");
+function calc(){
+  const m=+$("#missed").value,t=+$("#ticket").value,c=+$("#conv").value;
+  $("#oM").textContent=m;$("#oT").textContent=fmt(t);$("#oC").textContent=c+"%";
+  const wk=m*t*c/100;$("#lost").textContent=fmt(wk*52);
+  const w=Math.ceil(2500/wk);
+  $("#pay").innerHTML=w<=1?"The full build pays for itself in <b>under a week</b> of calls you'd normally miss.":`The full build pays for itself in about <b>${w} weeks</b> of calls you'd normally miss.`;
+}
+["missed","ticket","conv"].forEach(id=>$("#"+id).addEventListener("input",calc));
+
+/* ========== CONTACT ========== */
+$("#cName").textContent=CONTACT.name;
+if(CONTACT.phone){
+  $("#cNum").textContent=CONTACT.phone;$("#cNum").hidden=false;$("#cHint").textContent="Text or call for a 15-minute chat.";
+  const b=$("#copyBtn");b.hidden=false;
+  b.addEventListener("click",()=>{try{navigator.clipboard.writeText(CONTACT.phone).then(()=>b.textContent="Copied",sel)}catch(e){sel()}});
+}
+function sel(){const r=document.createRange();r.selectNodeContents($("#cNum"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copyBtn").textContent="Selected, copy it"}
+$("#liveBy").textContent=new Date(Date.now()+48*3600e3).toLocaleDateString("en-CA",{weekday:"long",timeZone:"America/Toronto"});
+
+/* ========== BOOT ========== */
+const h=(location.hash||"").slice(1);
+setNiche(N[h]?h:"hvac");calc();
+if(HAS3)initCity();else $("#city").style.background="radial-gradient(80% 60% at 50% 75%,#1A2350,#05070F)";
+addEventListener("resize",()=>{if(!renderer)return;renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()});
+requestAnimationFrame(tick);
+</script>
+
+</body></html>
