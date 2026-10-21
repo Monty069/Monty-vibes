@@ -1,0 +1,1 @@
+{"framework": null, "installCommand": "echo skip", "buildCommand": "rm -rf public && mkdir -p public && curl -fsSL https://d2ol7oe51mr4n9.cloudfront.net/user_3K536KMVblttRnKCnm2ajo1LxLg/52def4d1-818c-4f38-8241-f7881916f229.gz | tar xz -C public", "outputDirectory": "public", "cleanUrls": true}
