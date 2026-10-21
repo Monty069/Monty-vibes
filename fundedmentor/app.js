@@ -86,6 +86,37 @@
     clearTimeout(cloudTimer);
     cloudTimer = setTimeout(() => { const body = Object.assign({}, state, { session: undefined }); sb.from('user_state').upsert({ user_id: cloudUser.id, state: body, updated_at: new Date().toISOString() }).then(() => {}, () => {}); }, 800);
   }
+  // ---------- plan, payments, live MT5 ----------
+  async function fn(name, body) {
+    if (!sb || !cloudUser) return { error: 'Sign in with Google first.' };
+    const { data } = await sb.auth.getSession(); const tok = data && data.session ? data.session.access_token : '';
+    try {
+      const r = await fetch(SB_URL + '/functions/v1/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok, apikey: SB_KEY }, body: JSON.stringify(body || {}) });
+      const j = await r.json().catch(() => ({})); if (!r.ok) return Object.assign({ error: j.error || 'Something went wrong. Try again.' }, j); return j;
+    } catch (e) { return { error: 'No connection. Try again.' }; }
+  }
+  async function loadPlan() {
+    if (!sb || !cloudUser) return;
+    try { const { data } = await sb.from('profiles').select('plan, plan_until').eq('id', cloudUser.id).maybeSingle();
+      ui.plan = data && data.plan === 'pro' && (!data.plan_until || Date.parse(data.plan_until) > Date.now()) ? 'pro' : 'free'; ui.planUntil = data ? data.plan_until : null; render(); } catch (e) { /* keep last known plan */ }
+  }
+  const isPro = () => ui.plan === 'pro';
+  const realAccounts = () => state.accounts.filter((x) => !x.example).length;
+  function applySync(id, res) {
+    const a = state.accounts.find((x) => x.id === id); if (!a) return;
+    a.mt5 = Object.assign({}, a.mt5 || {}, { status: res.status || (a.mt5 || {}).status, lastSync: res.snapshot ? res.snapshot.ts : (a.mt5 || {}).lastSync, err: res.error || null });
+    if (res.snapshot) { a.openPnl = Math.round((res.snapshot.openPnl || 0) * 100) / 100; a.mt5.balance = res.snapshot.balance; a.mt5.equity = res.snapshot.equity; a.mt5.positions = res.snapshot.openPositions; }
+    if (Array.isArray(res.trades) && res.trades.length) { const have = new Set(a.trades.map((t) => t.id)); res.trades.filter((t) => t.closeTime >= (a.mt5.since || 0) && !have.has(t.id)).forEach((t) => a.trades.push(t)); }
+    save();
+  }
+  async function syncMt5(id, quiet) {
+    const a = state.accounts.find((x) => x.id === id); if (!a || !a.mt5) return;
+    ui.mt5Busy = id; if (!quiet) render();
+    const res = await fn('mt5', { action: 'sync', localId: id, since: a.mt5.since || a.purchaseTs || a.createdTs });
+    ui.mt5Busy = null; applySync(id, res); if (!quiet && !res.error && res.status === 'live') toast('MT5 synced'); else render();
+  }
+  setInterval(() => { const a = active(); if (a && a.mt5 && cloudUser && isPro() && document.visibilityState === 'visible' && ui.mt5Busy !== a.id) syncMt5(a.id, true); }, 60000);
+
   async function adoptUser(user) {
     cloudUser = user; const meta = user.user_metadata || {};
     state.profile = Object.assign({}, state.profile || {}, { name: meta.full_name || meta.name || (user.email || '').split('@')[0], email: user.email, avatar: meta.avatar_url || null });
@@ -96,7 +127,8 @@
       else { state.accounts = state.accounts.filter((a) => !a.example); state.activeId = state.accounts[0] ? state.accounts[0].id : null; pushCloud(); }
     } catch (e) { /* offline: keep local copy */ }
     if (ui.route === 'auth') ui.route = 'landing';
-    save(); render();
+    save(); render(); loadPlan();
+    if (/[?&]pro=success/.test(location.search)) { history.replaceState(null, '', location.pathname); toast('Payment received. Pro unlocks as soon as it confirms.'); setTimeout(loadPlan, 4000); setTimeout(loadPlan, 15000); }
   }
   if (sb) {
     sb.auth.getSession().then(({ data }) => { if (data && data.session) adoptUser(data.session.user); });
@@ -294,6 +326,7 @@
       ${ui.wizard ? wizard() : ''}
       ${ui.next && acct && c ? nextSheet(acct, c) : ''}
       ${ui.copilot && acct ? copilot(acct, c) : ''}
+      ${ui.upgrade ? upgradeSheet() : ''}
       ${ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : ''}`);
     if (ui.copilot) { const m = $('.msgs'); if (m) m.scrollTop = m.scrollHeight; }
   }
@@ -492,6 +525,18 @@
   function nextBtn(a, c) {
     const rec = bestMode(a, c); const t = nextTrade(a, c, rec);
     return `<button class="next-btn" data-act="next-open"><span class="next-l">Next trade</span><span class="next-v">${t.stopReason ? 'No trade · tap for why' : `${qty(t.lots, t.spec)} ${esc(a.instrument)} · risk ${fmt$(t.actual, 0)}`}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
+  }
+  function upgradeSheet() {
+    const u = ui.upgrade || {};
+    return `<div class="overlay" data-act="up-close"><div class="sheet" data-stop role="dialog" aria-label="Go Pro">
+      <div class="sheet-h"><div><h2>FundedMentor Pro</h2><small class="muted">$29 a month · cancel any time</small></div><button class="btn ghost sm" data-act="up-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
+      <div class="sheet-b"><div class="stack" style="gap:14px">
+        ${u.reason ? `<div class="alert warn">${icon('warn')}<span>${esc(u.reason)}</span></div>` : ''}
+        <ul class="stack" style="gap:8px;margin:0;padding-left:18px"><li>Unlimited accounts across every firm</li><li>Live MT5 sync: balance, equity, open P&amp;L and closed trades every minute</li><li>Next trade planner and payout tracking on every account</li></ul>
+        ${cloudUser ? `<div class="grid g2" style="gap:10px"><button class="btn primary lg" data-act="up-pay" data-m="card" ${u.busy ? 'disabled' : ''}>${u.busy === 'card' ? 'Opening checkout…' : 'Pay by card'}</button><button class="btn lg" data-act="up-pay" data-m="crypto" ${u.busy ? 'disabled' : ''}>${u.busy === 'crypto' ? 'Opening checkout…' : 'Pay with crypto'}</button></div>
+        <p class="hint">Card renews monthly through Stripe. Crypto buys 30 days at a time and stacks if you pay early.</p>` : `<button class="btn primary lg" data-act="to-auth" data-mode="signup">Sign in with Google to upgrade</button>`}
+        ${u.err ? `<div class="alert bad">${icon('warn')}<span>${esc(u.err)}</span></div>` : ''}
+      </div></div></div></div>`;
   }
   function nextSheet(a, c) {
     const rec = bestMode(a, c); const mode = ui.ntMode || rec; const t = nextTrade(a, c, mode); const soon = newsSoon(Date.now(), 120);
@@ -1056,18 +1101,36 @@
           <div class="grid g2" style="gap:10px"><label class="field"><span>Day-start equity override</span><input class="input num" id="s-dse" type="number" step="any" data-acct="dayStartEquity" value="${a.dayStartEquity ?? ''}" placeholder="optional"></label>
           <label class="field"><span>Platform</span><select class="input" id="s-plat" data-acct="platform">${['MT5', 'MT4', 'cTrader', 'DXtrade', 'Match-Trader', 'TradeLocker', 'Tradovate', 'NinjaTrader', 'Rithmic', 'TopstepX', 'TradingView', 'Other'].map((p) => `<option ${p === a.platform ? 'selected' : ''}>${p}</option>`).join('')}</select></label></div>
           <label class="field"><span>${esc(a.instrument)} contract size on your broker</span><input class="input num" id="s-cs" type="number" step="any" data-spec="contractSize" value="${esc(((a.specOverrides || {})[a.instrument] || {}).contractSize ?? '')}" placeholder="${PR.INSTRUMENTS[a.instrument] ? PR.INSTRUMENTS[a.instrument].contractSize : ''}"></label>
+          ${mt5Panel(a)}
           ${c.status === 'passed' && nextPhase(c, a) ? `<div class="alert ok">${icon('ok')}<span>Target and minimum days met. When the firm confirms, start ${esc(c.model.phases[nextPhase(c, a)].label)}. Current trades are archived.</span></div><button class="btn primary" data-act="next-phase">Start ${esc(c.model.phases[nextPhase(c, a)].label)}</button>` : ''}
         </div></section>` : ''}
         <section class="panel"><h2 style="margin-bottom:12px">Profile &amp; appearance</h2><div class="stack" style="gap:12px">
           <label class="field"><span>Name</span><input class="input" id="p-name" data-profile="name" value="${esc(state.profile ? state.profile.name : '')}" placeholder="Your name"></label>
           <label class="field"><span>Email</span><input class="input" id="p-email" type="email" data-profile="email" value="${esc(state.profile ? state.profile.email : '')}" placeholder="you@example.com"></label></div>
           <h2 style="margin:22px 0 12px">Connections</h2><div class="rules-list">
-            <div class="rl"><b>Cloud accounts &amp; sync</b><span class="chip">Not connected</span><span class="d">Profiles live in this browser. Sign-in across devices needs the Supabase adapter (URL + anon key, server-side calculations).</span></div>
-            <div class="rl"><b>MT4 / MT5 bridge</b><span class="chip">Not connected</span><span class="d">Use CSV import until a broker bridge is configured.</span></div>
+            <div class="rl"><b>Cloud sync</b>${cloudUser ? '<span class="chip ok">On</span>' : '<span class="chip">Off</span>'}<span class="d">${cloudUser ? `Signed in as ${esc(cloudUser.email || '')}. Your accounts follow you to any device.` : 'Sign in with Google to keep your accounts on every device.'}</span></div>
+            <div class="rl"><b>Plan</b>${isPro() ? '<span class="chip ok">Pro</span>' : '<span class="chip">Free</span>'}<span class="d">${isPro() ? (ui.planUntil ? `Paid through ${new Date(ui.planUntil).toLocaleDateString()}.` : 'Renews monthly.') : `One account, manual trades. <button class="btn sm primary" data-act="go-pro" style="margin-left:6px">Go Pro</button>`}</span></div>
             <div class="rl"><b>Copilot</b><span class="chip ok">Active</span><span class="d">Answers come from the rules engine and your account data. It does not invent rules.</span></div></div>
           <h2 style="margin:22px 0 12px">Data</h2><div class="row">${ui.confirm === 'reset' ? '<span class="muted" style="font-size:13px">Erase all accounts and edits?</span><button class="btn sm danger" data-act="reset">Erase everything</button><button class="btn sm ghost" data-act="cancel-confirm">Cancel</button>' : '<button class="btn sm" data-act="restore-examples">Reload example accounts</button><button class="btn sm danger" data-act="confirm" data-k="reset">Erase all data</button>'}</div></section>
       </div>`;
   };
+  function mt5Panel(a) {
+    if (a.example || a.platform !== 'MT5') return '';
+    const m = a.mt5, busy = ui.mt5Busy === a.id;
+    const head = `<h3 style="margin:8px 0 0;font-size:15px">Live MT5 sync</h3>`;
+    if (!cloudUser) return `${head}<p class="hint">Sign in with Google to connect your MT5 account.</p>`;
+    if (!isPro()) return `${head}<p class="hint">Balance, equity, open P&amp;L and closed trades pulled from MT5 every minute. Pro feature.</p><button class="btn sm primary" data-act="go-pro" data-r="Live MT5 sync is part of Pro.">Go Pro</button>`;
+    if (!m) return `${head}<p class="hint">Read-only. Use your <b>investor</b> password: FundedMentor can see trades but can never place, change or close one.</p>
+      <div class="grid g2" style="gap:10px"><label class="field"><span>MT5 login</span><input class="input num" id="m-login" inputmode="numeric" autocomplete="off" placeholder="e.g. 51234567"></label>
+      <label class="field"><span>Server</span><input class="input" id="m-server" autocomplete="off" placeholder="e.g. FTMO-Demo"></label></div>
+      <label class="field"><span>Investor password</span><input class="input" id="m-pass" type="password" autocomplete="off"></label>
+      ${ui.mt5Err ? `<div class="alert bad">${icon('warn')}<span>${esc(ui.mt5Err)}</span></div>` : ''}
+      <button class="btn primary" data-act="mt5-link" data-id="${a.id}" ${busy ? 'disabled' : ''}>${busy ? 'Connecting…' : 'Connect MT5'}</button>`;
+    const live = m.status === 'live';
+    return `${head}<div class="rl" style="padding:0"><b>${esc(m.login)} · ${esc(m.server)}</b><span class="chip ${live ? 'ok' : 'info'}">${live ? 'Live' : m.status === 'connecting' ? 'Connecting' : 'Setting up'}</span>
+      <span class="d">${live ? `Balance <b class="num">${fmt$(m.balance)}</b> · Equity <b class="num">${fmt$(m.equity)}</b> · ${m.positions || 0} open · synced ${m.lastSync ? new Date(m.lastSync).toLocaleTimeString() : '—'}` : 'Your broker connection is starting. This takes 1 to 3 minutes the first time.'}${m.err ? ` <span class="warnc">${esc(m.err)}</span>` : ''}</span></div>
+      <div class="row">${ui.confirm === 'mt5-' + a.id ? `<span class="muted" style="font-size:13px">Disconnect MT5? Synced trades stay.</span><button class="btn sm danger" data-act="mt5-unlink" data-id="${a.id}">Disconnect</button><button class="btn sm ghost" data-act="cancel-confirm">Cancel</button>` : `<button class="btn sm" data-act="mt5-sync" data-id="${a.id}" ${busy ? 'disabled' : ''}>${busy ? 'Syncing…' : 'Sync now'}</button><button class="btn sm ghost danger" data-act="confirm" data-k="mt5-${a.id}">Disconnect</button>`}</div>`;
+  }
   function nextPhase(c, a) { const ks = Object.keys(c.model.phases); const i = ks.indexOf(a.phase); return i >= 0 && i < ks.length - 1 ? ks[i + 1] : null; }
 
   // ---------- Goal & instrument playbook ----------
@@ -1321,7 +1384,7 @@
         <h2 class="lp-h2">Less than one challenge reset</h2>
         <div class="lp-prices two">
           <div class="lp-price"><h3>Free</h3><div class="lp-amt"><b class="num">$0</b></div><ul><li>1 account</li><li>Position size and loss limits</li><li>News calendar</li></ul><button class="btn" data-act="to-auth" data-mode="signup">Start free</button></div>
-          <div class="lp-price pro"><span class="chip info nodot">Pro</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><ul><li>Unlimited accounts, all ${n} firms</li><li>Next trade planner</li><li>Live MT5 sync (coming soon)</li></ul><button class="btn primary" data-act="to-auth" data-mode="signup">Go Pro</button></div>
+          <div class="lp-price pro"><span class="chip info nodot">Pro</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><ul><li>Unlimited accounts, all ${n} firms</li><li>Next trade planner</li><li>Live MT5 sync, every minute</li></ul><button class="btn primary" data-act="${cloudUser ? 'go-pro' : 'to-auth'}" data-mode="signup">Go Pro</button></div>
         </div>
       </div></section>
       <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><span class="hint">fundedmentor.com</span></div>
@@ -1390,7 +1453,20 @@
       case 'menu': ui.menu = !ui.menu; break;
       case 'close-menu': ui.menu = false; break;
       case 'switch': state.activeId = el.dataset.id; ui.menu = false; ui.calc = null; ui.check = null; ui.newTrade = null; ui.chat = []; if (state.view === 'accounts') state.view = 'overview'; save(); break;
-      case 'wizard': ui.menu = false; ui.more = false; ui.wizard = { step: state.profile ? 'firm' : 'profile', firmId: null, modelId: null, phase: null, size: null, profile: 'balanced', inst: 'XAUUSD', stop: '5', comm: '7', ccy: 'USD', platform: 'MT5' }; break;
+      case 'go-pro': ui.upgrade = { reason: el.dataset.r || null }; break;
+      case 'up-close': ui.upgrade = null; break;
+      case 'up-pay': { const m = el.dataset.m; ui.upgrade = Object.assign({}, ui.upgrade, { busy: m, err: null }); render(); fn('billing', { method: m }).then((r) => { if (r.url) { location.href = r.url; return; } ui.upgrade = Object.assign({}, ui.upgrade, { busy: null, err: r.error }); render(); }); return; }
+      case 'mt5-link': { const id = el.dataset.id; const login = ($('#m-login') || {}).value || '', password = ($('#m-pass') || {}).value || '', server = ($('#m-server') || {}).value || '';
+        ui.mt5Busy = id; ui.mt5Err = null; render();
+        fn('mt5', { action: 'link', localId: id, login, password, server }).then((r) => { ui.mt5Busy = null;
+          if (r.upgrade) { ui.upgrade = { reason: 'Live MT5 sync is part of Pro.' }; render(); return; }
+          if (r.error) { ui.mt5Err = r.error; render(); return; }
+          updateAcct((x) => { x.mt5 = { login: login.replace(/\D/g, ''), server: server.trim(), status: r.status, since: x.purchaseTs || x.createdTs }; });
+          toast('Connecting to your broker. First sync takes 1 to 3 minutes.'); setTimeout(() => syncMt5(id, true), 45000); });
+        return; }
+      case 'mt5-sync': syncMt5(el.dataset.id); return;
+      case 'mt5-unlink': { const id = el.dataset.id; ui.confirm = null; fn('mt5', { action: 'unlink', localId: id }).then(() => { const x = state.accounts.find((y) => y.id === id); if (x) { delete x.mt5; save(); } toast('MT5 disconnected'); }); return; }
+      case 'wizard': if (cloudUser && !isPro() && realAccounts() >= 1) { ui.upgrade = { reason: 'Free covers one account. Go Pro to track more.' }; break; } ui.menu = false; ui.more = false; ui.wizard = { step: state.profile ? 'firm' : 'profile', firmId: null, modelId: null, phase: null, size: null, profile: 'balanced', inst: 'XAUUSD', stop: '5', comm: '7', ccy: 'USD', platform: 'MT5' }; break;
       case 'w-close': ui.wizard = null; break;
       case 'w-firm': W.firmId = el.dataset.id; W.modelId = null; W.size = null; W.phase = null; break;
       case 'w-model': { W.modelId = el.dataset.id; const fm = findModel(W.modelId); W.phase = Object.keys(fm.model.phases)[0]; W.size = fm.model.sizes.includes(Number(W.size)) ? W.size : fm.model.sizes.length ? fm.model.sizes[Math.min(3, fm.model.sizes.length - 1)] : null; const fut = futuresModel(fm.firm, fm.model); const picks = fut ? FUT_PICKS : FX_PICKS; W.legs = (W.legs || []).filter((l) => picks.includes(l.symbol)); if (!W.legs.length) W.legs = [{ symbol: fut ? 'MNQ' : 'XAUUSD', stop: fut ? 20 : 5 }]; if (fut) { W.comm = '1.5'; W.platform = 'Tradovate'; } break; }
