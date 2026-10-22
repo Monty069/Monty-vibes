@@ -55,9 +55,11 @@
   // ---------- state ----------
   let state = load() || seed();
   if (!state.session && state.profile) state.session = { email: state.profile.email || '', ts: Date.now() };
-  // Economic news lives in the artifact's shared store (news/<YYYY-MM-DD> docs, refreshed daily).
+  // Economic news: on fundedmentor.com from the Supabase news_days table; inside a claude.ai artifact
+  // from the artifact's shared store. loadNews() is started at the END of this file, after sb, ui and
+  // the views exist (starting it here hit them before initialization and the feed always failed).
   let NEWS = {}; let newsState = 'loading';
-  (async () => {
+  async function loadNews() {
     try {
       const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
       if (!db) {
@@ -72,7 +74,7 @@
         NEWS = next; newsState = 'ready'; render();
       }, () => { newsState = 'off'; render(); });
     } catch (e) { newsState = 'off'; render(); }
-  })();
+  }
   const ui = { route: 'landing', authMode: 'signup', authErr: null, menu: false, more: false, wizard: null, copilot: false, chat: [], toast: null, ruleSearch: '', ruleFirm: 'ftmo', edit: null, confirm: null, csv: null, consWhatIf: '', calc: null, check: null };
 
   function load() { try { const s = JSON.parse(localStorage.getItem(STORE)); return s && s.v === 1 ? s : null; } catch (e) { return null; } }
@@ -490,17 +492,34 @@
     for (const e of newsFor(etDate(now))) { const t = Date.parse(e.t); if (e.impact === 'high' && t - now <= withinMin * 60000 && t - now > -15 * 60000) return e; }
     return null;
   }
+  // Is today's economic calendar actually loaded? Missing data is never presented as "no news".
+  // ok = calendar for that US-Eastern day is loaded; closed = weekend with nothing published;
+  // missing = a weekday with no calendar; off = feed failed; loading = still fetching.
+  function newsCoverage(key) {
+    if (newsState === 'loading') return 'loading';
+    if (newsState === 'off') return 'off';
+    if (key in NEWS) return 'ok';
+    const wd = new Date(key + 'T12:00:00Z').getUTCDay();
+    return wd === 0 || wd === 6 ? 'closed' : 'missing';
+  }
+  // Shared news-guard banner for every screen that helps place a trade.
+  function newsGuard(c, withinMin = 60, now = Date.now()) {
+    const cov = newsCoverage(etDate(now));
+    if (cov === 'missing' || cov === 'off') return `<div class="alert warn news-guard-off">${icon('warn')}<span><b>News guard is off.</b> Today’s economic calendar isn’t available, so FundedMentor can’t warn you about releases. Check Forex Factory or your broker’s calendar before every entry${c && c.rv.newsRestricted ? '; this account restricts news trading' : ''}.</span></div>`;
+    const soon = cov === 'ok' ? newsSoon(now, withinMin) : null;
+    return soon ? `<div class="alert warn">${icon('warn')}<span><b>${esc(soon.title)}</b> at ${tLocal(soon.t)}. Avoid new entries until 15 minutes after the release${c && c.rv.newsRestricted ? '; this account restricts news trading' : ''}.</span></div>` : '';
+  }
   function newsList(events, now = Date.now(), key) {
-    if (key && !(key in NEWS)) return '<p class="muted news-empty">The news calendar for this day isn’t loaded yet. Check your broker’s calendar before trading.</p>';
+    if (key && !(key in NEWS)) return newsCoverage(key) === 'closed' ? '<p class="muted news-empty">Weekend: no calendar published.</p>' : '<p class="muted news-empty">The news calendar for this day isn’t available. Check your broker’s calendar before trading.</p>';
     if (!events.length) return '<p class="muted news-empty">No major releases scheduled.</p>';
     return `<ul class="news">${events.map((e) => { const t = Date.parse(e.t); const past = t < now - 15 * 60000; const live = !past && t - now < 60 * 60000 && t >= now - 15 * 60000;
       return `<li class="${past ? 'past' : ''}${live ? ' live' : ''}"><span class="news-t num">${tLocal(e.t)}</span><span class="news-c">${esc(e.ccy || 'USD')}</span><span class="news-n"><b>${esc(e.title)}</b>${e.forecast || e.previous ? `<small>${e.forecast ? 'Forecast ' + esc(e.forecast) : ''}${e.forecast && e.previous ? ' · ' : ''}${e.previous ? 'Prev ' + esc(e.previous) : ''}${e.actual ? ' · Actual ' + esc(e.actual) : ''}</small>` : ''}</span><span class="imp ${e.impact === 'high' ? 'hi' : 'md'}" title="${e.impact === 'high' ? 'High impact' : 'Medium impact'}">${e.impact === 'high' ? 'High' : 'Med'}</span></li>`; }).join('')}</ul>`;
   }
   function newsPanel(c) {
-    const today = etDate(Date.now()); const ev = newsFor(today); const soon = newsSoon();
-    const body = newsState === 'off' ? '<p class="muted news-empty">The news feed appears in the live app.</p>' : newsState === 'loading' ? '<p class="muted news-empty">Loading today’s calendar…</p>' : newsList(ev, Date.now(), today);
+    const today = etDate(Date.now()); const ev = newsFor(today); const guard = newsGuard(c);
+    const body = newsState === 'off' ? '' : newsState === 'loading' ? '<p class="muted news-empty">Loading today’s calendar…</p>' : newsList(ev, Date.now(), today);
     return `<section class="panel"><div class="panel-h"><h2>Today’s news</h2><span class="muted">${new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · your time</span></div>
-      ${soon ? `<div class="alert warn" style="margin-bottom:12px">${icon('warn')}<span><b>${esc(soon.title)}</b> at ${tLocal(soon.t)}. Avoid new entries 15 minutes either side${c && c.rv.newsRestricted ? '; this account restricts news trading' : ''}.</span></div>` : ''}${body}</section>`;
+      ${guard ? `<div style="margin-bottom:12px">${guard}</div>` : ''}${body}</section>`;
   }
 
   // ---------- bezel dial (target progress) ----------
@@ -577,13 +596,13 @@
       </div></div></div></div>`;
   }
   function nextSheet(a, c) {
-    const rec = bestMode(a, c); const mode = ui.ntMode || rec; const t = nextTrade(a, c, mode); const soon = newsSoon(Date.now(), 120);
+    const rec = bestMode(a, c); const mode = ui.ntMode || rec; const t = nextTrade(a, c, mode);
     return `<div class="overlay" data-act="next-close"><div class="sheet nt" data-stop role="dialog" aria-label="Your next trade">
       <div class="sheet-h"><div><h2>Your next trade</h2><small class="muted">${esc(a.instrument)} · ${t.stop} ${esc((t.spec || {}).distUnit || '')} stop · 1:${t.rr} target</small></div><button class="btn ghost sm" data-act="next-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
       <div class="sheet-b">
         ${srcNote(c)}
         <div class="seg nt-seg" role="group" aria-label="Planning mode">${NT_MODES.map(([k, l]) => `<button data-act="nt-mode" data-k="${k}" aria-pressed="${mode === k}">${l}${k === rec ? '<i class="rec" title="Recommended: safest of the three"></i>' : ''}</button>`).join('')}</div>
-        ${soon ? `<div class="alert warn">${icon('warn')}<span><b>${esc(soon.title)}</b> at ${tLocal(soon.t)}. Wait until 15 minutes after the release before entering.</span></div>` : ''}
+        ${newsGuard(c, 120)}
         ${t.stopReason ? `<div class="nt-stop"><b>No trade</b><p>${esc(t.stopReason)}</p></div>` : `
         <div class="nt-hero"><span class="label">Size</span><div class="nt-lots">${qtyNum(t.lots, t.spec)}<small>${qtyUnit(t.spec)}</small></div><span class="muted">Buy or sell, on your own setup. ${mode === rec ? 'Recommended for today.' : ''}</span></div>
         <dl class="kv nt-kv">
@@ -829,6 +848,7 @@
     const spec = specFor(f.inst, a);
     const needRate = spec.quote !== a.currency && spec.base !== a.currency;
     return `${pageHead('Can I take this trade?', 'Checks a proposed trade against this account’s limits before you place it. It is a calculation, not permission from the firm.')}${srcNote(c)}
+      ${newsGuard(c, 60) ? `<div style="margin-bottom:14px">${newsGuard(c, 60)}</div>` : ''}
       <div class="grid g2">
         <section class="panel"><div class="stack" style="gap:14px">
           <div class="grid g2" style="gap:12px"><label class="field"><span>Instrument</span><select class="input" id="k-inst" data-check="inst" data-full="1">${Object.keys(PR.INSTRUMENTS).map((s) => `<option ${s === f.inst ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
@@ -1664,4 +1684,5 @@
   setInterval(() => { if (!document.activeElement || !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) render(); }, 60000);
 
   render();
+  loadNews();
 })();

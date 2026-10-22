@@ -8,6 +8,7 @@ const DIR = path.resolve(__dirname, process.argv[2] || '..');
 const read = (f) => fs.readFileSync(path.join(DIR, f), 'utf8');
 const MORPH = fs.readFileSync(require.resolve('morphdom/dist/morphdom-umd.min.js'), 'utf8');
 let fails = 0, passes = 0;
+(async () => {
 const ok = (cond, msg) => { if (cond) passes++; else { fails++; console.log('FAIL', msg); } };
 const DAY = 86400000;
 
@@ -15,7 +16,7 @@ function boot({ state, liveSync = false, news = { days: [] } } = {}) {
   const html = read('index.html').replace(/<script[\s\S]*?<\/script>/g, '');
   const dom = new JSDOM(html, { url: 'https://fundedmentor.com/', runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window; w.scrollTo = () => {}; const calls = []; const errors = [];
-  w.fetch = async (u) => { calls.push(String(u)); return { ok: true, json: async () => news }; };
+  w.fetch = async (u) => { calls.push(String(u)); if (news === 'fail') throw new Error('offline'); return { ok: true, json: async () => news }; };
   w.addEventListener('error', (e) => errors.push(e.message));
   w.console.error = (...a) => errors.push(a.join(' '));
   if (state) w.localStorage.setItem('passrate.v1', JSON.stringify(state));
@@ -95,4 +96,30 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   const t2 = boot({ state: base(acct), liveSync: true }); ok(/Live · MT5/.test(t2.root()), 'liveSync=true + fresh snapshot shows Live chip');
   ok(!t.errors.length && !t2.errors.length, 'liveSync path no errors'); }
 
+// H. News guard: never treat a missing calendar as "no news"
+{ const etKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const wd = new Date(etKey + 'T12:00:00Z').getUTCDay(), weekend = wd === 0 || wd === 6;
+  const settle = () => new Promise((r) => setTimeout(r, 30));
+  const views = async (t) => { await settle(); t.act('go', { v: 'overview' }); const o = t.root(); t.act('go', { v: 'check' }); const ch = t.root(); t.act('go', { v: 'overview' }); t.act('next-open'); const nx = t.root(); t.act('next-close'); return { o, ch, nx }; };
+  const st = base(manual());
+  // 1. Calendar loaded with a high-impact release in 30 minutes -> warning names it everywhere
+  const soon = new Date(Date.now() + 30 * 60000).toISOString();
+  const t1 = boot({ state: st, news: { days: [{ date: etKey, events: [{ t: soon, ccy: 'USD', title: 'Test CPI', impact: 'high' }] }] } }); const r1 = await views(t1);
+  ok(/Test CPI/.test(r1.o) && /Test CPI/.test(r1.ch) && /Test CPI/.test(r1.nx), 'news: upcoming high-impact release warned on overview, check and next trade');
+  ok(!/News guard is off/.test(r1.o), 'news: loaded calendar does not show guard-off');
+  // 2. Calendar loaded, no events today -> honest "no releases"
+  const t2 = boot({ state: st, news: { days: [{ date: etKey, events: [] }] } }); const r2 = await views(t2);
+  ok(/No major releases scheduled/.test(r2.o) && !/News guard is off/.test(r2.o), 'news: empty-but-loaded day says no releases');
+  // 3. Calendar missing for today -> guard off on weekdays, never "no releases"
+  const t3 = boot({ state: st, news: { days: [{ date: '2020-01-01', events: [] }] } }); const r3 = await views(t3);
+  ok(!/No major releases scheduled/.test(r3.o), 'news: missing day is never shown as "no releases"');
+  if (weekend) ok(/Weekend: no calendar/.test(r3.o), 'news: weekend without calendar labelled as weekend');
+  else ok(/News guard is off/.test(r3.o) && /News guard is off/.test(r3.ch) && /News guard is off/.test(r3.nx), 'news: missing weekday calendar disables the guard on overview, check and next trade');
+  // 4. Feed fails entirely -> guard off
+  const t4 = boot({ state: st, news: 'fail' }); const r4 = await views(t4);
+  ok(/News guard is off/.test(r4.o) && /News guard is off/.test(r4.nx), 'news: failed feed disables the guard visibly');
+  ok(![t1, t2, t3, t4].some((t) => t.errors.length), 'news: no errors');
+}
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
+})();
