@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { configReport } from "./flags.ts";
 
 export const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -20,17 +21,19 @@ export async function userFrom(req: Request) {
   return error ? null : data.user;
 }
 
-// Grant or extend Pro. `until` null = open-ended (subscription keeps it alive).
-export async function setPro(userId: string, until: Date | null) {
-  const db = admin();
-  const { data } = await db.from("profiles").select("plan_until").eq("id", userId).maybeSingle();
-  let next = until;
-  if (until && data?.plan_until && new Date(data.plan_until) > until) next = new Date(data.plan_until);
-  await db.from("profiles").update({ plan: "pro", plan_until: next ? next.toISOString() : null }).eq("id", userId);
+// Entitlement changes go through atomic SQL helpers (migration 20261022210000_split_entitlements).
+// Card and crypto time are stored separately; plan/plan_until are derived by a trigger.
+async function rpc(name: string, args: Record<string, unknown>) {
+  const { data, error } = await admin().rpc(name, args);
+  if (error) throw new Error(`${name} failed: ${error.message}`);
+  return data as string | null;
 }
-
-export async function setFree(userId: string) {
-  await admin().from("profiles").update({ plan: "free", plan_until: null }).eq("id", userId);
-}
+export const grantCard = (uid: string, until: Date) => rpc("fm_grant_card", { uid, until_ts: until.toISOString() });
+export const endCard = (uid: string) => rpc("fm_end_card", { uid });
+export const grantCrypto = (uid: string, days: number) => rpc("fm_grant_crypto", { uid, days });
+export const revokeCrypto = (uid: string, days: number) => rpc("fm_revoke_crypto", { uid, days });
 
 export const SITE = Deno.env.get("SITE_URL") || "https://fundedmentor.com";
+
+// One presence-only config line per cold boot (no secret values). See flags.ts.
+console.log("fm-config " + JSON.stringify(configReport((k) => Deno.env.get(k))));

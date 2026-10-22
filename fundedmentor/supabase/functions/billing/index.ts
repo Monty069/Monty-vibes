@@ -2,6 +2,8 @@
 // Card   -> Stripe Checkout subscription (env STRIPE_SECRET_KEY, STRIPE_PRICE_PRO)
 // Crypto -> NOWPayments invoice for one month (env NOWPAYMENTS_API_KEY)
 // Portal -> Stripe Billing Portal (cancel, change card, invoices). Needs the portal configured in Stripe.
+// Overlap rules: crypto can't be bought while card Pro is running (manage the card plan instead), and a
+// card subscription started while prepaid crypto time remains begins billing when that time ends.
 import { CORS, json, userFrom, admin, SITE } from "../_shared/common.ts";
 
 const PRO_USD = Number(Deno.env.get("PRO_PRICE_USD") || "29");
@@ -39,7 +41,7 @@ Deno.serve(async (req) => {
     const key = Deno.env.get("STRIPE_SECRET_KEY"), price = Deno.env.get("STRIPE_PRICE_PRO");
     if (!key || !price) return json({ error: "Card payments are not switched on yet." }, 503);
     const db = admin();
-    const { data: prof } = await db.from("profiles").select("stripe_customer_id").eq("id", user.id).maybeSingle();
+    const { data: prof } = await db.from("profiles").select("stripe_customer_id, crypto_until").eq("id", user.id).maybeSingle();
     const form = new URLSearchParams({
       mode: "subscription",
       "line_items[0][price]": price,
@@ -61,6 +63,9 @@ Deno.serve(async (req) => {
     }
     if (prof?.stripe_customer_id) form.set("customer", prof.stripe_customer_id);
     else if (user.email) form.set("customer_email", user.email);
+    // Prepaid crypto time left: start card billing when it ends (Stripe needs >= 48h ahead).
+    const cryptoEnd = prof?.crypto_until ? Date.parse(prof.crypto_until) : 0;
+    if (cryptoEnd > Date.now() + 48 * 3600000) form.set("subscription_data[trial_end]", String(Math.floor(cryptoEnd / 1000)));
     const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
@@ -74,8 +79,12 @@ Deno.serve(async (req) => {
   if (method === "crypto") {
     const key = Deno.env.get("NOWPAYMENTS_API_KEY");
     if (!key) return json({ error: "Crypto payments are not switched on yet." }, 503);
+    const { data: prof } = await admin().from("profiles").select("card_until").eq("id", user.id).maybeSingle();
+    if (prof?.card_until && Date.parse(prof.card_until) > Date.now())
+      return json({ error: "You're on a card plan. Use Manage billing to change it; crypto time can be added after it ends." }, 409);
     const fnBase = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
-    const r = await fetch("https://api.nowpayments.io/v1/invoice", {
+    const npBase = Deno.env.get("NOWPAYMENTS_SANDBOX") === "true" ? "https://api-sandbox.nowpayments.io" : "https://api.nowpayments.io";
+    const r = await fetch(`${npBase}/v1/invoice`, {
       method: "POST",
       headers: { "x-api-key": key, "Content-Type": "application/json" },
       body: JSON.stringify({

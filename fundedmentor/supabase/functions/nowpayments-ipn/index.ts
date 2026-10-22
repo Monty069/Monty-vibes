@@ -4,7 +4,9 @@
 // Safety: signature checked before anything is trusted; user id must be a UUID we issued; the paid
 // amount/currency must match the Pro price; and the 30 days are granted only by the request that
 // atomically moves this payment to "finished", so duplicate or concurrent IPNs grant once.
-import { json, admin, setPro } from "../_shared/common.ts";
+// A "refunded" IPN for a finished payment removes those 30 days, also exactly once.
+// Crypto time is stored in profiles.crypto_until, separate from card time.
+import { json, admin, grantCrypto, revokeCrypto } from "../_shared/common.ts";
 import { verifyNowPayments, isUuid } from "../_shared/verify.ts";
 
 const PRO_USD = Number(Deno.env.get("PRO_PRICE_USD") || "29");
@@ -28,21 +30,25 @@ Deno.serve(async (req) => {
   await db.from("payments").upsert({ user_id: uid, provider: "nowpayments", provider_ref: ref, amount: body.price_amount, currency: body.price_currency, status: "received" }, { onConflict: "provider,provider_ref", ignoreDuplicates: true });
 
   const status = String(body.payment_status || "");
+  if (status === "refunded") {
+    // Only a payment that actually granted time (finished -> refunded) gives the time back.
+    const { data: back } = await db.from("payments").update({ status: "refunded" }).eq("provider", "nowpayments").eq("provider_ref", ref).eq("status", "finished").select("id");
+    if (back && back.length) await revokeCrypto(uid, DAYS);
+    else await db.from("payments").update({ status: "refunded" }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "refunded");
+    return json({ ok: true });
+  }
   if (status !== "finished") {
-    await db.from("payments").update({ status }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "finished");
+    await db.from("payments").update({ status }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "finished").neq("status", "refunded");
     return json({ ok: true });
   }
   const amountOk = Number(body.price_amount) >= PRO_USD && String(body.price_currency || "").toLowerCase() === "usd";
   if (!amountOk) {
-    await db.from("payments").update({ status: "amount_mismatch" }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "finished");
+    await db.from("payments").update({ status: "amount_mismatch" }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "finished").neq("status", "refunded");
     return json({ ok: true, ignored: "amount mismatch" });
   }
   // Atomic transition: only one request can move this row to "finished".
-  const { data: moved } = await db.from("payments").update({ status: "finished" }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "finished").select("id");
-  if (moved && moved.length) {
-    const { data } = await db.from("profiles").select("plan_until").eq("id", uid).maybeSingle();
-    const base = data?.plan_until && new Date(data.plan_until) > new Date() ? new Date(data.plan_until) : new Date();
-    await setPro(uid, new Date(base.getTime() + DAYS * 86400000));
-  }
+  // A refunded payment can't be re-finished by a late IPN.
+  const { data: moved } = await db.from("payments").update({ status: "finished" }).eq("provider", "nowpayments").eq("provider_ref", ref).neq("status", "finished").neq("status", "refunded").select("id");
+  if (moved && moved.length) await grantCrypto(uid, DAYS);
   return json({ ok: true });
 });
