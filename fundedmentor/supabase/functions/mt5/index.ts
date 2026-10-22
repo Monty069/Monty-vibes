@@ -2,8 +2,9 @@
 // Body: { action: "link", localId, login, password, server }   -> provisions + deploys the account
 //       { action: "sync", localId, since? }                     -> balance, equity, open P&L, closed deals since `since`
 //       { action: "unlink", localId }                           -> removes it from MetaApi
-// env: METAAPI_TOKEN
+// env: METAAPI_TOKEN, MT5_SYNC_ENABLED ("true" to turn on; off by default, see _shared/flags.ts)
 import { CORS, json, userFrom, admin } from "../_shared/common.ts";
+import { mt5Enabled, MT5_DISABLED_BODY } from "../_shared/flags.ts";
 
 const PROV = "https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts";
 const clientHost = (region: string) => `https://mt-client-api-v1.${region || "new-york"}.agiliumtrade.ai/users/current/accounts`;
@@ -18,7 +19,10 @@ async function api(url: string, init: RequestInit = {}) {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  if (!Deno.env.get("METAAPI_TOKEN")) return json({ error: "Live MT5 sync is not switched on yet." }, 503);
+  // Kill switch: checked before auth, body parsing, DB access or any MetaApi call, so no broker
+  // operation (link, sync, unlink) is reachable while the integration is disabled.
+  if (!mt5Enabled((k) => Deno.env.get(k))) return json(MT5_DISABLED_BODY, 503);
+  if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
   const user = await userFrom(req);
   if (!user) return json({ error: "Sign in first." }, 401);
   const db = admin();

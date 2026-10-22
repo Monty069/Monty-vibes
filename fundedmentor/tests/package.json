@@ -1,0 +1,15 @@
+{
+  "name": "fundedmentor-tests",
+  "private": true,
+  "description": "Headless tests for FundedMentor. Test-only: nothing here ships with the site (see ../.vercelignore).",
+  "scripts": {
+    "test": "node smoke.test.js .. && node --experimental-strip-types server.test.mjs",
+    "test:smoke": "node smoke.test.js ..",
+    "test:server": "node --experimental-strip-types server.test.mjs"
+  },
+  "engines": { "node": ">=22.6" },
+  "devDependencies": {
+    "jsdom": "24.1.3",
+    "morphdom": "2.7.4"
+  }
+}
