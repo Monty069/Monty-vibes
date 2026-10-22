@@ -12,7 +12,7 @@ let fails = 0, passes = 0;
 const ok = (cond, msg) => { if (cond) passes++; else { fails++; console.log('FAIL', msg); } };
 const DAY = 86400000;
 
-function boot({ state, liveSync = false, news = { days: [] } } = {}) {
+function boot({ state, liveSync = false, news = { days: [] }, supabase = null } = {}) {
   const html = read('index.html').replace(/<script[\s\S]*?<\/script>/g, '');
   const dom = new JSDOM(html, { url: 'https://fundedmentor.com/', runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window; w.scrollTo = () => {}; const calls = []; const errors = [];
@@ -20,6 +20,7 @@ function boot({ state, liveSync = false, news = { days: [] } } = {}) {
   w.addEventListener('error', (e) => errors.push(e.message));
   w.console.error = (...a) => errors.push(a.join(' '));
   if (state) w.localStorage.setItem('passrate.v1', JSON.stringify(state));
+  if (supabase) w.supabase = supabase;
   let app = read('app.js');
   if (liveSync) { const flag = 'const FEATURES = { liveSync: false'; if (!app.includes(flag)) throw new Error('liveSync flag not found in app.js'); app = app.replace(flag, 'const FEATURES = { liveSync: true'); }
   for (const src of [MORPH, read('engine.js'), read('firms-data.js'), read('firms.js'), app]) { try { w.eval(src); } catch (e) { errors.push(e.stack); } }
@@ -119,6 +120,55 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   const t4 = boot({ state: st, news: 'fail' }); const r4 = await views(t4);
   ok(/News guard is off/.test(r4.o) && /News guard is off/.test(r4.nx), 'news: failed feed disables the guard visibly');
   ok(![t1, t2, t3, t4].some((t) => t.errors.length), 'news: no errors');
+}
+
+// I. Free public beta: Pro is "Coming Soon", nothing is gated, no checkout is reachable
+{ // Fake Supabase so the app runs as a signed-in Google user on fundedmentor.com
+  const cloud = { saved: null, upserts: 0, reads: [] };
+  const fakeSupabase = () => ({ createClient: () => {
+    const chain = (t) => { const q = { t, op: 'select' };
+      const self = { select: () => self, eq: () => self, gte: () => self, maybeSingle: () => self,
+        upsert: (row) => { q.op = 'upsert'; if (t === 'user_state') { cloud.saved = row.state; cloud.upserts++; } return self; },
+        then: (res) => { cloud.reads.push(t);
+          if (q.op === 'upsert') return res({ data: null, error: null });
+          if (t === 'profiles') return res({ data: { plan: 'free', plan_until: null }, error: null });
+          if (t === 'user_state') return res({ data: cloud.saved ? { state: cloud.saved } : null, error: null });
+          if (t === 'news_days') return res({ data: [], error: null });
+          return res({ data: null, error: null }); } };
+      return self; };
+    return { from: chain, auth: { getSession: async () => ({ data: { session: { access_token: 't', user: { id: 'b1c1d1e1-0000-4000-8000-000000000009', email: 'beta@example.com', user_metadata: { full_name: 'Beta User' } } } } }), onAuthStateChange: () => {}, signOut: async () => {}, signInWithIdToken: async () => ({}) } };
+  } });
+  const settle = () => new Promise((r) => setTimeout(r, 40));
+  // Landing
+  const L = boot(); const lh = L.root();
+  ok(/Pro — Coming Soon/.test(lh) && !/>Go Pro</.test(lh), 'beta: landing shows "Pro — Coming Soon", no Go Pro button');
+  ok(/Unlimited accounts during the beta/.test(lh) && /\$29/.test(lh), 'beta: free tier says unlimited during beta; $29 Pro price still displayed unchanged');
+  const proBtns = [...L.w.document.querySelectorAll('button')].filter((b) => /Pro — Coming Soon/.test(b.textContent));
+  ok(proBtns.length > 0 && proBtns.every((b) => b.disabled && !b.dataset.act), 'beta: every Pro button on landing is disabled with no action');
+  // Signed-in free user with one real account already
+  const T = boot({ state: base(manual()), supabase: fakeSupabase() }); await settle();
+  T.act('go', { v: 'settings' }); const sh = T.root();
+  ok(/Free beta: every feature is unlocked/.test(sh) && !/>Go Pro</.test(sh) && !/Manage billing/.test(sh), 'beta: settings plan row has no Go Pro or billing button');
+  T.act('wizard'); let h = T.root();
+  ok(/Set up an account/.test(h) && !/Go Pro to track more/.test(h) && !/Pro — Coming Soon<\/h2>/.test(h), 'beta: signed-in free user can add a 2nd account (no paywall)');
+  T.act('w-close');
+  // simulate a 3rd account by adding to state through the UI path: finder -> track
+  T.act('go', { v: 'finder' }); const track = T.w.document.querySelector('[data-act="finder-track"]');
+  ok(!!track, 'beta: Find a Prop offers "Track this account"'); if (track) track.click();
+  ok(/Set up an account/.test(T.root()) && !/Go Pro/.test(T.root()), 'beta: tracking another firm opens setup, no paywall');
+  T.act('w-close');
+  // Any checkout attempt is inert
+  T.act('go-pro'); h = T.root();
+  ok(/Pro — Coming Soon/.test(h) && /nothing to buy yet/.test(h) && !/Pay by card|Pay with crypto/.test(h), 'beta: upgrade sheet is informational only');
+  T.act('up-pay', { m: 'card' }); T.act('up-pay', { m: 'crypto' }); T.act('billing-portal'); await settle();
+  ok(!T.calls.some((u) => /functions\/v1\/(billing|stripe|nowpayments)/.test(u)), 'beta: no billing/checkout request can be made');
+  ok(!/Opening checkout/.test(T.root()), 'beta: no checkout spinner or redirect');
+  // Progress saves to the cloud for the signed-in user
+  T.act('go', { v: 'settings' }); const inp = T.w.document.getElementById('s-open'); inp.value = '-75'; inp.dispatchEvent(new T.w.Event('change', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 1000));
+  ok(cloud.upserts > 0 && cloud.saved && cloud.saved.accounts.some((a) => a.openPnl === -75), 'beta: signed-in progress is saved to the cloud (user_state upsert)');
+  ok(cloud.saved && cloud.saved.session === undefined, 'beta: session token is never written to cloud state');
+  ok(!T.errors.length, 'beta: no errors: ' + T.errors.join(' | '));
 }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
