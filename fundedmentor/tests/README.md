@@ -17,7 +17,9 @@ npm run test:smoke    # web app in jsdom: every view, manual-data labels, sync "
 npm run test:server   # Supabase edge functions: MT5 kill switch, Stripe + NOWPayments webhooks, billing
 ```
 
-Exit code `0` means every check passed. Requires Node 22.6+ (the server suite uses Node's built-in TypeScript stripping; no Deno needed).
+Exit code `0` means every check passed.
+
+Real-browser check of a deployed build (optional, needs Chromium): see the header of `browser.test.mjs`. Requires Node 22.6+ (the server suite uses Node's built-in TypeScript stripping; no Deno needed).
 
 ## What they cover
 
