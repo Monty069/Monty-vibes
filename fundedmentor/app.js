@@ -490,14 +490,15 @@
     for (const e of newsFor(etDate(now))) { const t = Date.parse(e.t); if (e.impact === 'high' && t - now <= withinMin * 60000 && t - now > -15 * 60000) return e; }
     return null;
   }
-  function newsList(events, now = Date.now()) {
+  function newsList(events, now = Date.now(), key) {
+    if (key && !(key in NEWS)) return '<p class="muted news-empty">The news calendar for this day isn’t loaded yet. Check your broker’s calendar before trading.</p>';
     if (!events.length) return '<p class="muted news-empty">No major releases scheduled.</p>';
     return `<ul class="news">${events.map((e) => { const t = Date.parse(e.t); const past = t < now - 15 * 60000; const live = !past && t - now < 60 * 60000 && t >= now - 15 * 60000;
       return `<li class="${past ? 'past' : ''}${live ? ' live' : ''}"><span class="news-t num">${tLocal(e.t)}</span><span class="news-c">${esc(e.ccy || 'USD')}</span><span class="news-n"><b>${esc(e.title)}</b>${e.forecast || e.previous ? `<small>${e.forecast ? 'Forecast ' + esc(e.forecast) : ''}${e.forecast && e.previous ? ' · ' : ''}${e.previous ? 'Prev ' + esc(e.previous) : ''}${e.actual ? ' · Actual ' + esc(e.actual) : ''}</small>` : ''}</span><span class="imp ${e.impact === 'high' ? 'hi' : 'md'}" title="${e.impact === 'high' ? 'High impact' : 'Medium impact'}">${e.impact === 'high' ? 'High' : 'Med'}</span></li>`; }).join('')}</ul>`;
   }
   function newsPanel(c) {
     const today = etDate(Date.now()); const ev = newsFor(today); const soon = newsSoon();
-    const body = newsState === 'off' ? '<p class="muted news-empty">The news feed appears in the live app.</p>' : newsState === 'loading' ? '<p class="muted news-empty">Loading today’s calendar…</p>' : newsList(ev);
+    const body = newsState === 'off' ? '<p class="muted news-empty">The news feed appears in the live app.</p>' : newsState === 'loading' ? '<p class="muted news-empty">Loading today’s calendar…</p>' : newsList(ev, Date.now(), today);
     return `<section class="panel"><div class="panel-h"><h2>Today’s news</h2><span class="muted">${new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · your time</span></div>
       ${soon ? `<div class="alert warn" style="margin-bottom:12px">${icon('warn')}<span><b>${esc(soon.title)}</b> at ${tLocal(soon.t)}. Avoid new entries 15 minutes either side${c && c.rv.newsRestricted ? '; this account restricts news trading' : ''}.</span></div>` : ''}${body}</section>`;
   }
@@ -637,7 +638,7 @@
       <div class="cal-legend"><span><i class="nd hi"></i>High-impact news</span><span><i class="nd"></i>Medium</span></div>
       ${(() => { const k = ui.calDay || today; const ev = newsFor(k); const pk = pnl[k];
         return `<div class="cal-day"><div class="row between"><h3>${new Date(k + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' })}</h3>${pk != null ? `<span class="num ${cls(pk)}">${sgn$(pk)} · ${cnt[k] || 0} trade${(cnt[k] || 0) === 1 ? '' : 's'}</span>` : '<span class="muted">No trades</span>'}</div>
-          ${newsState === 'off' ? '<p class="muted news-empty">The news feed appears in the live app.</p>' : newsList(ev)}</div>`; })()}
+          ${newsState === 'off' ? '<p class="muted news-empty">The news feed appears in the live app.</p>' : newsList(ev, Date.now(), k)}</div>`; })()}
     </section>`;
   }
   // Ring gauge: how much of a loss allowance is still unused.
