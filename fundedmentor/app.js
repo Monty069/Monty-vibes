@@ -86,6 +86,41 @@
     clearTimeout(cloudTimer);
     cloudTimer = setTimeout(() => { const body = Object.assign({}, state, { session: undefined }); sb.from('user_state').upsert({ user_id: cloudUser.id, state: body, updated_at: new Date().toISOString() }).then(() => {}, () => {}); }, 800);
   }
+  // ---------- integrations ----------
+  // Automatic MT4/MT5 sync is built (supabase/functions/mt5 via MetaApi + the client below) but not launched.
+  // Every sync entry point checks FEATURES.liveSync, so flipping it to true is the only switch needed once
+  // the bridge is production-ready. Until then the app runs entirely on manually entered data.
+  const FEATURES = { liveSync: false };
+  const SYNC_PLATFORMS = ['MT5']; // MT4 planned with the same bridge
+  const LIVE_FRESH_MS = 5 * 60000; // a live snapshot older than this is treated as not live
+  const OPEN_PNL_STALE_MS = 2 * 3600000;
+  const canSync = (a) => FEATURES.liveSync && !!a && !a.example && SYNC_PLATFORMS.includes(a.platform);
+
+  // Where the account's numbers come from. Only a fresh broker snapshot counts as verified live data;
+  // everything else is what the trader entered (starting balance + recorded/imported trades + floating P&L).
+  function dataSource(a, now = Date.now()) {
+    if (a.example) return { kind: 'example', label: 'Example data', detail: 'Sample trades for the demo account. Not a real account.' };
+    const m = a.mt5;
+    if (canSync(a) && m && m.status === 'live' && m.lastSync && now - m.lastSync < LIVE_FRESH_MS)
+      return { kind: 'live', label: 'Live · ' + a.platform, detail: `Balance, equity and trades verified from your broker at ${new Date(m.lastSync).toLocaleTimeString()}.`, asOf: m.lastSync };
+    const open = Number(a.openPnl) || 0;
+    const fromOldSync = a.openPnlSource === 'mt5';
+    const stale = open !== 0 && (fromOldSync || !a.openPnlTs || now - a.openPnlTs > OPEN_PNL_STALE_MS);
+    const openTxt = open === 0 ? 'no floating P&L entered' : fromOldSync ? 'floating P&L from an earlier broker sync, no longer updating' : a.openPnlTs ? `floating P&L entered ${dtStr(a.openPnlTs)}` : 'floating P&L entered manually';
+    return { kind: 'manual', label: 'Manual data', detail: `Starting balance plus the trades you recorded; ${openTxt}. Not verified with your broker.`, stale, asOf: a.openPnlTs || null };
+  }
+  function srcChip(src) {
+    if (!src) return '';
+    const tone = src.kind === 'live' ? 'ok' : src.kind === 'example' ? '' : src.stale ? 'warn' : 'info';
+    return `<span class="chip ${tone}" title="${esc(src.detail)}">${esc(src.label)}</span>`;
+  }
+  // One-line provenance note for any screen that sizes risk from equity.
+  function srcNote(c) {
+    if (!c || !c.src || c.src.kind === 'live') return c && c.src ? `<p class="hint src-note">${icon('ok', 'width="12" height="12"')} ${esc(c.src.detail)}</p>` : '';
+    if (c.src.kind === 'example') return '';
+    return `<p class="hint src-note">Equity ${fmt$(c.s.equity)} is calculated from manually entered data, not verified with your broker.${c.src.stale ? ' Floating P&L may be out of date: <button class="btn ghost sm" style="padding:0 4px;height:auto" data-act="go" data-v="settings">update it</button>.' : ''}</p>`;
+  }
+
   // ---------- plan, payments, live MT5 ----------
   async function fn(name, body) {
     if (!sb || !cloudUser) return { error: 'Sign in with Google first.' };
@@ -105,17 +140,17 @@
   function applySync(id, res) {
     const a = state.accounts.find((x) => x.id === id); if (!a) return;
     a.mt5 = Object.assign({}, a.mt5 || {}, { status: res.status || (a.mt5 || {}).status, lastSync: res.snapshot ? res.snapshot.ts : (a.mt5 || {}).lastSync, err: res.error || null });
-    if (res.snapshot) { a.openPnl = Math.round((res.snapshot.openPnl || 0) * 100) / 100; a.mt5.balance = res.snapshot.balance; a.mt5.equity = res.snapshot.equity; a.mt5.positions = res.snapshot.openPositions; }
+    if (res.snapshot) { a.openPnl = Math.round((res.snapshot.openPnl || 0) * 100) / 100; a.openPnlSource = 'mt5'; a.openPnlTs = res.snapshot.ts; a.mt5.balance = res.snapshot.balance; a.mt5.equity = res.snapshot.equity; a.mt5.positions = res.snapshot.openPositions; }
     if (Array.isArray(res.trades) && res.trades.length) { const have = new Set(a.trades.map((t) => t.id)); res.trades.filter((t) => t.closeTime >= (a.mt5.since || 0) && !have.has(t.id)).forEach((t) => a.trades.push(t)); }
     save();
   }
   async function syncMt5(id, quiet) {
-    const a = state.accounts.find((x) => x.id === id); if (!a || !a.mt5) return;
+    const a = state.accounts.find((x) => x.id === id); if (!a || !a.mt5 || !canSync(a)) return;
     ui.mt5Busy = id; if (!quiet) render();
     const res = await fn('mt5', { action: 'sync', localId: id, since: a.mt5.since || a.purchaseTs || a.createdTs });
     ui.mt5Busy = null; applySync(id, res); if (!quiet && !res.error && res.status === 'live') toast('MT5 synced'); else render();
   }
-  setInterval(() => { const a = active(); if (a && a.mt5 && cloudUser && isPro() && document.visibilityState === 'visible' && ui.mt5Busy !== a.id) syncMt5(a.id, true); }, 60000);
+  if (FEATURES.liveSync) setInterval(() => { const a = active(); if (a && a.mt5 && canSync(a) && cloudUser && isPro() && document.visibilityState === 'visible' && ui.mt5Busy !== a.id) syncMt5(a.id, true); }, 60000);
 
   async function adoptUser(user) {
     cloudUser = user; const meta = user.user_metadata || {};
@@ -252,11 +287,12 @@
     const targetHit = plan.target != null && plan.remainingTarget === 0;
     const breached = (dl.applicable && dl.status === 'breached') || (dd.applicable && dd.status === 'breached');
     const status = breached ? 'breached' : targetHit && td.met ? 'passed' : 'active';
-    return { firm, model, records, rv, s, dl, dd, td, cons, pay, payPhase, payVer: PR.verification(payRecs), plan, ver, spec, status, phase: model.phases[acct.phase] };
+    return { firm, model, records, rv, s, dl, dd, td, cons, pay, payPhase, payVer: PR.verification(payRecs), plan, ver, spec, status, phase: model.phases[acct.phase], src: dataSource(acct, now) };
   }
 
   function alertsFor(c) {
     const out = [];
+    if (c.src && c.src.kind === 'manual' && c.src.stale) out.push(['warn', 'Your floating P&L may be out of date, so equity and limits below may be off. Update it in Settings before sizing a trade.']);
     if (c.status === 'breached') out.push(['bad', 'A loss limit has been reached on these numbers. Stop trading and confirm the account status with the firm.']);
     for (const [r, name] of [[c.dl, 'daily loss'], [c.dd, 'maximum drawdown']]) {
       if (!r.applicable || r.status === 'breached') continue;
@@ -408,7 +444,7 @@
     const al = alertsFor(c);
     const p = c.plan;
     const tgt = p.target != null;
-    return `${pageHead(esc(a.name), `${esc(c.firm.name)} · ${esc(c.model.name)} · ${esc(phaseLabel(c))} · ${fmt$(a.initialBalance, 0)} account`, `${statusChip(c.status)}${verChip(c.ver)}`)}
+    return `${pageHead(esc(a.name), `${esc(c.firm.name)} · ${esc(c.model.name)} · ${esc(phaseLabel(c))} · ${fmt$(a.initialBalance, 0)} account`, `${srcChip(c.src)}${statusChip(c.status)}${verChip(c.ver)}`)}
       ${al.length ? `<div class="stack" style="gap:8px;margin-bottom:16px">${al.map(([k, t]) => `<div class="alert ${k}">${icon(k === 'ok' ? 'ok' : k === 'info' ? 'info' : 'warn')}<span>${t}</span></div>`).join('')}</div>` : ''}
       <section class="hero">
         <div class="hero-main">
@@ -420,6 +456,7 @@
             <div><span>Trading days</span><b class="num">${c.td.count}${c.td.min ? `<small> of ${c.td.min} min</small>` : ''}</b></div>
             <div><span>Consistency</span><b class="${c.cons.applicable ? (c.cons.pass === false ? 'warnc' : 'pos') : 'faint'}">${c.cons.applicable ? (c.cons.pass === false ? 'At risk' : c.cons.pass ? 'Pass' : '—') : 'No rule'}</b></div>
           </div>
+          ${c.src.kind === 'example' ? '' : `<p class="hint src-note">${esc(c.src.detail)}</p>`}
         </div>
         <div class="hero-dial">${bezel(c, 228)}${nextBtn(a, c)}</div>
       </section>
@@ -532,7 +569,7 @@
       <div class="sheet-h"><div><h2>FundedMentor Pro</h2><small class="muted">$29 a month · cancel any time</small></div><button class="btn ghost sm" data-act="up-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
       <div class="sheet-b"><div class="stack" style="gap:14px">
         ${u.reason ? `<div class="alert warn">${icon('warn')}<span>${esc(u.reason)}</span></div>` : ''}
-        <ul class="stack" style="gap:8px;margin:0;padding-left:18px"><li>Unlimited accounts across every firm</li><li>Live MT5 sync: balance, equity, open P&amp;L and closed trades every minute</li><li>Next trade planner and payout tracking on every account</li></ul>
+        <ul class="stack" style="gap:8px;margin:0;padding-left:18px"><li>Unlimited accounts across every firm</li><li>Next trade planner and payout tracking on every account</li>${FEATURES.liveSync ? '<li>Live MT5 sync: balance, equity, open P&amp;L and closed trades every minute</li>' : '<li class="muted">Automatic MT4/MT5 sync · Coming soon</li>'}</ul>
         ${cloudUser ? `<div class="grid g2" style="gap:10px"><button class="btn primary lg" data-act="up-pay" data-m="card" ${u.busy ? 'disabled' : ''}>${u.busy === 'card' ? 'Opening checkout…' : 'Pay by card'}</button><button class="btn lg" data-act="up-pay" data-m="crypto" ${u.busy ? 'disabled' : ''}>${u.busy === 'crypto' ? 'Opening checkout…' : 'Pay with crypto'}</button></div>
         <p class="hint">Card renews monthly through Stripe. Crypto buys 30 days at a time and stacks if you pay early.</p>` : `<button class="btn primary lg" data-act="to-auth" data-mode="signup">Sign in with Google to upgrade</button>`}
         ${u.err ? `<div class="alert bad">${icon('warn')}<span>${esc(u.err)}</span></div>` : ''}
@@ -543,6 +580,7 @@
     return `<div class="overlay" data-act="next-close"><div class="sheet nt" data-stop role="dialog" aria-label="Your next trade">
       <div class="sheet-h"><div><h2>Your next trade</h2><small class="muted">${esc(a.instrument)} · ${t.stop} ${esc((t.spec || {}).distUnit || '')} stop · 1:${t.rr} target</small></div><button class="btn ghost sm" data-act="next-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
       <div class="sheet-b">
+        ${srcNote(c)}
         <div class="seg nt-seg" role="group" aria-label="Planning mode">${NT_MODES.map(([k, l]) => `<button data-act="nt-mode" data-k="${k}" aria-pressed="${mode === k}">${l}${k === rec ? '<i class="rec" title="Recommended: safest of the three"></i>' : ''}</button>`).join('')}</div>
         ${soon ? `<div class="alert warn">${icon('warn')}<span><b>${esc(soon.title)}</b> at ${tLocal(soon.t)}. Wait until 15 minutes after the release before entering.</span></div>` : ''}
         ${t.stopReason ? `<div class="nt-stop"><b>No trade</b><p>${esc(t.stopReason)}</p></div>` : `
@@ -693,7 +731,7 @@
     const p = c.plan;
     const seg = Object.entries(PR.PROFILES).map(([k, v]) => `<button data-act="profile" data-k="${k}" aria-pressed="${(a.riskProfile || 'balanced') === k}">${v.label}</button>`).join('');
     const instOpts = Object.keys(PR.INSTRUMENTS).map((s) => `<option ${s === a.instrument ? 'selected' : ''}>${s}</option>`).join('');
-    return `${pageHead('Daily Plan', `Built from ${esc(c.model.name)} · ${esc(phaseLabel(c))} rules and your current numbers. Profiles change risk and assumptions, not your odds.`, `<div class="seg" role="group" aria-label="Risk profile">${seg}</div>`)}
+    return `${pageHead('Daily Plan', `Built from ${esc(c.model.name)} · ${esc(phaseLabel(c))} rules and your current numbers. Profiles change risk and assumptions, not your odds.`, `<div class="seg" role="group" aria-label="Risk profile">${seg}</div>`)}${srcNote(c)}
       ${!c.ver.confirmed ? `<div class="alert info" style="margin-bottom:16px">${icon('info')}<span>This plan uses rules that are not verified. Treat limits as unconfirmed until you check them in Firm Rules.</span></div>` : ''}
       ${p.notes.map((n) => `<div class="alert bad" style="margin-bottom:12px">${icon('warn')}<span>${esc(n)}</span></div>`).join('')}
       <div class="grid g3" style="margin-bottom:16px">
@@ -735,7 +773,7 @@
     const f = ui.calc || (ui.calc = calcDefaults(a));
     const spec = specFor(f.inst, a);
     const needRate = spec && spec.quote !== a.currency && spec.base !== a.currency;
-    return `${pageHead('Position Size Calculator', 'Instrument-specific contract sizes and conversions. Lots are rounded down to the lot step.')}
+    return `${pageHead('Position Size Calculator', 'Instrument-specific contract sizes and conversions. Lots are rounded down to the lot step.')}${srcNote(c)}
       <div class="grid g2">
         <section class="panel"><div class="stack" style="gap:14px">
           <div class="grid g2" style="gap:12px">
@@ -789,7 +827,7 @@
     const f = ui.check || (ui.check = checkDefaults(a));
     const spec = specFor(f.inst, a);
     const needRate = spec.quote !== a.currency && spec.base !== a.currency;
-    return `${pageHead('Can I take this trade?', 'Checks a proposed trade against this account’s limits before you place it. It is a calculation, not permission from the firm.')}
+    return `${pageHead('Can I take this trade?', 'Checks a proposed trade against this account’s limits before you place it. It is a calculation, not permission from the firm.')}${srcNote(c)}
       <div class="grid g2">
         <section class="panel"><div class="stack" style="gap:14px">
           <div class="grid g2" style="gap:12px"><label class="field"><span>Instrument</span><select class="input" id="k-inst" data-check="inst" data-full="1">${Object.keys(PR.INSTRUMENTS).map((s) => `<option ${s === f.inst ? 'selected' : ''}>${s}</option>`).join('')}</select></label>
@@ -849,7 +887,7 @@
   VIEWS.payout = (a, c) => {
     if (!c) return viewEmpty();
     const p = c.pay;
-    return `${pageHead('Payout Center', 'Each requirement is calculated separately. A full checklist does not mean the firm has approved a payout.', c.payVer.confirmed ? '' : '<span class="chip warn">Payout rules unverified</span>')}
+    return `${pageHead('Payout Center', 'Each requirement is calculated separately. A full checklist does not mean the firm has approved a payout.', c.payVer.confirmed ? '' : '<span class="chip warn">Payout rules unverified</span>')}${srcNote(c)}
       <div class="grid g3" style="margin-bottom:16px">
         <section class="panel"><span class="label">Profit above start</span><div class="big ${cls(p.profit)}" style="margin:6px 0">${sgn$(p.profit, 0)}</div><p class="muted">Closed trades only</p></section>
         <section class="panel"><span class="label">Your share${p.splitPct != null ? ' · ' + p.splitPct + '% split' : ''}</span><div class="big" style="margin:6px 0">${p.traderShare != null ? fmt$(p.traderShare, 0) : '—'}</div><p class="muted">${p.capped ? 'Capped at ' + fmt$(p.payable, 0) : p.splitPct == null ? 'Split not set for this model' : 'Before firm fees, if any'}</p></section>
@@ -972,7 +1010,7 @@
           <textarea class="input" id="csv-text" rows="5" placeholder="…or paste CSV here">${esc(ui.csvText || '')}</textarea>
           <div class="row"><button class="btn" data-act="csv-preview">Check file</button>${ui.csv ? `<button class="btn primary" data-act="csv-import" ${ui.csv.trades.length ? '' : 'disabled'}>Import ${ui.csv.trades.length} trades</button>` : ''}</div>
           ${ui.csv ? `<div class="alert ${ui.csv.errors.length ? 'warn' : 'ok'}">${icon(ui.csv.errors.length ? 'warn' : 'ok')}<span>${ui.csv.trades.length} new · ${ui.csv.duplicates} duplicates skipped · ${ui.csv.errors.length} errors${ui.csv.errors.length ? '<br>' + ui.csv.errors.slice(0, 6).map((e) => `Line ${e.line}: ${esc(e.msg)}`).join('<br>') : ''}</span></div>` : ''}
-          <div class="alert info">${icon('info')}<span>MT4/MT5 live sync needs a broker bridge (for example a MetaApi account). It is not connected, so nothing syncs automatically.</span></div></div></section>
+          <div class="alert info">${icon('info')}<span><b>Automatic MT4/MT5 sync is coming soon.</b> For now, record trades here or import your platform’s history as CSV. Every limit recalculates from what you enter.</span></div></div></section>
       </div>
       <section class="panel"><div class="tw"><table><thead><tr><th>Closed</th><th>Symbol</th><th>Side</th><th class="r">Lots</th><th class="r">Entry</th><th class="r">Exit</th><th class="r">Net</th><th>Source</th><th></th></tr></thead><tbody>
         ${t.length ? t.map((x) => { const net = x.profit + (x.commission || 0) + (x.swap || 0); return `<tr><td>${dtStr(x.closeTime)}</td><td><b>${esc(x.symbol)}</b></td><td>${x.side}</td><td class="r num">${x.lots ?? '—'}</td><td class="r num">${x.entry ?? '—'}</td><td class="r num">${x.exit ?? '—'}</td><td class="r num ${cls(net)}">${sgn$(net)}</td><td class="muted">${esc(x.source || 'manual')}</td><td class="r"><button class="btn ghost sm" data-act="del-trade" data-id="${esc(x.id)}" aria-label="Delete trade">${icon('x', 'width="14" height="14"')}</button></td></tr>`; }).join('') : '<tr><td colspan="9" class="muted" style="text-align:center;padding:24px">No trades yet.</td></tr>'}
@@ -1096,7 +1134,7 @@
           <label class="field"><span>Account name</span><input class="input" id="s-name" data-acct="name" value="${esc(a.name)}"></label>
           <div class="grid g2" style="gap:10px"><label class="field"><span>Phase</span><select class="input" id="s-phase" data-acct="phase">${Object.values(c.model.phases).map((p) => `<option value="${p.key}" ${p.key === a.phase ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}</select></label>
           <label class="field"><span>Starting balance</span><input class="input num" id="s-init" type="number" step="any" data-acct="initialBalance" value="${a.initialBalance}"></label></div>
-          <div class="grid g2" style="gap:10px"><label class="field"><span>Floating P&amp;L now ($)</span><input class="input num" id="s-open" type="number" step="any" data-acct="openPnl" value="${a.openPnl ?? 0}"></label>
+          <div class="grid g2" style="gap:10px"><label class="field"><span>Floating P&amp;L now ($) <span class="faint">· manual${a.openPnlTs ? ', ' + esc(dtStr(a.openPnlTs)) : ''}</span></span><input class="input num" id="s-open" type="number" step="any" data-acct="openPnl" value="${a.openPnl ?? 0}"></label>
           <label class="field"><span>Peak equity (intraday trailing)</span><input class="input num" id="s-peak" type="number" step="any" data-acct="peakEquity" value="${a.peakEquity ?? ''}" placeholder="optional"></label></div>
           <div class="grid g2" style="gap:10px"><label class="field"><span>Day-start equity override</span><input class="input num" id="s-dse" type="number" step="any" data-acct="dayStartEquity" value="${a.dayStartEquity ?? ''}" placeholder="optional"></label>
           <label class="field"><span>Platform</span><select class="input" id="s-plat" data-acct="platform">${['MT5', 'MT4', 'cTrader', 'DXtrade', 'Match-Trader', 'TradeLocker', 'Tradovate', 'NinjaTrader', 'Rithmic', 'TopstepX', 'TradingView', 'Other'].map((p) => `<option ${p === a.platform ? 'selected' : ''}>${p}</option>`).join('')}</select></label></div>
@@ -1115,7 +1153,13 @@
       </div>`;
   };
   function mt5Panel(a) {
-    if (a.example || a.platform !== 'MT5') return '';
+    if (a.example) return '';
+    if (!FEATURES.liveSync) {
+      if (!/^MT[45]$/.test(a.platform)) return '';
+      return `<div class="rl" style="padding:0"><b>Automatic ${esc(a.platform)} sync</b><span class="chip info nodot">Coming soon</span>
+        <span class="d">Balance, equity and trades will sync from your broker with a read-only investor password. Until then this account runs on what you enter: starting balance, recorded or imported trades, and floating P&amp;L above.${a.mt5 && a.mt5.login ? ` Previously linked login ${esc(a.mt5.login)} is kept but not syncing.` : ''}</span></div>`;
+    }
+    if (a.platform !== 'MT5') return '';
     const m = a.mt5, busy = ui.mt5Busy === a.id;
     const head = `<h3 style="margin:8px 0 0;font-size:15px">Live MT5 sync</h3>`;
     if (!cloudUser) return `${head}<p class="hint">Sign in with Google to connect your MT5 account.</p>`;
@@ -1230,7 +1274,7 @@
     const model = firm && firm.models.find((m) => m.id === w.modelId);
     let body = '', canNext = true;
     if (w.step === 'profile') {
-      body = `<h2>Create your profile</h2><p class="muted">Saved in this browser. Cloud sign-in needs the Supabase adapter, which is not connected in this build.</p>
+      body = `<h2>Create your profile</h2><p class="muted">Saved in this browser.${sb ? ' Sign in with Google to keep your accounts on every device.' : ''}</p>
         <label class="field"><span>Name</span><input class="input" id="w-name" data-w="name" value="${esc(w.name || '')}" autocomplete="name"></label>
         <label class="field"><span>Email</span><input class="input" id="w-email" type="email" data-w="email" value="${esc(w.email || '')}" autocomplete="email"></label>`;
       canNext = !!(w.name && w.name.trim());
@@ -1264,7 +1308,8 @@
         <textarea class="input" id="w-csv" rows="6" data-w="csv" placeholder="ticket,symbol,type,volume,open_time,close_time,profit,commission">${esc(w.csv || '')}</textarea>
         <div class="row"><button class="btn sm" data-act="w-csv-check">Check CSV</button>${w.csvRes ? `<span class="${w.csvRes.errors.length ? 'warnc' : 'pos'}" style="font-size:13px">${w.csvRes.trades.length} trades ready · ${w.csvRes.duplicates} duplicates · ${w.csvRes.errors.length} errors</span>` : ''}</div>
         ${w.csvRes && w.csvRes.errors.length ? `<div class="alert warn">${icon('warn')}<span>${w.csvRes.errors.slice(0, 5).map((e) => `Line ${e.line}: ${esc(e.msg)}`).join('<br>')}</span></div>` : ''}
-        <div class="pick"><button disabled><b>MT4 / MT5 sync</b><span class="muted" style="font-size:12px">Not connected · needs a broker bridge</span></button><button disabled><b>Broker API</b><span class="muted" style="font-size:12px">Not connected</span></button></div>`;
+        <div class="pick"><button disabled><b>MT4 / MT5 auto-sync</b><span class="chip info nodot" style="font-size:11px">Coming soon</span></button><button disabled><b>Broker API</b><span class="chip info nodot" style="font-size:11px">Coming soon</span></button></div>
+        <p class="hint">You can track this account fully by hand: record trades, import CSV, and enter floating P&amp;L in Settings.</p>`;
     } else if (w.step === 'plan') {
       const acct = draftAccount(w); const c = compute(acct);
       body = `<h2>Your plan</h2><p class="muted">${esc(firm.name)} · ${esc(model.name)} · ${esc(c.phase.label)} · ${fmt$(acct.initialBalance, 0)}</p>
@@ -1299,7 +1344,7 @@
   }
   function answer(q, a, c) {
     const t = q.toLowerCase(); const B = (x) => `<b>${x}</b>`;
-    const tail = c.ver.confirmed ? '' : '<br><span class="muted">Based on unverified rules.</span>';
+    const tail = (c.ver.confirmed ? '' : '<br><span class="muted">Based on unverified rules.</span>') + (c.src && c.src.kind === 'manual' ? `<br><span class="muted">Uses manually entered balance and P&amp;L, not broker-verified${c.src.stale ? '; floating P&amp;L may be out of date' : ''}.</span>` : '');
     const m = t.match(/(?:make|made|earn|gain|profit of|another)\s*\$?\s*([\d,]+(?:\.\d+)?)/);
     if (m || /what happens if/.test(t)) {
       const amt = m ? Number(m[1].replace(/,/g, '')) : null;
@@ -1384,7 +1429,7 @@
         <h2 class="lp-h2">Less than one challenge reset</h2>
         <div class="lp-prices two">
           <div class="lp-price"><h3>Free</h3><div class="lp-amt"><b class="num">$0</b></div><ul><li>1 account</li><li>Position size and loss limits</li><li>News calendar</li></ul><button class="btn" data-act="to-auth" data-mode="signup">Start free</button></div>
-          <div class="lp-price pro"><span class="chip info nodot">Pro</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><ul><li>Unlimited accounts, all ${n} firms</li><li>Next trade planner</li><li>Live MT5 sync, every minute</li></ul><button class="btn primary" data-act="${cloudUser ? 'go-pro' : 'to-auth'}" data-mode="signup">Go Pro</button></div>
+          <div class="lp-price pro"><span class="chip info nodot">Pro</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><ul><li>Unlimited accounts, all ${n} firms</li><li>Next trade planner</li>${FEATURES.liveSync ? '<li>Live MT5 sync, every minute</li>' : '<li class="muted">MT4/MT5 auto-sync · Coming soon</li>'}</ul><button class="btn primary" data-act="${cloudUser ? 'go-pro' : 'to-auth'}" data-mode="signup">Go Pro</button></div>
         </div>
       </div></section>
       <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><span class="hint">fundedmentor.com</span></div>
@@ -1456,7 +1501,7 @@
       case 'go-pro': ui.upgrade = { reason: el.dataset.r || null }; break;
       case 'up-close': ui.upgrade = null; break;
       case 'up-pay': { const m = el.dataset.m; ui.upgrade = Object.assign({}, ui.upgrade, { busy: m, err: null }); render(); fn('billing', { method: m }).then((r) => { if (r.url) { location.href = r.url; return; } ui.upgrade = Object.assign({}, ui.upgrade, { busy: null, err: r.error }); render(); }); return; }
-      case 'mt5-link': { const id = el.dataset.id; const login = ($('#m-login') || {}).value || '', password = ($('#m-pass') || {}).value || '', server = ($('#m-server') || {}).value || '';
+      case 'mt5-link': if (!FEATURES.liveSync) { toast('Automatic sync is coming soon.'); return; } { const id = el.dataset.id; const login = ($('#m-login') || {}).value || '', password = ($('#m-pass') || {}).value || '', server = ($('#m-server') || {}).value || '';
         ui.mt5Busy = id; ui.mt5Err = null; render();
         fn('mt5', { action: 'link', localId: id, login, password, server }).then((r) => { ui.mt5Busy = null;
           if (r.upgrade) { ui.upgrade = { reason: 'Live MT5 sync is part of Pro.' }; render(); return; }
@@ -1464,8 +1509,8 @@
           updateAcct((x) => { x.mt5 = { login: login.replace(/\D/g, ''), server: server.trim(), status: r.status, since: x.purchaseTs || x.createdTs }; });
           toast('Connecting to your broker. First sync takes 1 to 3 minutes.'); setTimeout(() => syncMt5(id, true), 45000); });
         return; }
-      case 'mt5-sync': syncMt5(el.dataset.id); return;
-      case 'mt5-unlink': { const id = el.dataset.id; ui.confirm = null; fn('mt5', { action: 'unlink', localId: id }).then(() => { const x = state.accounts.find((y) => y.id === id); if (x) { delete x.mt5; save(); } toast('MT5 disconnected'); }); return; }
+      case 'mt5-sync': if (!FEATURES.liveSync) { toast('Automatic sync is coming soon.'); return; } syncMt5(el.dataset.id); return;
+      case 'mt5-unlink': if (!FEATURES.liveSync) return; { const id = el.dataset.id; ui.confirm = null; fn('mt5', { action: 'unlink', localId: id }).then(() => { const x = state.accounts.find((y) => y.id === id); if (x) { delete x.mt5; save(); } toast('MT5 disconnected'); }); return; }
       case 'wizard': if (cloudUser && !isPro() && realAccounts() >= 1) { ui.upgrade = { reason: 'Free covers one account. Go Pro to track more.' }; break; } ui.menu = false; ui.more = false; ui.wizard = { step: state.profile ? 'firm' : 'profile', firmId: null, modelId: null, phase: null, size: null, profile: 'balanced', inst: 'XAUUSD', stop: '5', comm: '7', ccy: 'USD', platform: 'MT5' }; break;
       case 'w-close': ui.wizard = null; break;
       case 'w-firm': W.firmId = el.dataset.id; W.modelId = null; W.size = null; W.phase = null; break;
@@ -1593,7 +1638,7 @@
       if (['peakEquity', 'dayStartEquity'].includes(k)) v = v === '' ? null : Number(v);
       if (k === 'fundedTs') v = v ? Date.parse(v + 'T00:00:00') : null;
       if (k === 'name' && !v.trim()) { toast('Name cannot be empty'); return; }
-      updateAcct((x) => { x[k] = v; });
+      updateAcct((x) => { x[k] = v; if (k === 'openPnl') { x.openPnlSource = 'manual'; x.openPnlTs = Date.now(); } });
       if (k === 'instrument') ui.calc = null;
       render(); return;
     }
