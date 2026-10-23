@@ -370,7 +370,7 @@
         <main class="main">
           <div class="top">
             <div class="mark top-mark" aria-hidden="true">FM</div><div class="grow">${acct ? acctPill(acct, c) : '<b class="wm">Funded<span>Mentor</span></b>'}</div>
-            ${state.session && state.session.demo ? `<span class="chip info nodot demo-chip">Demo</span><button class="btn sm primary" data-act="to-auth" data-mode="signup">Sign in</button>` : ''}
+            ${state.session && state.session.demo ? `<div class="demo-ctl"><span class="chip info nodot demo-chip">Demo</span><span class="demo-note">Example data</span><button class="btn sm primary" data-act="to-auth" data-mode="signup">Sign in</button></div>` : ''}
             ${acct ? `<button class="btn sm top-cal" data-act="go" data-v="calendar" ${v === 'calendar' ? 'aria-current="page"' : ''} aria-label="Performance calendar">${icon('calendar', 'width="16" height="16"')}<span class="hide-sm">Performance</span></button>` : ''}
             <button class="btn sm hide-sm" data-act="wizard">${icon('plus', 'width="14" height="14"')}Add account</button>
           </div>

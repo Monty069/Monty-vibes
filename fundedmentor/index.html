@@ -443,6 +443,9 @@ a.btn { text-decoration: none; }
 .gbtn.on { display: flex; }
 .gbtn.on + .g-fallback { display: none; }
 .demo-chip { flex: none; }
+/* Demo controls: invisible wrapper on desktop (layout unchanged); a slim gold strip on phones. */
+.demo-ctl { display: contents; }
+.demo-note { display: none; }
 .lp-prices.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 760px; }
 #features .lp-feats { margin-top: 0; }
 @media (max-width: 960px) { .lp-prices.two { grid-template-columns: minmax(0, 1fr); } }
@@ -461,7 +464,17 @@ a.btn { text-decoration: none; }
   .top-mark { display: grid; }
   .g2, .g3 { grid-template-columns: minmax(0, 1fr); }
   .span2 { grid-column: auto; }
-  .top { margin-bottom: 18px; padding-block: 10px; }
+  .top { margin-bottom: 18px; padding-block: 10px; flex-wrap: wrap; row-gap: 10px; }
+  .top .grow { order: 1; }
+  .top-mark { order: 0; }
+  .top-cal { order: 2; flex: none; width: 40px; height: 40px; padding: 0; border-radius: 12px; }
+  .acct-pill { width: 100%; }
+  .acct-pill .t { flex: 1; }
+  .acct-pill .t small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .demo-ctl { order: 3; flex: 1 0 100%; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 5px 5px 5px 12px; border-radius: 14px; background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(220,190,125,.22); }
+  .demo-ctl .demo-chip { height: auto; padding: 0; border: 0; background: none; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; }
+  .demo-note { display: block; flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .demo-ctl .btn { flex: none; height: 32px; padding: 0 14px; border-radius: 16px; }
   h1 { font-size: 22px; }
   .hero { grid-template-columns: minmax(0, 1fr); padding: 26px 18px 22px; gap: 18px; background: none; box-shadow: none; }
   .hero-main { align-items: center; text-align: center; }
