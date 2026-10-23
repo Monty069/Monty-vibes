@@ -171,5 +171,30 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   ok(!T.errors.length, 'beta: no errors: ' + T.errors.join(' | '));
 }
 
+// J. Support email: one official address, mailto links on landing, dashboard, settings, legal pages
+{ const SUP = 'support@fundedmentor.com';
+  const mailtos = (doc) => [...doc.querySelectorAll('a[href^="mailto:"]')].map((a) => a.getAttribute('href'));
+  const official = (h) => /^mailto:support@fundedmentor\.com(\?subject=[^&]+(&body=[^&]+)?)?$/.test(h);
+  const L = boot(); const lm = mailtos(L.w.document);
+  ok(L.w.document.getElementById('contact') && /Questions\? Email the team/.test(L.root()), 'support: landing has a Contact section');
+  ok(lm.length >= 3 && lm.every(official), 'support: landing mailto links all go to ' + SUP + ' ' + lm.join(' '));
+  ok(L.w.document.querySelector('.lp-foot a[href^="mailto:' + SUP + '"]'), 'support: footer shows support email');
+  ok(L.w.document.querySelector('[data-act="lp-jump"][data-to="contact"]'), 'support: landing nav links to Contact');
+  L.act('copy-support'); ok(new RegExp(SUP).test(L.root()), 'support: copy address gives feedback with the address');
+  L.act('to-auth'); ok(mailtos(L.w.document).some(official), 'support: sign-in page offers support email');
+  ok(!L.w.document.querySelector('input[type="password"]'), 'support: sign-in page has no password field');
+  const t = boot({ state: base(manual()) });
+  ok(t.w.document.querySelector('.side-help[href^="mailto:' + SUP + '"]'), 'support: dashboard sidebar has Contact support');
+  t.act('more'); ok(t.w.document.querySelector('.support-btn[href^="mailto:' + SUP + '"]'), 'support: mobile More sheet has Contact support'); t.act('close-more');
+  t.act('go', { v: 'settings' }); const sm = mailtos(t.w.document);
+  ok(/Contact Support/.test(t.root()) && sm.length && sm.every(official), 'support: Settings has Contact Support mailto');
+  ok(decodeURIComponent(sm[0]).includes('Signed in as: t@x.com'), 'support: app mailto pre-fills the signed-in email');
+  const all = [read('app.js'), read('index.html'), read('privacy.html'), read('terms.html')].join('\n');
+  const addrs = [...new Set((all.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z.]{2,}/g) || []))].filter((a) => !/^you@example\.com$/.test(a));
+  ok(addrs.length === 1 && addrs[0] === SUP, 'support: only the official address ships in site code: ' + addrs.join(', '));
+  for (const f of ['privacy.html', 'terms.html']) { const d = new JSDOM(read(f)).window.document; const m = mailtos(d); ok(m.length >= 2 && m.every((h) => h === 'mailto:' + SUP), `support: ${f} mailto links are official`); }
+  ok(!t.errors.length && !L.errors.length, 'support: no errors: ' + t.errors.concat(L.errors).join(' | '));
+}
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

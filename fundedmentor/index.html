@@ -404,6 +404,19 @@ td.r, th.r { text-align: right; }
 .lp-final .lp-h2 { max-width: 20ch; }
 .lp-foot { padding-block: 32px calc(32px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); }
 .lp-foot .disclaimer { margin-top: 16px; }
+.lp-foot a.hint { color: var(--faint); }
+a.btn { text-decoration: none; }
+.lp-contact { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.lp-contact-copy .lp-lede { margin-top: 14px; }
+.lp-contact-card { padding: 28px; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); background: radial-gradient(120% 80% at 50% 0%, var(--glow), transparent 60%), var(--surface); display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); min-width: 0; }
+.lp-contact-mail { font-size: clamp(18px, 2.4vw, 24px); font-weight: 500; letter-spacing: -.02em; color: var(--fg); text-decoration: none; overflow-wrap: anywhere; }
+.lp-contact-mail:hover { color: var(--accent); }
+.side-help { display: flex; align-items: center; gap: 11px; margin: auto 0 8px; padding: 8px 10px; border-radius: var(--r-sm); color: var(--muted); font-weight: 500; text-decoration: none; }
+.side-help svg { width: 18px; height: 18px; flex: none; }
+.side-help:hover { background: var(--surface-2); color: var(--fg); }
+.side-help + .side-foot { margin-top: 0; }
+.support-btn { width: 100%; margin-bottom: 10px; }
+@media (max-width: 860px) { .lp-contact { grid-template-columns: minmax(0, 1fr); gap: 24px; } .lp-contact-card { padding: 20px; } }
 
 /* ---------- Log in ---------- */
 .auth { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

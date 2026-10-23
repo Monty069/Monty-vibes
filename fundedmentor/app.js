@@ -43,8 +43,26 @@
     plus: 'M12 5v14M5 12h14',
     chev: 'M6 9l6 6 6-6',
     ext: 'M14 3h7v7M21 3l-9 9M10 5H5v14h14v-5',
+    mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
   };
   const icon = (k, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${P[k]}"/></svg>`;
+
+  // ---------- support ----------
+  // Official support inbox (Zoho Mail). Links use mailto: so they open the user's own email app on desktop and mobile.
+  const SUPPORT_EMAIL = 'support@fundedmentor.com';
+  const supportHref = (subject, body) => {
+    const q = [];
+    if (subject) q.push('subject=' + encodeURIComponent(subject));
+    if (body) q.push('body=' + encodeURIComponent(body));
+    return 'mailto:' + SUPPORT_EMAIL + (q.length ? '?' + q.join('&') : '');
+  };
+  // Pre-fills who is writing so support can find the account; never includes trade data.
+  const appSupportHref = () => supportHref('FundedMentor support request', '\n\n---\nSigned in as: ' + ((state.profile && state.profile.email) || 'not signed in') + '\nPage: ' + (state.view || 'overview'));
+  // Shows the address right away (works everywhere); upgrades the message once the clipboard write succeeds.
+  function copySupport() {
+    toast(SUPPORT_EMAIL);
+    try { if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(SUPPORT_EMAIL).then(() => toast('Copied ' + SUPPORT_EMAIL), () => {}); } catch (e) { /* clipboard unavailable: address is already on screen */ }
+  }
 
   const NAV = [
     ['overview', 'Overview'], ['calendar', 'Performance'], ['finder', 'Find a Prop'], ['accounts', 'My Accounts'], ['plan', 'Daily Plan'], ['calc', 'Position Size'], ['check', 'Pre-Trade Check'],
@@ -336,7 +354,7 @@
   }
   function render() {
     applyTheme();
-    if (!state.session) { paint(ui.route === 'auth' ? authPage() : landing()); if (ui.route === 'auth') mountGoogleButton(); return; }
+    if (!state.session) { paint((ui.route === 'auth' ? authPage() : landing()) + (ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : '')); if (ui.route === 'auth') mountGoogleButton(); return; }
     const acct = active();
     const c = acct ? compute(acct) : null;
     const v = state.view;
@@ -346,6 +364,7 @@
         <aside class="side">
           <div class="brand"><div class="mark" aria-hidden="true">FM</div><div><b>FundedMentor</b><small>Prop challenge copilot</small></div></div>
           <nav class="nav" aria-label="Main">${NAV.map(([k, l], i) => `${i === 9 ? '<div class="sep"></div>' : ''}<button data-act="go" data-v="${k}" ${v === k ? 'aria-current="page"' : ''}>${icon(k)}${l}</button>`).join('')}</nav>
+          <a class="side-help" href="${esc(appSupportHref())}">${icon('mail')}Contact support</a>
           <div class="side-foot"><span class="acct-pill-ic">${esc(((state.profile && state.profile.name) || 'U').slice(0, 1).toUpperCase())}</span><span class="grow"><b>${esc((state.profile && state.profile.name) || 'Trader')}</b><small>${esc((state.profile && state.profile.email) || 'Signed in')}</small></span><button class="btn ghost sm" data-act="logout">Log out</button></div>
         </aside>
         <main class="main">
@@ -394,6 +413,7 @@
   function moreSheet() {
     return `<div class="overlay" data-act="close-more"><div class="sheet" data-stop><div class="sheet-h"><h2>All sections</h2><button class="btn ghost sm" data-act="close-more" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
       <div class="sheet-b"><div class="pick">${NAV.map(([k, l]) => `<button data-act="go" data-v="${k}" ${state.view === k ? 'aria-pressed="true"' : ''}><span class="row">${icon(k, 'width="16" height="16"')}<b>${l}</b></span></button>`).join('')}</div>
+      <a class="btn support-btn" href="${esc(appSupportHref())}">${icon('mail', 'width="14" height="14"')}Contact support</a>
       <div class="row between"><button class="btn" data-act="wizard">${icon('plus', 'width="14" height="14"')}Add account</button><button class="btn ghost" data-act="logout">Log out</button></div></div></div></div>`;
   }
 
@@ -1180,6 +1200,9 @@
             <div class="rl"><b>Cloud sync</b>${cloudUser ? '<span class="chip ok">On</span>' : '<span class="chip">Off</span>'}<span class="d">${cloudUser ? `Signed in as ${esc(cloudUser.email || '')}. Your accounts follow you to any device.` : 'Sign in with Google to keep your accounts on every device.'}</span></div>
             <div class="rl"><b>Plan</b>${isPro() ? '<span class="chip ok">Pro</span>' : '<span class="chip">Free</span>'}<span class="d">${isPro() ? (ui.planUntil ? `Pro through ${new Date(ui.planUntil).toLocaleDateString()}.` : 'Renews monthly.') + (FEATURES.payments ? ` <button class="btn sm" data-act="billing-portal" style="margin-left:6px" ${ui.portalBusy ? 'disabled' : ''}>${ui.portalBusy ? 'Opening…' : 'Manage billing'}</button>` : '') : FEATURES.payments ? `One account, manual trades. <button class="btn sm primary" data-act="go-pro" style="margin-left:6px">Go Pro</button>` : 'Free beta: every feature is unlocked. <span class="chip nodot">Pro — Coming Soon</span>'}</span></div>
             <div class="rl"><b>Copilot</b><span class="chip ok">Active</span><span class="d">Answers come from the rules engine and your account data. It does not invent rules.</span></div></div>
+          <h2 style="margin:22px 0 12px">Support</h2><div class="rules-list">
+            <div class="rl"><b>Email</b><span class="d">Questions, bug reports, account or data-deletion requests: <a href="${esc(appSupportHref())}">${SUPPORT_EMAIL}</a></span></div></div>
+          <div class="row" style="margin-top:10px"><a class="btn sm primary" href="${esc(appSupportHref())}">${icon('mail', 'width="14" height="14"')}Contact Support</a><button class="btn sm ghost" data-act="copy-support">Copy email</button></div>
           <h2 style="margin:22px 0 12px">Data</h2><div class="row">${ui.confirm === 'reset' ? '<span class="muted" style="font-size:13px">Erase all accounts and edits?</span><button class="btn sm danger" data-act="reset">Erase everything</button><button class="btn sm ghost" data-act="cancel-confirm">Cancel</button>' : '<button class="btn sm" data-act="restore-examples">Reload example accounts</button><button class="btn sm danger" data-act="confirm" data-k="reset">Erase all data</button>'}</div></section>
       </div>`;
   };
@@ -1422,7 +1445,7 @@
   function lpNav() {
     return `<header class="lp-nav"><div class="lp-wrap lp-nav-in">
       <button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
-      <nav class="lp-links" aria-label="Sections"><button data-act="lp-jump" data-to="features">Features</button><button data-act="lp-jump" data-to="pricing">Pricing</button></nav>
+      <nav class="lp-links" aria-label="Sections"><button data-act="lp-jump" data-to="features">Features</button><button data-act="lp-jump" data-to="pricing">Pricing</button><button data-act="lp-jump" data-to="contact">Contact</button></nav>
       <div class="row lp-nav-cta"><button class="btn ghost sm" data-act="demo">Demo</button><button class="btn primary sm" data-act="to-auth" data-mode="signup">Sign in</button></div>
     </div></header>`;
   }
@@ -1463,8 +1486,19 @@
           <div class="lp-price pro"><span class="chip info nodot">Pro</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month</span></div><ul><li>Unlimited accounts, all ${n} firms</li><li>Next trade planner</li>${FEATURES.liveSync ? '<li>Live MT5 sync, every minute</li>' : '<li class="muted">MT4/MT5 auto-sync · Coming soon</li>'}</ul>${FEATURES.payments ? `<button class="btn primary" data-act="${cloudUser ? 'go-pro' : 'to-auth'}" data-mode="signup">Go Pro</button>` : '<button class="btn" disabled aria-disabled="true">Pro — Coming Soon</button><p class="hint" style="margin-top:8px">Free and unlimited during the beta.</p>'}</div>
         </div>
       </div></section>
-      <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><span class="hint">fundedmentor.com</span></div>
-        <p class="disclaimer">FundedMentor is a planning and risk tool. It does not place trades, give investment advice, or guarantee a pass or payout. Trading involves substantial risk of loss.</p><p class="hint" style="margin-top:12px"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p></div></footer>
+      <section class="lp-sec" id="contact" aria-labelledby="contact-h"><div class="lp-wrap lp-contact">
+        <div class="lp-contact-copy"><span class="lp-eyebrow"><i></i>Support</span>
+          <h2 class="lp-h2" id="contact-h">Questions? Email the team.</h2>
+          <p class="lp-lede">Sign-in help, a rule that looks wrong, a bug, feedback on the beta, or a request to delete your data. Every message goes to a real inbox and gets a reply from the FundedMentor team.</p></div>
+        <div class="lp-contact-card">
+          <span class="label">Support email</span>
+          <a class="lp-contact-mail" href="${supportHref('FundedMentor support request')}">${SUPPORT_EMAIL}</a>
+          <div class="row lp-cta"><a class="btn primary lg" href="${supportHref('FundedMentor support request')}">${icon('mail', 'width="16" height="16"')}Email support</a><button class="btn lg" data-act="copy-support">Copy address</button></div>
+          <p class="hint">Opens your email app. Please don’t send passwords or broker logins.</p>
+        </div>
+      </div></section>
+      <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><a class="hint" href="${supportHref()}">${SUPPORT_EMAIL}</a></div>
+        <p class="disclaimer">FundedMentor is a planning and risk tool. It does not place trades, give investment advice, or guarantee a pass or payout. Trading involves substantial risk of loss.</p><p class="hint" style="margin-top:12px"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="${supportHref()}">Contact support</a></p></div></footer>
     </div>`;
   }
   function authPage() {
@@ -1482,6 +1516,7 @@
         <div class="auth-or"><span>or</span></div>
         <button type="button" class="btn lg" data-act="demo">Explore the demo</button>
         <p class="hint auth-fine">By continuing you agree to the <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>. We use your Google name and email for your account only.</p>
+        <p class="hint auth-fine">Trouble signing in? Email <a href="${supportHref('Sign-in help')}">${SUPPORT_EMAIL}</a>.</p>
       </div></main>
     </div>`;
   }
@@ -1524,6 +1559,7 @@
       case 'google': if (!sb) { ui.authErr = 'Google sign-in works on fundedmentor.com. Open the site there to sign in.'; break; } ui.authBusy = true; render(); sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/', queryParams: { prompt: 'select_account' } } }).then(({ error }) => { if (error) { ui.authBusy = false; ui.authErr = /not enabled|provider/i.test(error.message) ? 'Google sign-in is being switched on. Try again shortly or explore the demo.' : error.message; render(); } }); return;
       case 'logout': if (sb && cloudUser) { sb.auth.signOut().catch(() => {}); cloudUser = null; } state.session = null; ui.route = 'landing'; ui.menu = false; ui.more = false; ui.copilot = false; save(); render(); window.scrollTo(0, 0); return;
       case 'go': state.view = el.dataset.v; ui.more = false; ui.menu = false; ui.confirm = null; save(); render(); window.scrollTo(0, 0); return;
+      case 'copy-support': copySupport(); return;
       case 'more': ui.more = true; break;
       case 'close-more': ui.more = false; break;
       case 'menu': ui.menu = !ui.menu; break;
