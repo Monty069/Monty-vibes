@@ -196,5 +196,15 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   ok(!t.errors.length && !L.errors.length, 'support: no errors: ' + t.errors.concat(L.errors).join(' | '));
 }
 
+// K. Brand: logo emblem, favicon, share image
+{ const idx = read('index.html');
+  for (const f of ['brand/logo-mark.png', 'brand/favicon-32.png', 'brand/apple-touch-icon.png', 'brand/og-image.jpg']) ok(fs.existsSync(path.join(DIR, f)) && fs.statSync(path.join(DIR, f)).size > 500, 'brand: ' + f + ' ships');
+  ok(/rel="icon"[^>]*\/brand\/favicon-32\.png/.test(idx) && !/rel="icon" href="data:/.test(idx), 'brand: favicon is the new logo');
+  ok(/og:image" content="https:\/\/fundedmentor\.com\/brand\/og-image\.jpg"/.test(idx), 'brand: social share image set');
+  ok(/\.mark \{[^}]*logo-mark\.png/.test(idx), 'brand: .mark uses the logo emblem');
+  for (const f of ['privacy.html', 'terms.html']) ok(/logo-mark\.png/.test(read(f)) && /favicon-32\.png/.test(read(f)), 'brand: ' + f + ' uses logo + favicon');
+  const L = boot(); ok(/class="wm">Funded<span>Mentor<\/span>/.test(L.root()) && L.w.document.querySelectorAll('.mark').length >= 2, 'brand: landing shows emblem + two-tone wordmark');
+}
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

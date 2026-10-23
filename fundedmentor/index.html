@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="FundedMentor turns your prop firm rules into a live daily plan: daily loss, drawdown, position size, next trade and payouts."><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2230%22 fill=%22%23DCBE7D%22/%3E%3Ccircle cx=%2232%22 cy=%2232%22 r=%2224%22 fill=%22%230B0A09%22/%3E%3Ctext x=%2232%22 y=%2240%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22%23DCBE7D%22 text-anchor=%22middle%22%3EFM%3C/text%3E%3C/svg%3E"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>FundedMentor</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="FundedMentor turns your prop firm rules into a live daily plan: daily loss, drawdown, position size, next trade and payouts."><link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png"><link rel="apple-touch-icon" href="/brand/apple-touch-icon.png"><meta property="og:type" content="website"><meta property="og:site_name" content="FundedMentor"><meta property="og:title" content="FundedMentor · Plan, trade, pass your prop challenge"><meta property="og:description" content="FundedMentor turns your prop firm rules into a live daily plan: daily loss, drawdown, position size, next trade and payouts."><meta property="og:url" content="https://fundedmentor.com/"><meta property="og:image" content="https://fundedmentor.com/brand/og-image.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://fundedmentor.com/brand/og-image.jpg"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>FundedMentor</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#0B0A09">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,8 +42,10 @@ button, [data-act], .pick button, .tabbar button { touch-action: manipulation; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Brand */
-.mark { width: 30px; height: 30px; border-radius: 9px; flex: none; display: grid; place-items: center; font: 700 12px/1 var(--f-display); letter-spacing: -.02em; color: var(--accent-ink);
-  background: linear-gradient(145deg, var(--accent-2), var(--accent) 55%, color-mix(in srgb, var(--accent) 70%, #000)); box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 4px 14px -6px var(--accent); }
+/* Logo emblem (brand/logo-mark.png). The "FM" text inside stays for no-image fallback but is hidden. */
+.mark { width: 32px; height: 30px; flex: none; display: grid; place-items: center; font-size: 0; color: transparent; overflow: hidden;
+  background: url(/brand/logo-mark.png) center / contain no-repeat; filter: drop-shadow(0 3px 10px color-mix(in srgb, var(--accent) 35%, transparent)); }
+.wm span { color: var(--accent); }
 .top-mark { display: none; }
 
 /* Shell */
@@ -314,7 +316,7 @@ td.r, th.r { text-align: right; }
 /* First paint while scripts load */
 .boot { min-height: 70vh; display: grid; place-items: center; }
 .boot div { display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--muted); font-size: 13px; }
-.boot .mark { width: 44px; height: 44px; border-radius: 13px; font-size: 16px; animation: breathe 1.4s ease-in-out infinite; }
+.boot .mark { width: 50px; height: 44px; font-size: 0; animation: breathe 1.4s ease-in-out infinite; }
 
 /* Sidebar footer */
 .side-foot { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px 0; border-top: 1px solid var(--line); }

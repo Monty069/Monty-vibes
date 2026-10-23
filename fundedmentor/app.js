@@ -362,14 +362,14 @@
     paint(`
       <div class="app">
         <aside class="side">
-          <div class="brand"><div class="mark" aria-hidden="true">FM</div><div><b>FundedMentor</b><small>Prop challenge copilot</small></div></div>
+          <div class="brand"><div class="mark" aria-hidden="true">FM</div><div><b class="wm">Funded<span>Mentor</span></b><small>Prop challenge copilot</small></div></div>
           <nav class="nav" aria-label="Main">${NAV.map(([k, l], i) => `${i === 9 ? '<div class="sep"></div>' : ''}<button data-act="go" data-v="${k}" ${v === k ? 'aria-current="page"' : ''}>${icon(k)}${l}</button>`).join('')}</nav>
           <a class="side-help" href="${esc(appSupportHref())}">${icon('mail')}Contact support</a>
           <div class="side-foot"><span class="acct-pill-ic">${esc(((state.profile && state.profile.name) || 'U').slice(0, 1).toUpperCase())}</span><span class="grow"><b>${esc((state.profile && state.profile.name) || 'Trader')}</b><small>${esc((state.profile && state.profile.email) || 'Signed in')}</small></span><button class="btn ghost sm" data-act="logout">Log out</button></div>
         </aside>
         <main class="main">
           <div class="top">
-            <div class="mark top-mark" aria-hidden="true">FM</div><div class="grow">${acct ? acctPill(acct, c) : '<b>FundedMentor</b>'}</div>
+            <div class="mark top-mark" aria-hidden="true">FM</div><div class="grow">${acct ? acctPill(acct, c) : '<b class="wm">Funded<span>Mentor</span></b>'}</div>
             ${state.session && state.session.demo ? `<span class="chip info nodot demo-chip">Demo</span><button class="btn sm primary" data-act="to-auth" data-mode="signup">Sign in</button>` : ''}
             ${acct ? `<button class="btn sm top-cal" data-act="go" data-v="calendar" ${v === 'calendar' ? 'aria-current="page"' : ''} aria-label="Performance calendar">${icon('calendar', 'width="16" height="16"')}<span class="hide-sm">Performance</span></button>` : ''}
             <button class="btn sm hide-sm" data-act="wizard">${icon('plus', 'width="14" height="14"')}Add account</button>
@@ -1444,7 +1444,7 @@
   const DEMO = { dl: { applicable: true, usedPct: 34, status: 'ok', remaining: 3300 }, dd: { applicable: true, usedPct: 58, status: 'warning', remaining: 4200 } };
   function lpNav() {
     return `<header class="lp-nav"><div class="lp-wrap lp-nav-in">
-      <button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
+      <button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></button>
       <nav class="lp-links" aria-label="Sections"><button data-act="lp-jump" data-to="features">Features</button><button data-act="lp-jump" data-to="pricing">Pricing</button><button data-act="lp-jump" data-to="contact">Contact</button></nav>
       <div class="row lp-nav-cta"><button class="btn ghost sm" data-act="demo">Demo</button><button class="btn primary sm" data-act="to-auth" data-mode="signup">Sign in</button></div>
     </div></header>`;
@@ -1497,17 +1497,17 @@
           <p class="hint">Opens your email app. Please don’t send passwords or broker logins.</p>
         </div>
       </div></section>
-      <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></span><a class="hint" href="${supportHref()}">${SUPPORT_EMAIL}</a></div>
+      <footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></span><a class="hint" href="${supportHref()}">${SUPPORT_EMAIL}</a></div>
         <p class="disclaimer">FundedMentor is a planning and risk tool. It does not place trades, give investment advice, or guarantee a pass or payout. Trading involves substantial risk of loss.</p><p class="hint" style="margin-top:12px"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="${supportHref()}">Contact support</a></p></div></footer>
     </div>`;
   }
   function authPage() {
     return `<div class="auth">
-      <aside class="auth-side"><button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
+      <aside class="auth-side"><button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></button>
         <div class="auth-side-mid"><h2 class="lp-h2">Know your limit before the market finds it.</h2>${demoCard()}</div>
         <p class="hint">Rules for ${FIRMS.filter((f) => !f.custom).length} prop firms, sized to your account.</p></aside>
       <main class="auth-main"><div class="auth-card">
-        <button type="button" class="lp-brand auth-mobile-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b>FundedMentor</b></button>
+        <button type="button" class="lp-brand auth-mobile-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></button>
         <h1>Sign in</h1>
         <p class="muted">One tap with Google. New here? The same button creates your free account.</p>
         <div id="gbtn" class="gbtn" aria-label="Sign in with Google"></div>
