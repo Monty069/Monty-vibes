@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vaela Thermal Spa</title>
+<meta name="description" content="Vaela is a thermal spa in Brampton. Walk through it, room by room, then book a visit.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700;800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#0B0907; --bg-2:#14100C; --glass:rgba(18,14,10,.56); --line:rgba(243,234,223,.16);
+  --ink:#F3EADF; --ink-soft:#B4A693; --gold:#E7C48D; --gold-ink:#1B140B; --mineral:#9FD9CC;
+  --f-display:"Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-text:"Figtree", "Helvetica Neue", Arial, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --gut-l:max(16px, env(safe-area-inset-left, 0px));
+  --gut-r:max(16px, env(safe-area-inset-right, 0px));
+  --cut:14px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:auto;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-text);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.mono{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase}
+.wrap{max-width:1240px;margin:0 auto;padding-left:var(--gut-l);padding-right:var(--gut-r)}
+.loader{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;transition:opacity .7s ease, visibility .7s}
+.loader.done{opacity:0;visibility:hidden}
+.loader-in{display:grid;gap:18px;justify-items:center}
+.loader-mark{font-family:var(--f-display);font-weight:800;font-size:clamp(34px,7vw,64px);letter-spacing:.18em;color:transparent;-webkit-text-stroke:1px var(--gold)}
+.loader-bar{width:180px;height:1px;background:var(--line);position:relative;overflow:hidden}
+.loader-bar i{position:absolute;inset:0;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--bg)}
+.nav{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:50;padding-left:var(--gut-l);padding-right:var(--gut-r)}
+.nav-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;padding-block:18px}
+.brand{font-family:var(--f-display);font-weight:700;letter-spacing:.32em;font-size:15px;text-decoration:none;text-shadow:0 1px 10px rgba(0,0,0,.55)}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{text-decoration:none;font-size:14px;color:var(--ink);opacity:.86;text-shadow:0 1px 10px rgba(0,0,0,.55);transition:opacity .2s}
+.nav-links a:hover{opacity:1;color:var(--ink)}
+.nav-links a.btn,.nav-links a.btn:hover{color:var(--gold-ink)}
+.btn{display:inline-flex;align-items:center;gap:10px;border:0;cursor:pointer;text-decoration:none;font-weight:600;font-size:14px;padding:13px 20px;background:var(--gold);color:var(--gold-ink);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);transition:transform .2s ease, background .2s}
+.btn:hover{transform:translateY(-1px);background:#F0D3A5}
+.btn.ghost{background:rgba(11,9,7,.28);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn.ghost:hover{background:rgba(243,234,223,.08)}
+@media (max-width:820px){.nav-links a:not(.btn){display:none}.nav-in{padding-block:14px}}
+.progress{position:fixed;left:0;right:0;bottom:0;height:2px;z-index:55;background:transparent}
+.progress i{display:block;height:100%;background:var(--gold);transform-origin:left;transform:scaleX(0)}
+.walk{position:relative;height:calc(5 * 175vh + 100vh)}
+.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:#000}
+.cam{position:absolute;inset:0;will-change:transform}
+.layer{position:absolute;left:0;top:0;opacity:0;visibility:hidden;will-change:transform,opacity,clip-path}
+.layer img{width:100%;height:100%;object-fit:cover;user-select:none;-webkit-user-drag:none}
+.layer.on{visibility:visible}
+.scrim-top{position:absolute;inset:0 0 auto;height:200px;background:linear-gradient(rgba(11,9,7,.62),rgba(11,9,7,0));pointer-events:none;z-index:3}
+.scrim-bot{position:absolute;inset:auto 0 0;height:58%;background:linear-gradient(rgba(11,9,7,0),rgba(11,9,7,.5) 55%,rgba(11,9,7,.78));pointer-events:none;z-index:3}
+.pin{position:absolute;transform:translate(-50%,-50%) scale(var(--inv,1));opacity:0;transition:opacity .35s ease;pointer-events:none;z-index:2}
+.pin.show{opacity:1;pointer-events:auto}
+.pin .dot{width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(231,196,141,.28),0 2px 10px rgba(0,0,0,.45);position:relative}
+.pin .dot::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:1px solid rgba(231,196,141,.7);animation:ping 2.4s ease-out infinite}
+@keyframes ping{0%{transform:scale(.4);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.pin .tag{position:absolute;left:24px;top:50%;transform:translateY(-50%);white-space:nowrap;background:rgba(14,11,8,.72);backdrop-filter:blur(14px) saturate(1.2);-webkit-backdrop-filter:blur(14px) saturate(1.2);border:1px solid var(--line);padding:8px 12px;display:grid;gap:2px}
+.pin.l .tag{left:auto;right:24px}
+.pin .tag b{font-weight:600;font-size:13.5px;line-height:1.2}
+.pin .tag span{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;color:var(--mineral)}
+.pin .tag::before{content:"";position:absolute;top:50%;left:-14px;width:14px;height:1px;background:rgba(231,196,141,.7)}
+.pin.l .tag::before{left:auto;right:-14px}
+.hud{position:absolute;z-index:6;left:var(--gut-l);top:calc(env(safe-area-inset-top,0px) + 82px);display:grid;gap:6px;pointer-events:none}
+.hud .loc{display:flex;align-items:center;gap:10px}
+.hud .loc i{width:6px;height:6px;border-radius:50%;background:var(--mineral);box-shadow:0 0 0 3px rgba(159,217,204,.25)}
+.hud .env{color:var(--ink-soft)}
+.hud.flip{animation:hudflip .5s ease}
+@keyframes hudflip{0%{opacity:.2;transform:translateX(-6px)}100%{opacity:1;transform:none}}
+.hero{position:absolute;z-index:5;left:var(--gut-l);right:var(--gut-r);bottom:calc(env(safe-area-inset-bottom,0px) + 9vh);max-width:1400px;margin:0 auto 60px;will-change:opacity,transform}
+.hero-mark{font-family:var(--f-display);font-weight:800;font-size:clamp(64px,15vw,230px);line-height:.82;letter-spacing:.06em;color:transparent;-webkit-text-stroke:1.5px rgba(243,234,223,.9);margin:0 0 18px -.04em}
+.hero h1{font-family:var(--f-display);font-weight:500;font-size:clamp(26px,3.6vw,52px);line-height:1.05;letter-spacing:-.01em;margin:0 0 14px;max-width:16ch;text-wrap:balance}
+.hero p{margin:0 0 24px;max-width:46ch;color:var(--ink);opacity:.86;font-size:clamp(15px,1.3vw,18px)}
+.hero .row{display:flex;gap:12px;flex-wrap:wrap}
+.card{position:absolute;z-index:5;bottom:calc(env(safe-area-inset-bottom,0px) + 7vh);margin-bottom:76px;width:min(460px, calc(100% - 32px));background:var(--glass);backdrop-filter:blur(20px) saturate(1.25);-webkit-backdrop-filter:blur(20px) saturate(1.25);border:1px solid var(--line);padding:26px 26px 22px;opacity:0;visibility:hidden;will-change:opacity,transform;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.card.left{left:var(--gut-l)}
+.card.right{right:var(--gut-r)}
+.card .room-name{color:var(--mineral);margin-bottom:12px;display:block}
+.card h2{font-family:var(--f-display);font-weight:500;font-size:clamp(22px,2.3vw,32px);line-height:1.1;letter-spacing:-.01em;margin:0 0 12px;text-wrap:balance}
+.card p{margin:0 0 16px;color:var(--ink);opacity:.84;font-size:15.5px}
+.svc{list-style:none;margin:0 0 4px;padding:0;display:grid;border-top:1px solid var(--line)}
+.svc li{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.svc .d{font-family:var(--f-mono);font-size:11px;color:var(--ink-soft);letter-spacing:.06em}
+.svc .p{font-family:var(--f-mono);font-size:13px;color:var(--gold);font-variant-numeric:tabular-nums}
+.card .btn{margin-top:16px}
+@media (max-width:820px){
+  .card{left:var(--gut-l)!important;right:var(--gut-r)!important;width:auto;padding:18px 18px 16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+  .card p{font-size:14.5px;margin-bottom:12px}
+  .svc li{padding:8px 0;font-size:13.5px}
+  .pin .tag{display:none}
+  .pin.key .tag{display:grid}
+}
+section.block{padding-block:clamp(80px,12vw,150px);position:relative}
+.sec-head{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;align-items:end;margin-bottom:56px}
+.sec-head h2{font-family:var(--f-display);font-weight:500;font-size:clamp(32px,5vw,68px);line-height:1;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sec-head p{margin:0;color:var(--ink-soft);max-width:44ch;font-size:17px}
+@media (max-width:820px){.sec-head{grid-template-columns:1fr;gap:16px;margin-bottom:36px}}
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:56px 64px}
+@media (max-width:820px){.menu-grid{grid-template-columns:1fr;gap:44px}}
+.cat h3{font-family:var(--f-display);font-weight:300;font-size:20px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 6px;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.cat h3 span{color:var(--mineral)}
+.cat > p{margin:0 0 14px;color:var(--ink-soft);font-size:14.5px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.item:first-of-type{border-top:1px solid var(--line)}
+.item .n{min-width:0}
+.item .n b{display:block;font-weight:600;font-size:16px}
+.item .n small{display:block;color:var(--ink-soft);font-size:13.5px}
+.item .d{font-family:var(--f-mono);font-size:12px;color:var(--ink-soft)}
+.item .p{font-family:var(--f-mono);font-size:14px;color:var(--gold);font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
+.add{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:transparent;cursor:pointer;display:grid;place-items:center;transition:background .2s,border-color .2s,transform .2s}
+.add:hover{border-color:var(--gold)}
+.add svg{width:14px;height:14px;stroke:currentColor;stroke-width:1.6;fill:none;transition:transform .25s}
+.add[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.add[aria-pressed="true"] svg{transform:rotate(45deg)}
+@media (max-width:480px){.item{grid-template-columns:minmax(0,1fr) auto auto;gap:12px}.item .d{grid-column:1;grid-row:2;margin-top:-8px}}
+.pk-band{background:var(--bg-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+@media (max-width:900px){.pk{grid-template-columns:1fr}}
+.pk article{position:relative;overflow:hidden;min-height:440px;display:flex;flex-direction:column;justify-content:flex-end;padding:26px;border:1px solid var(--line);clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.pk article img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.pk article:hover img{transform:scale(1.06)}
+.pk article::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(11,9,7,.05) 25%,rgba(11,9,7,.88))}
+.pk .in{position:relative;z-index:1}
+.pk h3{font-family:var(--f-display);font-weight:500;font-size:24px;margin:0 0 8px}
+.pk p{margin:0 0 18px;color:var(--ink);opacity:.82;font-size:15px;max-width:34ch}
+.pk .meta{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pk .price{font-family:var(--f-mono);font-size:20px;color:var(--gold);font-variant-numeric:tabular-nums}
+.book{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:start}
+@media (max-width:900px){.book{grid-template-columns:1fr}}
+form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+@media (max-width:560px){form{grid-template-columns:1fr}}
+.field{display:grid;gap:8px}
+.field.full{grid-column:1/-1}
+.field label{color:var(--ink-soft)}
+.field input,.field select,.field textarea{width:100%;background:rgba(243,234,223,.04);border:1px solid var(--line);padding:14px;border-radius:0;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+.field textarea{min-height:96px;resize:vertical}
+.field select option{background:var(--bg-2)}
+.err{color:#F2A08A;font-size:13.5px;min-height:1.2em;grid-column:1/-1;margin:-6px 0 0}
+.summary{background:var(--bg-2);border:1px solid var(--line);padding:26px;position:sticky;top:96px;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.summary h3{font-family:var(--f-display);font-weight:500;font-size:20px;margin:0 0 4px}
+.summary .hint{color:var(--ink-soft);font-size:14px;margin:0 0 16px}
+.sel{list-style:none;margin:0;padding:0;display:grid}
+.sel li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.sel li .p{font-family:var(--f-mono);color:var(--gold);font-variant-numeric:tabular-nums}
+.sel li button{background:none;border:0;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:4px;text-decoration:underline}
+.sel .empty{color:var(--ink-soft);grid-template-columns:1fr}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;font-family:var(--f-mono)}
+.total b{font-size:22px;color:var(--ink);font-variant-numeric:tabular-nums}
+.info{margin-top:26px;display:grid;gap:14px;font-size:14.5px}
+.info .mono{color:var(--ink-soft);display:block;margin-bottom:3px}
+.copy{background:none;border:1px solid var(--line);padding:4px 10px;cursor:pointer;font-size:12px;margin-left:8px}
+.done-panel{grid-column:1/-1;border:1px solid var(--mineral);padding:24px;background:rgba(159,217,204,.06)}
+.done-panel h3{font-family:var(--f-display);font-weight:500;margin:0 0 8px;font-size:22px}
+.done-panel p{margin:0;color:var(--ink-soft)}
+footer{border-top:1px solid var(--line);padding-block:44px calc(60px + env(safe-area-inset-bottom,0px))}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px;align-items:center;color:var(--ink-soft);font-size:14px}
+.foot .brand{color:var(--ink)}
+.fab{position:fixed;z-index:58;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.fab a{position:relative;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .2s ease, background .2s}
+.fab a:hover{transform:translateY(-2px) scale(1.04)}
+.fab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.fab .call{background:var(--gold);color:var(--gold-ink)}
+.fab .msg{background:rgba(14,11,8,.82);color:var(--ink);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.fab .call::after{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid var(--gold);animation:ping 2.6s ease-out infinite;pointer-events:none}
+@media (max-width:820px){.fab{flex-direction:row;gap:10px}}
+@media (prefers-reduced-motion: reduce){
+  .pin .dot::after,.fab .call::after{animation:none}
+  .loader,.pin,.btn,.pk article img{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-in">
+    <div class="loader-mark">VAELA</div>
+    <div class="loader-bar"><i id="loadbar"></i></div>
+  </div>
+</div>
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top">VAELA</a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#walk">Walk through</a>
+      <a href="#menu">Menu</a>
+      <a href="#packages">Packages</a>
+      <a class="btn" href="#book">Book a visit</a>
+    </nav>
+  </div>
+</header>
+<nav class="fab" aria-label="Contact the front desk">
+  <a class="msg" href="sms:+19055550142" aria-label="Text the front desk at (905) 555-0142" title="Message (905) 555-0142"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg></a>
+  <a class="call" href="tel:+19055550142" aria-label="Call the front desk at (905) 555-0142" title="Call (905) 555-0142"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg></a>
+</nav>
+<div class="progress" aria-hidden="true"><i id="prog"></i></div>
+<main id="top">
+<section class="walk" id="walk" aria-label="Walk through the spa">
+  <div class="stage" id="stage">
+    <div class="cam" id="cam">
+      <div class="layer"><img src="img/arrival.webp" srcset="img/arrival-sm.webp 960w, img/arrival.webp 1920w" sizes="(max-aspect-ratio: 1/1) 190vh, 100vw" alt="Reception with a travertine desk, oak slat wall and an olive tree in afternoon light"></div>
+      <div class="layer"><img src="img/corridor.webp" srcset="img/corridor-sm.webp 960w, img/corridor.webp 1920w" sizes="(max-aspect-ratio: 1/1) 190vh, 100vw" alt="Candlelit oak hallway leading to an open frosted-glass door"></div>
+      <div class="layer"><img src="img/treatment.webp" srcset="img/treatment-sm.webp 960w, img/treatment.webp 1920w" sizes="(max-aspect-ratio: 1/1) 190vh, 100vw" alt="Treatment suite with a linen massage table, hot stones and sheer curtains"></div>
+      <div class="layer"><img src="img/thermal.webp" srcset="img/thermal-sm.webp 960w, img/thermal.webp 1920w" sizes="(max-aspect-ratio: 1/1) 190vh, 100vw" alt="Indoor mineral pool lined in travertine beside a garden window"></div>
+      <div class="layer"><img src="img/lounge.webp" srcset="img/lounge-sm.webp 960w, img/lounge.webp 1920w" sizes="(max-aspect-ratio: 1/1) 190vh, 100vw" alt="Relaxation lounge with herbal tea, looking out at an olive garden at golden hour"></div>
+    </div>
+    <div class="scrim-top"></div>
+    <div class="scrim-bot"></div>
+    <div class="hud" id="hud" aria-hidden="true">
+      <div class="loc mono"><i></i><span id="hudLoc">Reception</span></div>
+      <div class="env mono" id="hudEnv">22.0&#176;C / Light 2700K</div>
+    </div>
+    <div class="hero" id="hero">
+      <div class="hero-mark" aria-hidden="true">VAELA</div>
+      <h1>Walk in. Leave lighter.</h1>
+      <p>A thermal spa in Brampton with private massage suites, a mineral pool and a garden lounge. Take the walk before you book.</p>
+      <div class="row">
+        <a class="btn" href="#book">Book a visit</a>
+        <a class="btn ghost" href="#menu">See the menu</a>
+      </div>
+    </div>
+    <article class="card left" data-card="0">
+      <span class="room-name mono">Reception</span>
+      <h2>Your visit starts at the door.</h2>
+      <p>A concierge who already has your booking. A warm robe, your own locker, and a cup of arrival tea while your room is prepared.</p>
+      <ul class="svc">
+        <li><span>Arrival ritual</span><span class="d">15 MIN</span><span class="p">Included</span></li>
+        <li><span>Robe, slippers, locker</span><span class="d">ALL DAY</span><span class="p">Included</span></li>
+      </ul>
+    </article>
+    <article class="card right" data-card="1">
+      <span class="room-name mono">Quiet hall</span>
+      <h2>The city stays in the hallway.</h2>
+      <p>Phones sleep here. Oak and stone soak up the sound, so every step gets quieter. Pick your scent at the candle ledge on the way past.</p>
+      <ul class="svc">
+        <li><span>Aromatherapy blend</span><span class="d">ADD-ON</span><span class="p">$25</span></li>
+        <li><span>Scalp ritual</span><span class="d">30 MIN</span><span class="p">$60</span></li>
+      </ul>
+    </article>
+    <article class="card right" data-card="2">
+      <span class="room-name mono">Treatment suite</span>
+      <h2>Hands that find where you hold it.</h2>
+      <p>Heated tables, garden light through linen, and a therapist who asks before they start.</p>
+      <ul class="svc">
+        <li><span>Signature massage</span><span class="d">60 / 90</span><span class="p">$135+</span></li>
+        <li><span>Deep tissue</span><span class="d">60 MIN</span><span class="p">$145</span></li>
+        <li><span>Hot stone</span><span class="d">75 MIN</span><span class="p">$175</span></li>
+      </ul>
+    </article>
+    <article class="card left" data-card="3">
+      <span class="room-name mono">Thermal pool</span>
+      <h2>Warm water. Then cold. Then quiet.</h2>
+      <p>A full circuit, as many rounds as you like. Mineral pool, steam room and cold plunge, with towels warmed at the ledge.</p>
+      <ul class="svc">
+        <li><span>Mineral pool</span><span class="d">34&#176;C</span><span class="p">Circuit</span></li>
+        <li><span>Steam, then cold plunge</span><span class="d">45&#176; / 12&#176;C</span><span class="p">Circuit</span></li>
+        <li><span>Thermal day pass</span><span class="d">3 HRS</span><span class="p">$65</span></li>
+      </ul>
+    </article>
+    <article class="card left" data-card="4">
+      <span class="room-name mono">Garden lounge</span>
+      <h2>Stay until the light changes.</h2>
+      <p>No one rushes you out. Herbal tea, cucumber water and a lounger facing the olive garden. Add a facial and finish here.</p>
+      <ul class="svc">
+        <li><span>HydraGlow facial</span><span class="d">60 MIN</span><span class="p">$160</span></li>
+        <li><span>Herbal tea bar</span><span class="d">ALL DAY</span><span class="p">Included</span></li>
+      </ul>
+      <a class="btn" href="#book">Book a visit</a>
+    </article>
+  </div>
+</section>
+<section class="block" id="menu" aria-labelledby="menuTitle">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="menuTitle">Everything you walked past.</h2>
+      <p>Tap the plus on anything you want. It builds your visit in the booking panel below, with the total.</p>
+    </div>
+    <div class="menu-grid" id="menuGrid"></div>
+  </div>
+</section>
+<section class="block pk-band" id="packages" aria-labelledby="pkTitle">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="pkTitle">Or let us plan the day.</h2>
+      <p>Three ways through the spa, each with full thermal access and the garden lounge for as long as you want it.</p>
+    </div>
+    <div class="pk" id="pkGrid"></div>
+  </div>
+</section>
+<section class="block" id="book" aria-labelledby="bookTitle">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="bookTitle">Book your visit.</h2>
+      <p>Send a request and the front desk confirms by text within the hour, during opening times.</p>
+    </div>
+    <div class="book">
+      <form id="bookForm" novalidate>
+        <div class="field"><label class="mono" for="fName">Name</label><input id="fName" autocomplete="name" required></div>
+        <div class="field"><label class="mono" for="fPhone">Mobile</label><input id="fPhone" type="tel" autocomplete="tel" inputmode="tel" required></div>
+        <div class="field"><label class="mono" for="fDate">Date</label><input id="fDate" type="date" required></div>
+        <div class="field"><label class="mono" for="fTime">Arrival time</label>
+          <select id="fTime" required>
+            <option value="">Choose a time</option>
+            <option>9:00 AM</option><option>10:30 AM</option><option>12:00 PM</option><option>1:30 PM</option><option>3:00 PM</option><option>4:30 PM</option><option>6:00 PM</option>
+          </select></div>
+        <div class="field"><label class="mono" for="fGuests">Guests</label>
+          <select id="fGuests"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+        <div class="field"><label class="mono" for="fPressure">Massage pressure</label>
+          <select id="fPressure"><option>No preference</option><option>Light</option><option>Medium</option><option>Firm</option></select></div>
+        <div class="field full"><label class="mono" for="fNotes">Anything we should know</label><textarea id="fNotes" placeholder="Allergies, injuries, a celebration"></textarea></div>
+        <p class="err" id="err" role="alert"></p>
+        <div class="field full"><button class="btn" type="submit">Send booking request</button></div>
+      </form>
+      <aside class="summary" aria-labelledby="sumTitle">
+        <h3 id="sumTitle">Your visit</h3>
+        <p class="hint">Built from the menu above.</p>
+        <ul class="sel" id="sel"></ul>
+        <div class="total mono"><span>Total per guest</span><b id="total">$0</b></div>
+        <div class="info">
+          <div><span class="mono">Address</span>Queen Street West, Brampton, ON</div>
+          <div><span class="mono">Phone</span><span id="phoneTxt">(905) 555-0142</span><button class="copy" type="button" data-copy="(905) 555-0142">Copy</button></div>
+          <div><span class="mono">Open</span>Mon to Thu 9 to 9 &#183; Fri to Sun 8 to 10</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+<footer>
+  <div class="wrap foot">
+    <span class="brand">VAELA</span>
+    <span>Concept site by <a href="/#work" style="color:inherit">Unity Alpha Network</a>. Business name, address and prices are placeholders.</span>
+  </div>
+</footer>
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var IMG_R = 1920/1086;
+  var STOPS = [
+    {name:"Reception", env:"22.0°C / Light 2700K", f:[0.385,0.40], mx:0.55, pins:[
+      {x:.66,y:.49,t:"Concierge check-in",d:"Robe / slippers / locker",key:1},
+      {x:.885,y:.36,t:"Apothecary shelf",d:"Oils to take home",l:1},
+      {x:.20,y:.42,t:"Olive courtyard",d:"Garden entrance"}]},
+    {name:"Quiet hall", env:"21.0°C / Sound 28 dB", f:[0.452,0.41], mx:0.5, pins:[
+      {x:.17,y:.53,t:"Scent selection",d:"Aromatherapy / $25",key:1},
+      {x:.535,y:.36,t:"Treatment suites",d:"Heated tables",l:1}]},
+    {name:"Treatment suite", env:"24.0°C / Heated table", f:[0.35,0.36], mx:0.52, pins:[
+      {x:.53,y:.62,t:"Hot stone",d:"75 MIN / $175",key:1},
+      {x:.51,y:.53,t:"Signature massage",d:"60 MIN / $135"},
+      {x:.86,y:.42,t:"Organic oil bar",d:"Choose your blend",l:1},
+      {x:.33,y:.26,t:"Daylight suite",d:"Garden facing"}]},
+    {name:"Thermal pool", env:"Water 34°C / Air 29°C", f:[0.352,0.40], mx:0.6, pins:[
+      {x:.70,y:.66,t:"Mineral pool",d:"Kept at 34°C",key:1,l:1},
+      {x:.10,y:.40,t:"Warm towels",d:"Steam / cold plunge"},
+      {x:.89,y:.30,t:"Garden glass",d:"Swim with a view",l:1}]},
+    {name:"Garden lounge", env:"23.0°C / Golden hour", f:[0.80,0.20], mx:0.62, pins:[
+      {x:.885,y:.70,t:"Herbal tea bar",d:"Ginger / chamomile / mint",key:1,l:1},
+      {x:.64,y:.42,t:"Olive garden",d:"Open May to October",l:1},
+      {x:.13,y:.30,t:"Rest lounges",d:"Stay as long as you like"}]}
+  ];
+  var N = STOPS.length, T0 = 0.64, TAIL = 0.6;
+  var walk = document.getElementById("walk"), cam = document.getElementById("cam");
+  var layers = [].slice.call(document.querySelectorAll(".layer"));
+  var cards = [].slice.call(document.querySelectorAll("[data-card]"));
+  var hero = document.getElementById("hero");
+  var hudLoc = document.getElementById("hudLoc"), hudEnv = document.getElementById("hudEnv"), hud = document.getElementById("hud");
+  var prog = document.getElementById("prog");
+  layers.forEach(function(L,i){
+    STOPS[i].pins.forEach(function(p){
+      var el = document.createElement("div");
+      el.className = "pin" + (p.l ? " l" : "") + (p.key ? " key" : "");
+      el.style.left = (p.x*100)+"%"; el.style.top = (p.y*100)+"%";
+      el.innerHTML = '<div class="dot"></div><div class="tag"><b></b><span></span></div>';
+      el.querySelector("b").textContent = p.t; el.querySelector("span").textContent = p.d;
+      L.appendChild(el);
+    });
+  });
+  var pinsBy = layers.map(function(L){ return [].slice.call(L.querySelectorAll(".pin")); });
+  var geo = [], vw=0, vh=0, wTop=0, wSpan=1;
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+  function smooth(a,b,x){var t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);}
+  function easeIO(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function layout(){
+    vw = window.innerWidth; vh = window.innerHeight;
+    var w,h; if (vw/vh > IMG_R){ w=vw; h=vw/IMG_R; } else { h=vh; w=vh*IMG_R; }
+    geo = STOPS.map(function(s){ return {w:w,h:h,x:clamp(vw/2 - s.mx*w, vw-w, 0),y:(vh-h)/2}; });
+    layers.forEach(function(L,i){ var g=geo[i]; L.style.width=g.w+"px"; L.style.height=g.h+"px"; L.style.left=g.x+"px"; L.style.top=g.y+"px"; });
+    wTop = walk.offsetTop; wSpan = Math.max(1, walk.offsetHeight - vh);
+  }
+  var lastActive = -1;
+  function render(y){
+    var p = clamp((y - wTop)/wSpan, 0, 1);
+    var u = p*(N-1+TAIL);
+    var k = Math.min(Math.floor(u), N-1), f = u-k;
+    var trans = (k < N-1 && f > T0) ? (f-T0)/(1-T0) : 0;
+    for (var i=0;i<N;i++){
+      var L = layers[i];
+      if (i !== k && !(trans>0 && i===k+1)){ if (L.classList.contains("on")){ L.classList.remove("on"); L.style.opacity=0; L.style.clipPath="none"; } continue; }
+      L.classList.add("on");
+    }
+    var s, cur = layers[k], st = STOPS[k];
+    cur.style.transformOrigin = (st.f[0]*100)+"% "+(st.f[1]*100)+"%";
+    if (reduce){ s = 1; cur.style.opacity = trans>0 ? 1 - smooth(.2,.8,trans) : 1; }
+    else if (trans>0){ var e = easeIO(trans); s = 1.12 + 2.4*e*e; cur.style.opacity = 1 - smooth(.7,1,trans); }
+    else { var span = k===N-1 ? TAIL : T0; s = 1.02 + 0.10*clamp(f/span,0,1); cur.style.opacity = 1; }
+    cur.style.transform = "scale("+s.toFixed(4)+")";
+    cur.style.setProperty("--inv", (1/s).toFixed(4));
+    cur.style.clipPath = "none"; cur.style.zIndex = 1;
+    if (trans>0){
+      var nx = layers[k+1], g0 = geo[k], g1 = geo[k+1];
+      var sx = g0.x + st.f[0]*g0.w, sy = g0.y + st.f[1]*g0.h;
+      var fx = (sx - g1.x)/g1.w, fy = (sy - g1.y)/g1.h;
+      var e2 = reduce ? 1 : easeIO(trans);
+      if (reduce){ nx.style.clipPath="none"; nx.style.opacity = smooth(.2,.8,trans); nx.style.transform="none"; }
+      else {
+        var g = Math.pow(e2,1.7), hw = lerp(2.4,120,g), hh = lerp(6,120,g);
+        var top = Math.max(0, fy*100-hh), bot = Math.max(0,(1-fy)*100-hh), lft = Math.max(0, fx*100-hw), rgt = Math.max(0,(1-fx)*100-hw);
+        nx.style.clipPath = "inset("+top.toFixed(2)+"% "+rgt.toFixed(2)+"% "+bot.toFixed(2)+"% "+lft.toFixed(2)+"% round "+lerp(18,0,e2).toFixed(1)+"px)";
+        nx.style.opacity = smooth(0,.12,trans);
+        nx.style.transformOrigin = (fx*100)+"% "+(fy*100)+"%";
+        var ns = lerp(1.35,1.02,e2);
+        nx.style.transform = "scale("+ns.toFixed(4)+")";
+        nx.style.setProperty("--inv",(1/ns).toFixed(4));
+      }
+      nx.style.zIndex = 2;
+      pinsBy[k+1].forEach(function(pn){ pn.classList.remove("show"); });
+      cam.style.transform = reduce ? "none" : "translate3d(0,"+(Math.sin(trans*Math.PI*4)*4*Math.sin(trans*Math.PI)).toFixed(2)+"px,0)";
+    } else { cam.style.transform = "none"; }
+    pinsBy[k].forEach(function(pn,j){
+      pn.classList.toggle("show", trans===0 && f > (k===0?0.30:0.10)+j*0.06 && (k===N-1 || f < T0-0.04));
+    });
+    var hOp = k===0 ? 1 - smooth(0.05, 0.22, f) : 0;
+    hero.style.opacity = hOp; hero.style.visibility = hOp < 0.01 ? "hidden" : "visible";
+    hero.style.transform = reduce ? "none" : "translate3d(0,"+(-40*(1-hOp)).toFixed(1)+"px,0)";
+    cards.forEach(function(c,i){
+      var a;
+      if (i!==k) a = 0;
+      else if (k===0) a = smooth(.26,.36,f) * (1 - smooth(T0-0.06,T0,f));
+      else if (k===N-1) a = smooth(.06,.18,f);
+      else a = smooth(.04,.16,f) * (1 - smooth(T0-0.06,T0,f));
+      c.style.opacity = a; c.style.visibility = a < 0.01 ? "hidden" : "visible";
+      c.style.transform = reduce ? "none" : "translate3d(0,"+(24*(1-a)).toFixed(1)+"px,0)";
+    });
+    var active = trans>0.5 ? k+1 : k;
+    if (active !== lastActive){
+      hudLoc.textContent = STOPS[active].name; hudEnv.textContent = STOPS[active].env;
+      hud.classList.remove("flip"); void hud.offsetWidth; hud.classList.add("flip");
+      lastActive = active;
+    }
+    var docH = document.documentElement.scrollHeight - vh;
+    prog.style.transform = "scaleX("+clamp(y/Math.max(1,docH),0,1).toFixed(4)+")";
+  }
+  var touch = window.matchMedia("(pointer: coarse)").matches;
+  var target = window.scrollY, curY = target, ticking = false;
+  function loop(){
+    curY = (touch||reduce) ? target : curY + (target-curY)*0.16;
+    if (Math.abs(target-curY) < 0.4) curY = target;
+    render(curY);
+    if (curY !== target) requestAnimationFrame(loop); else ticking = false;
+  }
+  function kick(){ target = window.scrollY; if(!ticking){ ticking = true; requestAnimationFrame(loop); } }
+  window.addEventListener("scroll", kick, {passive:true});
+  window.addEventListener("resize", function(){ layout(); curY = target = window.scrollY; render(curY); });
+  var imgs = layers.map(function(L){ return L.querySelector("img"); });
+  var loaded = 0, loader = document.getElementById("loader"), bar = document.getElementById("loadbar"), finished=false;
+  function finish(){ if(finished) return; finished=true; layout(); render(window.scrollY); setTimeout(function(){ loader.classList.add("done"); }, 250); }
+  function tick(){ loaded++; bar.style.transform = "scaleX("+(loaded/imgs.length)+")"; if (loaded>=imgs.length) finish(); }
+  imgs.forEach(function(im){ if (im.complete && im.naturalWidth) tick(); else { im.addEventListener("load",tick,{once:true}); im.addEventListener("error",tick,{once:true}); } });
+  setTimeout(finish, 5000);
+  layout(); render(window.scrollY);
+
+  var MENU = [
+    {cat:"Massage", note:"Heated tables, your choice of pressure.", items:[
+      {id:"m1",n:"Signature massage",s:"Full body, Swedish and deep work blended",d:"60 MIN",p:135},
+      {id:"m2",n:"Signature massage, long",s:"Same ritual with time for feet and scalp",d:"90 MIN",p:185},
+      {id:"m3",n:"Deep tissue",s:"Slow, focused work on shoulders and back",d:"60 MIN",p:145},
+      {id:"m4",n:"Hot stone",s:"Warm basalt along the spine and hands",d:"75 MIN",p:175},
+      {id:"m5",n:"Prenatal massage",s:"Side-lying, after the first trimester",d:"60 MIN",p:140}]},
+    {cat:"Facials", note:"Finished in the garden lounge.", items:[
+      {id:"f1",n:"HydraGlow facial",s:"Cleanse, exfoliate, hydrating infusion",d:"60 MIN",p:160},
+      {id:"f2",n:"Lift and sculpt",s:"Facial massage with cooling jade",d:"75 MIN",p:210},
+      {id:"f3",n:"Express glow",s:"A quick reset before an event",d:"30 MIN",p:85}]},
+    {cat:"Thermal", note:"Pool, steam room and cold plunge.", items:[
+      {id:"t1",n:"Thermal day pass",s:"Full circuit, robe and tea included",d:"3 HRS",p:65},
+      {id:"t2",n:"Evening circuit",s:"After 6 PM, quieter and candlelit",d:"2 HRS",p:55},
+      {id:"t3",n:"Private pool hour",s:"The whole pool for you and one guest",d:"60 MIN",p:180}]},
+    {cat:"Rituals", note:"Add to any visit.", items:[
+      {id:"r1",n:"Salt scrub and wrap",s:"Exfoliation, then a warm body wrap",d:"75 MIN",p:165},
+      {id:"r2",n:"Scalp ritual",s:"Oil, pressure points, hot towel",d:"30 MIN",p:60},
+      {id:"r3",n:"Aromatherapy blend",s:"Chosen at the candle ledge",d:"ADD-ON",p:25}]}
+  ];
+  var PACKS = [
+    {id:"p1",n:"Half day",img:"img/corridor-sm.webp",s:"Signature massage, thermal circuit and lunch in the garden lounge.",p:245},
+    {id:"p2",n:"Full day",img:"img/thermal-sm.webp",s:"Massage, HydraGlow facial, thermal circuit, lunch and tea until close.",p:420},
+    {id:"p3",n:"Side by side",img:"img/lounge-sm.webp",s:"Two guests, two therapists, one suite, then a private pool hour.",p:520}
+  ];
+  var ALL = {};
+  MENU.forEach(function(c){ c.items.forEach(function(it){ ALL[it.id]=it; }); });
+  PACKS.forEach(function(pk){ ALL[pk.id]={id:pk.id,n:pk.n+" package",p:pk.p}; });
+  var chosen = [];
+  try { var saved = JSON.parse(localStorage.getItem("vaela-visit")||"[]"); if (Array.isArray(saved)) chosen = saved.filter(function(id){return ALL[id];}); } catch(e){}
+  var plus = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12"/></svg>';
+  var grid = document.getElementById("menuGrid");
+  MENU.forEach(function(c){
+    var div = document.createElement("div"); div.className="cat";
+    var h = document.createElement("h3"); h.innerHTML = "<b></b><span class='mono'></span>";
+    h.querySelector("b").textContent = c.cat; h.querySelector("span").textContent = c.items.length + " options";
+    var note = document.createElement("p"); note.textContent = c.note;
+    div.appendChild(h); div.appendChild(note);
+    c.items.forEach(function(it){
+      var row = document.createElement("div"); row.className="item";
+      row.innerHTML = '<div class="n"><b></b><small></small></div><span class="d"></span><span class="p"></span><button class="add" type="button" data-id="'+it.id+'">'+plus+'</button>';
+      row.querySelector("b").textContent = it.n; row.querySelector("small").textContent = it.s;
+      row.querySelector(".d").textContent = it.d; row.querySelector(".p").textContent = "$"+it.p;
+      row.querySelector(".add").setAttribute("aria-label","Add "+it.n+" to your visit");
+      div.appendChild(row);
+    });
+    grid.appendChild(div);
+  });
+  var pkGrid = document.getElementById("pkGrid");
+  PACKS.forEach(function(pk){
+    var a = document.createElement("article");
+    a.innerHTML = '<img alt="" loading="lazy"><div class="in"><h3></h3><p></p><div class="meta"><span class="price"></span><button class="btn ghost add-pk" type="button" data-id="'+pk.id+'">Add to visit</button></div></div>';
+    a.querySelector("img").src = pk.img; a.querySelector("h3").textContent = pk.n; a.querySelector("p").textContent = pk.s;
+    a.querySelector(".price").textContent = "$"+pk.p;
+    pkGrid.appendChild(a);
+  });
+  var sel = document.getElementById("sel"), totalEl = document.getElementById("total");
+  function save(){ try{ localStorage.setItem("vaela-visit", JSON.stringify(chosen)); }catch(e){} }
+  function paint(){
+    document.querySelectorAll(".add").forEach(function(b){ b.setAttribute("aria-pressed", chosen.indexOf(b.getAttribute("data-id"))>-1 ? "true":"false"); });
+    document.querySelectorAll(".add-pk").forEach(function(b){ var on = chosen.indexOf(b.getAttribute("data-id"))>-1; b.textContent = on ? "Added" : "Add to visit"; b.setAttribute("aria-pressed", on?"true":"false"); });
+    sel.innerHTML = "";
+    if (!chosen.length){ var li=document.createElement("li"); li.className="empty"; li.textContent="Nothing added yet. Use the plus buttons in the menu, or add a package."; sel.appendChild(li); }
+    var sum = 0;
+    chosen.forEach(function(id){
+      var it = ALL[id]; sum += it.p;
+      var li = document.createElement("li");
+      li.innerHTML = '<span></span><span class="p"></span><button type="button">Remove</button>';
+      li.children[0].textContent = it.n; li.children[1].textContent = "$"+it.p;
+      li.children[2].setAttribute("aria-label","Remove "+it.n);
+      li.children[2].addEventListener("click", function(){ toggle(id); });
+      sel.appendChild(li);
+    });
+    totalEl.textContent = "$"+sum;
+  }
+  function toggle(id){ var i = chosen.indexOf(id); if (i>-1) chosen.splice(i,1); else chosen.push(id); save(); paint(); }
+  document.addEventListener("click", function(e){
+    var b = e.target.closest(".add, .add-pk"); if (b) toggle(b.getAttribute("data-id"));
+    var c = e.target.closest(".copy");
+    if (c){ var txt=c.getAttribute("data-copy");
+      var ok=function(){ c.textContent="Copied"; setTimeout(function(){c.textContent="Copy";},1600); };
+      var fallback=function(){ var r=document.createRange(); r.selectNodeContents(document.getElementById("phoneTxt")); var s=window.getSelection(); s.removeAllRanges(); s.addRange(r); c.textContent="Selected"; setTimeout(function(){c.textContent="Copy";},1600); };
+      try { navigator.clipboard.writeText(txt).then(ok, fallback); } catch(err){ fallback(); }
+    }
+  });
+  paint();
+  var today = new Date(); var iso = new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  document.getElementById("fDate").min = iso;
+  var form = document.getElementById("bookForm"), err = document.getElementById("err");
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+    var $ = function(id){ return document.getElementById(id); };
+    var name = $("fName").value.trim(), phone = $("fPhone").value.trim(), date = $("fDate").value, time = $("fTime").value, guests = $("fGuests").value;
+    if (!name){ err.textContent = "Add your name so the front desk knows who to expect."; $("fName").focus(); return; }
+    if (phone.replace(/\D/g,"").length < 10){ err.textContent = "Enter a 10-digit mobile number. We confirm by text."; $("fPhone").focus(); return; }
+    if (!date || date < iso){ err.textContent = "Pick a date from today onward."; $("fDate").focus(); return; }
+    if (!time){ err.textContent = "Choose an arrival time."; $("fTime").focus(); return; }
+    err.textContent = "";
+    var when = new Date(date+"T12:00:00").toLocaleDateString("en-CA",{weekday:"long",month:"long",day:"numeric"});
+    var items = chosen.map(function(id){return ALL[id].n;});
+    var panel = document.createElement("div"); panel.className="done-panel"; panel.setAttribute("role","status");
+    panel.innerHTML = "<h3></h3><p></p>";
+    panel.querySelector("h3").textContent = "Request sent, " + name.split(" ")[0] + ".";
+    panel.querySelector("p").textContent = "We have you down for " + when + " at " + time + " for " + guests + (guests==="1"?" guest":" guests") + (items.length ? ", with " + items.join(", ") : "") + ". This is a concept site, so no real booking was made.";
+    form.innerHTML = ""; form.appendChild(panel);
+  });
+})();
+</script>
+</body>
+</html>
