@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CSS, Footer, FloatingContact, LeadForm, Nav, useReveal } from "../shared";
-import { PRICES, SITE, TESTIMONIALS, cities, demos } from "../site";
+import { FRONT_DESK_ALONE, PACKAGES, SITE, TESTIMONIALS, cities, demos } from "../site";
 
 const FRAME_COUNT = 240;
 const frameSrc = (i: number) => `/frames/f_${String(i).padStart(3, "0")}.webp`;
@@ -10,12 +10,6 @@ const chapters = [
   { from: 0.4, to: 0.6, n: "02", label: "Street level", title: "Built to stop the scroll.", body: "Phone, laptop, tablet. Every page is designed to make a first-time visitor pay attention." },
   { from: 0.64, to: 0.82, n: "03", label: "The neighbourhood", title: "Made for local business.", body: "Salons, kitchens, clinics, trades. Real sites for businesses that still run on a phone number." },
   { from: 0.86, to: 1.01, n: "04", label: "Golden hour", title: "Live in days, not months.", body: "Tell us about the business on a short call. We send you a working site to look at." },
-];
-
-const services = [
-  { k: "Flagship", price: PRICES.flagship, title: "Custom websites", body: "A fully custom build with motion, scroll storytelling and a look your competitors cannot copy from a template." },
-  { k: "Local", price: PRICES.local, title: "Business sites", body: "A fast, clean site with your services, hours, reviews and a big call button. Found on Google, easy on a phone." },
-  { k: "Ongoing", price: PRICES.ongoing, title: "Updates and care", body: "Send the change you want. New prices, new photos, new hours. It goes live the same day." },
 ];
 
 const steps = [
@@ -30,6 +24,7 @@ const faqs = [
   { q: "Do I need to know anything technical?", a: "No. We handle the design, build, domain and hosting. You tell us what you want changed and we change it." },
   { q: "Can I see something before I commit?", a: "Yes. We send you a live demo for your type of business so you can see exactly what you would get." },
   { q: "What is the AI receptionist?", a: "A natural-sounding voice assistant that answers your business line when you're busy or closed. It books appointments, takes callbacks and texts you a summary of every call. You keep your number." },
+  { q: "What does the $100 a month cover?", a: "Everything after launch on the full package: hosting, the AI receptionist on your phone line, and any updates you need, like new prices, photos, hours or services. No surprise bills." },
   { q: "Which areas do you serve?", a: "Brampton, Mississauga, Toronto and the wider GTA. Calls and demos happen remotely, so anywhere works." },
 ];
 
@@ -282,12 +277,8 @@ function Proof() {
             <p className="mt-3 leading-relaxed text-white/65">
               Ava answers our line the way she'd answer yours: books the call, takes a callback, and texts the owner a summary.
               Ask her anything.
-              {PRICES.receptionist && (
-                <>
-                  {" "}
-                  <span className="text-white/80">For your business: {PRICES.receptionist}.</span>
-                </>
-              )}
+              {" "}
+              <span className="text-white/80">Included in the full package.</span>
             </p>
           </div>
           <a href={`tel:${SITE.phoneTel}`} className="ua-btn !px-7 !py-4 whitespace-nowrap">
@@ -313,8 +304,21 @@ function Proof() {
   );
 }
 
+function usePackagePrefill() {
+  useEffect(() => {
+    const f = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement).closest<HTMLElement>("[data-package]");
+      const msg = document.getElementById("lf-msg") as HTMLTextAreaElement | null;
+      if (a && msg && !msg.value.trim()) msg.value = `Interested in: ${a.dataset.package}. `;
+    };
+    document.addEventListener("click", f);
+    return () => document.removeEventListener("click", f);
+  }, []);
+}
+
 export function Home() {
   useReveal();
+  usePackagePrefill();
   return (
     <div className="ua-root min-h-screen bg-[#06070b] font-body text-white antialiased">
       <style>{CSS}</style>
@@ -344,31 +348,59 @@ export function Home() {
           </div>
         </div>
 
-        <section id="services" className="px-5 py-28 md:px-12 md:py-36">
+        <section id="services" className="px-5 py-28 md:px-12 md:py-36" aria-labelledby="pricing-title">
           <div className="mx-auto max-w-7xl">
             <div className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end" data-reveal>
-              <h2 className="font-display text-5xl font-extrabold tracking-tight md:text-7xl">Services</h2>
-              <p className="max-w-sm text-white/60">Three ways we work with you. All of them start with a free demo.</p>
+              <h2 id="pricing-title" className="font-display text-5xl font-extrabold tracking-tight md:text-7xl">
+                Simple <span className="ua-grad">pricing.</span>
+              </h2>
+              <p className="max-w-sm text-white/60">Every package starts with a free demo for your business. You pay once you love it.</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {services.map((s, i) => (
-                <div key={s.title} className="ua-card group flex flex-col p-7 md:p-8" data-reveal style={{ transitionDelay: `${i * 90}ms` }}>
-                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--ua-amber)]">{s.k}</p>
-                  <h3 className="mt-16 font-display text-2xl font-extrabold tracking-tight md:text-3xl">{s.title}</h3>
-                  <p className="mt-3 leading-relaxed text-white/60">{s.body}</p>
-                  {s.price && (
-                    <p className="ua-price mt-8 border-t border-white/10 pt-5">
-                      <span className="ua-dot" /> <b>{s.price}</b>
-                    </p>
-                  )}
+            <div className="grid items-stretch gap-4 md:grid-cols-3">
+              {PACKAGES.map((p, i) => (
+                <div
+                  key={p.id}
+                  className={`ua-card flex flex-col p-7 md:p-8 ${p.featured ? "ua-featured order-first md:order-none" : ""}`}
+                  data-reveal
+                  style={{ transitionDelay: `${i * 90}ms` }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--ua-amber)]">{p.k}</p>
+                    {p.featured && <span className="ua-badge">Best value</span>}
+                  </div>
+                  <h3 className="mt-8 font-display text-2xl font-extrabold tracking-tight md:text-[1.7rem]">{p.title}</h3>
+                  <p className="mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className={`font-display font-black tracking-tight ${p.featured ? "ua-grad text-6xl" : "text-5xl"}`}>{p.price}</span>
+                    {p.was && <s className="text-lg text-white/40">{p.was}</s>}
+                    {p.per && <span className="text-sm text-white/50">{p.per}</span>}
+                  </p>
+                  {p.then && <p className="mt-2 text-sm font-medium text-white/80">{p.then}</p>}
+                  {p.was && <p className="mt-2 text-sm font-medium text-white/80">Launch price</p>}
+                  <p className="mt-5 leading-relaxed text-white/60">{p.body}</p>
+                  <ul className="mt-6 flex flex-col gap-2.5 border-t border-white/10 pt-6 text-[15px] text-white/75">
+                    {p.includes.map((x) => (
+                      <li key={x} className="flex gap-3">
+                        <span className="ua-tick" aria-hidden="true">✓</span>
+                        {x}
+                      </li>
+                    ))}
+                  </ul>
+                  <a href="#contact" data-package={p.title} className={`${p.featured ? "ua-btn" : "ua-btn-ghost"} mt-8 w-full`}>
+                    {p.cta}
+                  </a>
                 </div>
               ))}
             </div>
-            {(PRICES.flagship || PRICES.local) && (
-              <p className="mt-6 text-sm text-white/45" data-reveal>
-                Starting points for most local businesses. You get an exact, fixed price after the first call, before any work starts.
+            <div className="ua-card mt-4 flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:px-8" data-reveal>
+              <p className="text-white/70">
+                <span className="font-display font-extrabold text-white">Just the AI front desk?</span> {FRONT_DESK_ALONE.setup} setup, then{" "}
+                {FRONT_DESK_ALONE.monthly}.
               </p>
-            )}
+              <p className="text-sm text-white/55">
+                Or get it inside the <a href="#contact" className="text-white underline decoration-[var(--ua-amber)] underline-offset-4">full package</a> for $100 / month, with a premium website included.
+              </p>
+            </div>
+            <p className="mt-6 text-sm text-white/40" data-reveal>Prices in CAD, plus HST. Domain registration not included.</p>
           </div>
         </section>
 

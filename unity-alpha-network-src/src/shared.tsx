@@ -38,6 +38,10 @@ html{scroll-behavior:smooth}
 [data-reveal]{opacity:0;translate:0 28px;transition:opacity .9s cubic-bezier(.2,.7,.2,1),translate .9s cubic-bezier(.2,.7,.2,1)}
 [data-reveal].is-in{opacity:1;translate:0 0}
 .ua-faq summary::-webkit-details-marker{display:none}
+.ua-featured{border-color:rgba(246,181,69,.45);background:linear-gradient(160deg,rgba(246,181,69,.12),rgba(255,111,91,.05) 45%,rgba(255,255,255,.015));box-shadow:0 30px 90px -40px rgba(246,181,69,.55)}
+.ua-featured:hover{border-color:rgba(246,181,69,.7)}
+.ua-badge{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#160e02;padding:.35rem .7rem;border-radius:999px;background:linear-gradient(135deg,#ffd27a,var(--ua-amber) 45%,var(--ua-coral))}
+.ua-tick{color:var(--ua-amber);font-weight:700}
 .ua-price{display:inline-flex;align-items:center;gap:.5rem;font-size:13px;letter-spacing:.04em;color:rgba(255,255,255,.75)}
 .ua-price b{font-weight:600;color:#fff}
 .ua-field{display:flex;flex-direction:column;gap:.45rem;text-align:left}
@@ -106,7 +110,7 @@ export function Nav({ base = "" }: { base?: string }) {
           }`}
         >
           {[
-            ["Services", `${base}#services`],
+            ["Pricing", `${base}#services`],
             ["Demos", `${base}#work`],
             ["Areas", "/areas/"],
             ["FAQ", `${base}#faq`],
