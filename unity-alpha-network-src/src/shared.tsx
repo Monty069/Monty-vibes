@@ -41,6 +41,7 @@ html{scroll-behavior:smooth}
 .ua-featured{border-color:rgba(246,181,69,.45);background:linear-gradient(160deg,rgba(246,181,69,.12),rgba(255,111,91,.05) 45%,rgba(255,255,255,.015));box-shadow:0 30px 90px -40px rgba(246,181,69,.55)}
 .ua-featured:hover{border-color:rgba(246,181,69,.7)}
 .ua-badge{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#160e02;padding:.35rem .7rem;border-radius:999px;background:linear-gradient(135deg,#ffd27a,var(--ua-amber) 45%,var(--ua-coral))}
+.ua-launch{border-radius:14px;border:1px solid rgba(246,181,69,.3);background:rgba(246,181,69,.07);padding:.8rem .9rem}
 .ua-tick{color:var(--ua-amber);font-weight:700}
 .ua-price{display:inline-flex;align-items:center;gap:.5rem;font-size:13px;letter-spacing:.04em;color:rgba(255,255,255,.75)}
 .ua-price b{font-weight:600;color:#fff}

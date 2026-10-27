@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CSS, Footer, FloatingContact, LeadForm, Nav, useReveal } from "../shared";
-import { FRONT_DESK_ALONE, PACKAGES, SITE, TESTIMONIALS, cities, demos } from "../site";
+import { FRONT_DESK_ALONE, LAUNCH, PACKAGES, SITE, TESTIMONIALS, cities, demos } from "../site";
 
 const FRAME_COUNT = 240;
 const frameSrc = (i: number) => `/frames/f_${String(i).padStart(3, "0")}.webp`;
@@ -375,7 +375,22 @@ export function Home() {
                     {p.per && <span className="text-sm text-white/50">{p.per}</span>}
                   </p>
                   {p.then && <p className="mt-2 text-sm font-medium text-white/80">{p.then}</p>}
-                  {p.was && <p className="mt-2 text-sm font-medium text-white/80">Launch price</p>}
+                  {p.was && p.note !== "launch" && <p className="mt-2 text-sm font-medium text-white/80">Launch price</p>}
+                  {p.note === "launch" && (
+                    <div className="ua-launch mt-4">
+                      <p className="text-sm font-medium text-white">
+                        Launch price for our first {LAUNCH.total} clients. {LAUNCH.regular} after that.
+                      </p>
+                      <div className="mt-3 flex items-center gap-3">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                          <div className="ua-progress h-full rounded-full" style={{ width: `${((LAUNCH.total - LAUNCH.left) / LAUNCH.total) * 100}%`, minWidth: "6px" }} />
+                        </div>
+                        <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ua-amber)]">
+                          {LAUNCH.left} of {LAUNCH.total} spots left
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <p className="mt-5 leading-relaxed text-white/60">{p.body}</p>
                   <ul className="mt-6 flex flex-col gap-2.5 border-t border-white/10 pt-6 text-[15px] text-white/75">
                     {p.includes.map((x) => (

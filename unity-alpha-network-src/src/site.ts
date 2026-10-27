@@ -17,6 +17,7 @@ export type Package = {
   title: string;
   price: string;
   was?: string; // shown struck through
+  note?: string; // small line under the price, e.g. launch offer
   per?: string; // small text after the price
   then?: string; // second line, e.g. monthly
   body: string;
@@ -42,7 +43,9 @@ export const PACKAGES: Package[] = [
     k: "Full package",
     title: "Premium site + AI front desk",
     price: "$2,500",
+    was: "$4,000",
     per: "one time",
+    note: "launch",
     then: "then $100 / month, everything included",
     body: "The whole thing. A premium site that makes the city look twice, and an AI receptionist that never misses a call.",
     includes: [
@@ -66,6 +69,9 @@ export const PACKAGES: Package[] = [
     cta: "Get the premium site",
   },
 ];
+
+// Full-package launch offer. Keep `left` honest: update it every time a full package sells.
+export const LAUNCH = { total: 25, left: 25, regular: "$4,000" };
 
 // The stand-alone AI front desk, shown under the packages so the full package reads as the better deal.
 export const FRONT_DESK_ALONE = { setup: "$1,000", monthly: "$200 / month" };
