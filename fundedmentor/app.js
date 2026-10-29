@@ -75,7 +75,7 @@
 
   // ---------- state ----------
   let state = load() || seed();
-  if (!state.session && state.profile) state.session = { email: state.profile.email || '', ts: Date.now() };
+  // A saved profile alone never signs anyone in: only a live Google session (or the demo) does.
   // Economic news: on fundedmentor.com from the Supabase news_days table; inside a claude.ai artifact
   // from the artifact's shared store. loadNews() is started at the END of this file, after sb, ui and
   // the views exist (starting it here hit them before initialization and the feed always failed).

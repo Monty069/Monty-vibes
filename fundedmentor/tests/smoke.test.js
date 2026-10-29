@@ -239,7 +239,9 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   ok(/id="lp-static"/.test(t.root()), 'logout: confirm returns to landing');
   ok(!t.w.localStorage.getItem('sb-zikowizjdkzgexgdjhuw-auth-token'), 'logout: saved Google sign-in cleared immediately');
   ok(!JSON.parse(t.w.localStorage.getItem('passrate.v1')).session, 'logout: app session cleared');
-  ok(!t.errors.length, 'logout: no errors'); }
+  const after = JSON.parse(t.w.localStorage.getItem('passrate.v1'));
+  const t3 = boot({ state: after }); ok(/id="lp-static"/.test(t3.root()) && !/Log out/.test(t3.root()), 'logout: refresh after logout stays on the landing (saved profile does not sign in)');
+  ok(!t.errors.length && !t3.errors.length, 'logout: no errors'); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
