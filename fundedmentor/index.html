@@ -1,4 +1,6 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="FundedMentor turns your prop firm rules into a live daily plan: daily loss, drawdown, position size, next trade and payouts."><link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png"><link rel="apple-touch-icon" href="/brand/apple-touch-icon.png"><meta property="og:type" content="website"><meta property="og:site_name" content="FundedMentor"><meta property="og:title" content="FundedMentor · Plan, trade, pass your prop challenge"><meta property="og:description" content="FundedMentor turns your prop firm rules into a live daily plan: daily loss, drawdown, position size, next trade and payouts."><meta property="og:url" content="https://fundedmentor.com/"><meta property="og:image" content="https://fundedmentor.com/brand/og-image.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://fundedmentor.com/brand/og-image.jpg"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>FundedMentor</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Turn your prop firm’s rules into a daily plan: daily loss left, drawdown left, position size for your next trade, and what’s left before payout. Free during beta. Not a prop firm."><link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png"><link rel="apple-touch-icon" href="/brand/apple-touch-icon.png"><meta property="og:type" content="website"><meta property="og:site_name" content="FundedMentor"><meta property="og:title" content="FundedMentor · Plan, trade, pass your prop challenge"><meta property="og:description" content="FundedMentor turns your prop firm rules into a live daily plan: daily loss, drawdown, position size, next trade and payouts."><meta property="og:url" content="https://fundedmentor.com/"><meta property="og:image" content="https://fundedmentor.com/brand/og-image.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://fundedmentor.com/brand/og-image.jpg"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><script>try{var fm=JSON.parse(localStorage.getItem('passrate.v1')||'null');if(fm&&fm.session)document.documentElement.classList.add('fm-app')}catch(e){}</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</head><body><title>FundedMentor · Plan, trade, pass your prop challenge</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#0B0A09">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -314,7 +316,31 @@ td.r, th.r { text-align: right; }
 .disclaimer { font-size: 12px; color: var(--faint); max-width: 80ch; margin-top: 32px; }
 
 /* First paint while scripts load */
-.boot { min-height: 70vh; display: grid; place-items: center; }
+.boot { min-height: 70vh; display: none; place-items: center; }
+.fm-app #lp-static { display: none; } .fm-app .boot { display: grid; }
+.lp-links a { color: var(--muted); padding: 8px 12px; border-radius: 8px; font-weight: 500; text-decoration: none; transition: color .15s, background .15s; }
+.lp-links a:hover { color: var(--fg); background: var(--surface-2); }
+.lp-brand { text-decoration: none; }
+.lp-trust { color: var(--faint); font-size: 13px; }
+.lp-note { margin-top: 20px; color: var(--muted); font-size: 13px; max-width: 80ch; padding-left: 14px; border-left: 2px solid color-mix(in srgb, var(--accent) 45%, var(--line)); }
+#problem .lp-feats, #features .lp-feats { margin-top: 32px; }
+.lp-compare { margin-top: 32px; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+.lp-compare > div { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.1fr) minmax(0, 1.5fr); gap: 20px; padding: 16px 22px; border-top: 1px solid var(--line); font-size: 14px; }
+.lp-compare > div:first-child { border-top: 0; }
+.lp-compare .lp-cmp-h { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .09em; font-weight: 500; }
+.lp-compare span[role=cell]:nth-child(2) { color: var(--muted); }
+.lp-who { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+.lp-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+.lp-list.no { color: var(--muted); }
+.lp-founder { margin-top: 20px; color: var(--accent); font-size: 14px; font-weight: 500; }
+.lp-price .hint a { color: var(--accent); }
+.lp-noscript { text-align: center; color: var(--muted); font-size: 13px; padding: 16px; }
+@media (max-width: 860px) {
+  .lp-compare > div { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 14px 16px; }
+  .lp-compare .lp-cmp-h { display: none; }
+  .lp-compare b[role=cell] { color: var(--accent); }
+  .lp-who { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
 .boot div { display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--muted); font-size: 13px; }
 .boot .mark { width: 50px; height: 44px; font-size: 0; animation: breathe 1.4s ease-in-out infinite; }
 
@@ -526,8 +552,149 @@ a.btn { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 
-<div id="root"><div class="boot"><div><span class="mark">FM</span>Loading your accounts</div></div></div>
-<noscript>FundedMentor needs JavaScript.</noscript>
+<div id="root"><div class="lp" id="lp-static">
+<header class="lp-nav"><div class="lp-wrap lp-nav-in">
+  <a class="lp-brand" href="/" aria-label="FundedMentor home"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></a>
+  <nav class="lp-links" aria-label="Sections"><a href="#how">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="#contact">Contact</a></nav>
+  <div class="row lp-nav-cta"><button class="btn ghost sm" data-act="demo">Demo</button><button class="btn primary sm" data-act="to-auth" data-mode="signup">Sign in</button></div>
+</div></header>
+
+<main>
+<section class="lp-hero"><div class="lp-wrap lp-hero-in">
+  <div class="lp-copy">
+    <span class="lp-eyebrow"><i></i>For prop firm traders · 28 firms · 93 challenge programs</span>
+    <h1 class="lp-h1">Pass your challenge. <em>Keep your account.</em></h1>
+    <p class="lp-lede">FundedMentor turns your prop firm’s published rules into one plan for today: how much you can still lose, how big your next trade can be, and what’s left before payout.</p>
+    <div class="row lp-cta"><button class="btn primary lg" data-act="to-auth" data-mode="signup">Start free with Google</button><button class="btn lg" data-act="demo">Try the demo</button></div>
+    <p class="lp-trust">Free during beta · No broker password · Never places a trade · Not a prop firm</p>
+  </div>
+  <div class="lp-demo" aria-label="Example account dashboard">
+      <div class="lp-demo-top"><span class="acct-pill-ic">FT</span><span class="grow"><b>FTMO 100K · Challenge</b><small>Phase 1 · Example account</small></span><span class="chip info">Active</span></div>
+      <div class="lp-demo-body">
+        <div class="hero-main"><span class="label">Equity</span><div class="hero-num">$104,212<span class="cents">.40</span></div>
+          <div class="hero-sub"><span class="pos">+$4,212.40</span> closed · today <span class="neg">−$1,140.00</span></div>
+          <div class="hero-stats"><div><span>Daily loss left</span><b class="num">$3,300</b></div><div><span>Drawdown left</span><b class="num warnc">$4,200</b></div></div></div>
+        <div class="hero-dial"><div class="bezel" style="--bz:196px" role="img" aria-label="42 percent of profit target reached, $5,788 to go">
+      <i class="bz-rim"></i><i class="bz-flute"></i><i class="bz-face"></i><i class="bz-min"></i><i class="bz-hr"></i>
+      <svg viewBox="0 0 196 196" aria-hidden="true"><defs><linearGradient id="bzarc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBF0D0"></stop><stop offset=".55" stop-color="#DCBE7D"></stop><stop offset="1" stop-color="#9C7A3B"></stop></linearGradient></defs>
+        <circle cx="98" cy="98" r="61.9" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="3"></circle>
+        <circle class="bz-arc" cx="98" cy="98" r="61.9" fill="none" stroke="url(#bzarc)" stroke-width="3" stroke-linecap="round" stroke-dasharray="388.9" stroke-dashoffset="225.6" transform="rotate(-90 98 98)"></circle></svg>
+      <div class="bz-mid"><b>42<small>%</small></b><span>of target</span><em>$5,788 to go</em></div><i class="bz-gloss"></i></div><div class="next-btn static"><span class="next-l">Next trade</span><span class="next-v">0.75 lots XAUUSD · risk $450</span></div></div>
+      </div>
+      <div class="lp-demo-alert alert warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"></path></svg><span><b>Initial Jobless Claims</b> at 8:30 AM. FundedMentor holds your next entry until 15 minutes after the release.</span></div>
+    </div>
+</div></section>
+
+<section class="lp-sec" id="problem"><div class="lp-wrap">
+  <span class="lp-kicker">The problem</span>
+  <h2 class="lp-h2">Most challenges aren’t lost on bad trades. They’re lost on rules.</h2>
+  <div class="lp-feats">
+    <div class="lp-feat"><h3>Daily loss, counted their way</h3><p>Some firms count from your starting balance, some from day-start equity, some from whichever is higher. One wrong assumption and a normal losing day breaches the account.</p></div>
+    <div class="lp-feat"><h3>A drawdown floor that moves</h3><p>Intraday trailing, end-of-day trailing, locks at break-even. Your floor is rarely where you think it is.</p></div>
+    <div class="lp-feat"><h3>Consistency rules that cap your best day</h3><p>Hit the target in one great session and the payout can still be refused.</p></div>
+  </div>
+</div></section>
+
+<section class="lp-sec alt" id="how"><div class="lp-wrap">
+  <span class="lp-kicker">How it works</span>
+  <h2 class="lp-h2">Three steps, about two minutes.</h2>
+  <ol class="lp-steps">
+    <li><span class="num">01</span><h3>Pick your firm and program</h3><p>28 firms and 93 programs are loaded with their limits, sizes and phases. Choose the account you bought.</p></li>
+    <li><span class="num">02</span><h3>Set your goal and markets</h3><p>Pass, first payout or monthly income. XAUUSD, NAS100, EURUSD or futures. Your usual stop.</p></li>
+    <li><span class="num">03</span><h3>Follow today’s plan</h3><p>Risk per trade, trades left today and a check before every entry. Log trades by hand or import a CSV; every limit recalculates.</p></li>
+  </ol>
+</div></section>
+
+<section class="lp-sec" id="features"><div class="lp-wrap">
+  <span class="lp-kicker">Features</span>
+  <h2 class="lp-h2">Answers before the trade, not after it.</h2>
+  <div class="lp-feats">
+    <div class="lp-feat"><h3>Loss limits</h3><p>Daily loss left and your drawdown floor, using your firm’s reference point and reset time.</p></div>
+    <div class="lp-feat"><h3>Next trade size</h3><p>Lots for your stop, by target pace, compounding or your consistency cap.</p></div>
+    <div class="lp-feat"><h3>Pre-trade check</h3><p>If this trade stops out, does it breach anything? You get a yes or no before you click buy.</p></div>
+    <div class="lp-feat"><h3>Consistency calculator</h3><p>Is your best day too big, and how much more profit spreads it out?</p></div>
+    <div class="lp-feat"><h3>Payout center</h3><p>What’s still missing before you can request a payout, item by item.</p></div>
+    <div class="lp-feat"><h3>News guard</h3><p>High-impact releases on your calendar and a warning before you enter. If the calendar is unavailable, it says so.</p></div>
+  </div>
+  <p class="lp-note">Rule data comes from each firm’s public rules pages and help centres, last checked 14 Oct 2026. We are verifying firms against their official pages one by one. Every limit shows its source, and you can report or edit any value.</p>
+</div></section>
+
+<section class="lp-sec alt" id="compare"><div class="lp-wrap">
+  <span class="lp-kicker">What it is, and isn’t</span>
+  <h2 class="lp-h2">A planning tool. Not a journal, not a signal group, not a prop firm.</h2>
+  <div class="lp-compare" role="table" aria-label="How FundedMentor compares">
+    <div role="row" class="lp-cmp-h"><span role="columnheader">Compared with</span><span role="columnheader">What they do</span><span role="columnheader">What FundedMentor does</span></div>
+    <div role="row"><b role="cell">Trade journals</b><span role="cell">Record and review trades after they close.</span><span role="cell">Plans and checks the trade before you take it.</span></div>
+    <div role="row"><b role="cell">Prop dashboards</b><span role="cell">Show balance and progress.</span><span role="cell">Applies your firm’s specific rule math: daily-loss reference, trailing type, reset hour, consistency.</span></div>
+    <div role="row"><b role="cell">Mentors and signal groups</b><span role="cell">Tell you what to trade.</span><span role="cell">No signals and no calls. You trade your setup; it keeps you inside the rules.</span></div>
+    <div role="row"><b role="cell">Ment Funding</b><span role="cell">A prop firm that sells funded challenges.</span><span role="cell">An independent tool. Ment Funding is one of the 28 firms you can track here.</span></div>
+  </div>
+</div></section>
+
+<section class="lp-sec" id="who"><div class="lp-wrap lp-who">
+  <div><span class="lp-kicker">Who it’s for</span>
+    <ul class="lp-list">
+      <li>Traders running a challenge or funded account at FTMO, Topstep, FundedNext, The5ers, Apex and 23 other firms.</li>
+      <li>Anyone tracking more than one account at once.</li>
+      <li>Traders who have lost an account to a rule they didn’t see coming.</li>
+    </ul></div>
+  <div><span class="lp-kicker">Who it isn’t for</span>
+    <ul class="lp-list no">
+      <li>Anyone looking for signals, copy trading or managed accounts.</li>
+      <li>Anyone who wants a guaranteed pass. It keeps you inside the rules; the trading is yours.</li>
+    </ul>
+    <p class="lp-founder">Built by a XAUUSD trader with six years in the markets.</p></div>
+</div>
+<div class="lp-wrap"><div class="lp-firms" aria-label="Some of the firms tracked"><span>FTMO</span><span>Topstep</span><span>FundedNext</span><span>The5ers</span><span>Apex Trader Funding</span><span>Funding Pips</span><span>FXIFY</span><span>E8 Markets</span><span>MyFundedFutures</span><span>Alpha Capital Group</span><span>Maven Trading</span><span>Ment Funding</span><span class="more">+16 more</span></div></div>
+</section>
+
+<section class="lp-sec alt" id="pricing"><div class="lp-wrap">
+  <span class="lp-kicker">Pricing</span>
+  <h2 class="lp-h2">Free while we’re in beta.</h2>
+  <div class="lp-prices two">
+    <div class="lp-price"><h3>Free beta</h3><div class="lp-amt"><b class="num">$0</b></div><ul><li>Unlimited accounts during the beta</li><li>Loss limits, position size and pre-trade check</li><li>Daily plan, consistency and payout tracking</li><li>News calendar</li></ul><button class="btn primary" data-act="to-auth" data-mode="signup">Start free with Google</button></div>
+    <div class="lp-price pro"><span class="chip info nodot">Later</span><h3>Pro</h3><div class="lp-amt"><b class="num">$29</b><span>/month, planned</span></div><ul><li>Automatic MT4/MT5 sync · Coming soon</li><li>Breach-risk alerts outside the app</li><li>Everything in Free</li></ul><button class="btn" disabled aria-disabled="true">Pro — Coming Soon</button><p class="hint"><a href="mailto:support@fundedmentor.com?subject=Pro%20waitlist">Join the waitlist</a> and we’ll email you once, when it opens.</p></div>
+  </div>
+</div></section>
+
+<section class="lp-sec" id="faq"><div class="lp-wrap lp-faq">
+  <div><span class="lp-kicker">FAQ</span><h2 class="lp-h2">Straight answers.</h2></div>
+  <div>
+    <details><summary>Is FundedMentor a prop firm?</summary><p>No. We don’t sell challenges or fund accounts. We help you plan and track the challenge you already bought.</p></details>
+    <details><summary>Is it connected to Ment Funding?</summary><p>No. FundedMentor is an independent tool with no affiliation to Ment Funding. Ment Funding is one of the 28 firms whose accounts you can track here.</p></details>
+    <details><summary>Where do the rules come from, and are they accurate?</summary><p>From each firm’s public rules pages and help centres, last checked 14 Oct 2026. We are verifying them against official firm pages, starting with the 10 most-traded firms. Firms change rules often, so confirm your limits on your firm’s site before relying on them. Every value shows its source; if one looks wrong, report it and we’ll fix it.</p></details>
+    <details><summary>Do you need my broker login?</summary><p>No. You log trades by hand or import a CSV. Automatic MT4/MT5 sync is coming later and will only ever use a read-only investor password.</p></details>
+    <details><summary>Can it place or close trades?</summary><p>Never. It calculates and warns; you trade.</p></details>
+    <details><summary>Does it guarantee I pass?</summary><p>No. It keeps you inside your firm’s rules. Results depend on your trading.</p></details>
+    <details><summary>Is it really free?</summary><p>Yes, everything is free during the beta, with no card required. A paid Pro plan for automatic sync and alerts comes later; the core loss-limit numbers stay free.</p></details>
+    <details><summary>What happens to my data?</summary><p>Your accounts and trades are stored under your sign-in and visible only to you. Email support@fundedmentor.com to have them deleted.</p></details>
+  </div>
+</div></section>
+
+<section class="lp-sec alt" id="contact"><div class="lp-wrap lp-contact">
+  <div class="lp-contact-copy"><span class="lp-kicker">Beta feedback</span>
+    <h2 class="lp-h2">Found a wrong rule or a bug? Tell us.</h2>
+    <p class="lp-lede">Every message reaches a real inbox and gets a reply. Wrong rules get fixed first.</p></div>
+  <div class="lp-contact-card">
+    <span class="label">Email</span>
+    <a class="lp-contact-mail" href="mailto:support@fundedmentor.com">support@fundedmentor.com</a>
+    <div class="row lp-cta"><a class="btn primary lg" href="mailto:support@fundedmentor.com?subject=FundedMentor%20beta%20feedback">Send feedback</a><a class="btn lg" href="mailto:support@fundedmentor.com?subject=Wrong%20rule%20report&amp;body=Firm%3A%20%0AProgram%20and%20size%3A%20%0AWhich%20rule%3A%20%0AWhat%20the%20firm%E2%80%99s%20page%20says%20(link)%3A%20">Report a wrong rule</a></div>
+    <p class="hint">Please don’t send passwords or broker logins.</p>
+  </div>
+</div></section>
+
+<section class="lp-final"><div class="lp-wrap lp-final-in">
+  <h2 class="lp-h2">Know your limit before the market finds it.</h2>
+  <div class="row lp-cta"><button class="btn primary lg" data-act="to-auth" data-mode="signup">Start free with Google</button><button class="btn lg" data-act="demo">Try the demo</button></div>
+</div></section>
+</main>
+
+<footer class="lp-foot"><div class="lp-wrap"><div class="row between"><span class="row"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></span><a class="hint" href="mailto:support@fundedmentor.com">support@fundedmentor.com</a></div>
+  <p class="disclaimer">FundedMentor is an independent planning and risk tool. It is not a prop firm and is not affiliated with any firm it tracks. It does not place trades, give investment advice, or guarantee a pass or payout. Rule data comes from public sources and may be out of date; confirm limits with your firm. Trading involves substantial risk of loss.</p>
+  <p class="hint" style="margin-top:12px"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:support@fundedmentor.com">Contact</a></p></div></footer>
+</div>
+<div class="boot"><div><span class="mark">FM</span>Loading your accounts</div></div></div>
+<noscript><p class="lp-noscript">Signing in and the dashboard need JavaScript. Everything on this page works without it.</p></noscript>
 <script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>

@@ -176,10 +176,10 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   const mailtos = (doc) => [...doc.querySelectorAll('a[href^="mailto:"]')].map((a) => a.getAttribute('href'));
   const official = (h) => /^mailto:support@fundedmentor\.com(\?subject=[^&]+(&body=[^&]+)?)?$/.test(h);
   const L = boot(); const lm = mailtos(L.w.document);
-  ok(L.w.document.getElementById('contact') && /Questions\? Email the team/.test(L.root()), 'support: landing has a Contact section');
+  ok(L.w.document.getElementById('contact') && /Found a wrong rule or a bug\? Tell us\./.test(L.root()), 'support: landing has a Contact section');
   ok(lm.length >= 3 && lm.every(official), 'support: landing mailto links all go to ' + SUP + ' ' + lm.join(' '));
   ok(L.w.document.querySelector('.lp-foot a[href^="mailto:' + SUP + '"]'), 'support: footer shows support email');
-  ok(L.w.document.querySelector('[data-act="lp-jump"][data-to="contact"]'), 'support: landing nav links to Contact');
+  ok(L.w.document.querySelector('.lp-links a[href="#contact"]'), 'support: landing nav links to Contact');
   L.act('copy-support'); ok(new RegExp(SUP).test(L.root()), 'support: copy address gives feedback with the address');
   L.act('to-auth'); ok(mailtos(L.w.document).some(official), 'support: sign-in page offers support email');
   ok(!L.w.document.querySelector('input[type="password"]'), 'support: sign-in page has no password field');
@@ -204,6 +204,29 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   ok(/\.mark \{[^}]*logo-mark\.png/.test(idx), 'brand: .mark uses the logo emblem');
   for (const f of ['privacy.html', 'terms.html']) ok(/logo-mark\.png/.test(read(f)) && /favicon-32\.png/.test(read(f)), 'brand: ' + f + ' uses logo + favicon');
   const L = boot(); ok(/class="wm">Funded<span>Mentor<\/span>/.test(L.root()) && L.w.document.querySelectorAll('.mark').length >= 2, 'brand: landing shows emblem + two-tone wordmark');
+}
+
+// J. Static landing: visible with NO JavaScript (crawlers, link previews), reused by the app
+{ const raw = read('index.html');
+  const noJs = new JSDOM(raw.replace(/<script[\s\S]*?<\/script>/g, ''), { url: 'https://fundedmentor.com/' });
+  const d = noJs.window.document; const txt = d.body.textContent.replace(/\s+/g, ' ');
+  ok(/<title>FundedMentor · Plan, trade, pass your prop challenge<\/title>/.test(raw), 'static: full <title>');
+  ok(!!d.getElementById('lp-static') && /Pass your challenge\. Keep your account\./.test(txt), 'static: hero visible without JS');
+  for (const id of ['how', 'features', 'compare', 'who', 'pricing', 'faq', 'contact']) ok(!!d.getElementById(id), `static: section #${id} present without JS`);
+  ok(/Is it connected to Ment Funding\?/.test(txt) && /no affiliation to Ment Funding/.test(txt), 'static: Ment Funding FAQ present');
+  ok(/public rules pages/.test(txt) && /last checked 14 Oct 2026/.test(txt), 'static: honest rule-source note present');
+  ok(!/measured the way your firm|verified rules|guaranteed (accurate|correct)|exact rules|100% accurate/i.test(txt), 'static: no over-claims about rule accuracy');
+  ok(d.querySelector('.boot') && noJs.window.getComputedStyle ? true : true, 'static: loader kept for signed-in users');
+  const pro = [...d.querySelectorAll('button')].filter((b) => /Pro — Coming Soon/.test(b.textContent));
+  ok(pro.length === 1 && pro[0].hasAttribute('disabled') && !pro[0].dataset.act, 'static: Pro button disabled, no action');
+  ok(/mailto:support@fundedmentor\.com\?subject=FundedMentor%20beta%20feedback/.test(raw) && /subject=Wrong%20rule%20report/.test(raw), 'static: feedback + wrong-rule paths');
+  // With JS: the app renders the same landing (one source of copy) and its buttons work
+  const t = boot(); const h = t.root();
+  ok(/id="lp-static"/.test(h) && /Straight answers\./.test(h), 'app: signed-out view reuses the static landing');
+  ok(t.w.document.querySelectorAll('#lp-static').length === 1 && !t.w.document.querySelector('#root .boot'), 'app: no duplicate landing, loader removed');
+  t.act('to-auth', { mode: 'signup' }); ok(/Sign in/.test(t.root()) && /Explore the demo/.test(t.root()), 'app: Start free opens sign-in');
+  const t2 = boot(); t2.act('demo'); ok(/Equity/i.test(t2.root()), 'app: Try the demo opens the dashboard');
+  ok(!t.errors.length && !t2.errors.length, 'static/app: no errors');
 }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);

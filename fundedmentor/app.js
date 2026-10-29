@@ -1,6 +1,9 @@
 /* FUNDEDMENTOR — application layer. Rendering + state. All numbers come from engine.js (window.PR). */
 (function () {
   'use strict';
+  // The public landing page is plain HTML in index.html (#lp-static) so it is visible without
+  // JavaScript (search engines, link previews). The app reuses that exact markup: one source of copy.
+  const STATIC_LP = (() => { const n = document.getElementById('lp-static'); return n ? n.outerHTML : ''; })();
   const PR = window.PR, FIRMS = window.FIRMS, META = window.RULE_META;
   const STORE = 'passrate.v1';
   const DAY = 86400000;
@@ -353,6 +356,7 @@
     });
   }
   function render() {
+    document.documentElement.classList.remove('fm-app'); // pre-paint hint from index.html; the app decides from here
     applyTheme();
     if (!state.session) { paint((ui.route === 'auth' ? authPage() : landing()) + (ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : '')); if (ui.route === 'auth') mountGoogleButton(); return; }
     const acct = active();
@@ -1462,6 +1466,7 @@
     </div>`;
   }
   function landing() {
+    if (STATIC_LP) return STATIC_LP;
     const n = FIRMS.filter((f) => !f.custom).length;
     const F = [
       ['spark', 'Your next trade, sized', 'Lots, stop and target for the next trade, from your target, compounding or consistency rule.'],
