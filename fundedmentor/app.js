@@ -391,6 +391,7 @@
       ${ui.next && acct && c ? nextSheet(acct, c) : ''}
       ${ui.copilot && acct ? copilot(acct, c) : ''}
       ${ui.upgrade ? upgradeSheet() : ''}
+      ${ui.logoutAsk ? `<div class="overlay" data-act="logout-no"><div class="sheet" data-stop role="dialog" aria-label="Log out"><div class="sheet-h"><h2>Log out?</h2><button class="btn ghost sm" data-act="logout-no" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div><div class="sheet-b"><div class="stack" style="gap:14px"><p class="muted">Your accounts and trades stay saved to your Google sign-in. Sign in again any time to pick up where you left off.</p><div class="row"><button class="btn primary" data-act="logout-yes">Log out</button><button class="btn ghost" data-act="logout-no">Cancel</button></div></div></div></div></div>` : ''}
       ${ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : ''}`);
     if (ui.copilot) { const m = $('.msgs'); if (m) m.scrollTop = m.scrollHeight; }
   }
@@ -1562,7 +1563,14 @@
       case 'lp-jump': { const t = document.getElementById(el.dataset.to); if (t) t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); return; }
       case 'demo': state.session = { email: '', demo: true, ts: Date.now() }; if (!state.accounts.length) { const s0 = seed(); state.accounts = s0.accounts; state.activeId = s0.activeId; } state.view = 'overview'; save(); render(); window.scrollTo(0, 0); return;
       case 'google': if (!sb) { ui.authErr = 'Google sign-in works on fundedmentor.com. Open the site there to sign in.'; break; } ui.authBusy = true; render(); sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + '/', queryParams: { prompt: 'select_account' } } }).then(({ error }) => { if (error) { ui.authBusy = false; ui.authErr = /not enabled|provider/i.test(error.message) ? 'Google sign-in is being switched on. Try again shortly or explore the demo.' : error.message; render(); } }); return;
-      case 'logout': if (sb && cloudUser) { sb.auth.signOut().catch(() => {}); cloudUser = null; } state.session = null; ui.route = 'landing'; ui.menu = false; ui.more = false; ui.copilot = false; save(); render(); window.scrollTo(0, 0); return;
+      case 'logout': ui.logoutAsk = true; ui.menu = false; ui.more = false; break;
+      case 'logout-no': ui.logoutAsk = false; break;
+      case 'logout-yes': {
+        // Clear the saved Google session locally first, so a refresh right after can't sign back in.
+        try { Object.keys(localStorage).filter((k) => /^sb-.*-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* storage blocked */ }
+        if (sb) sb.auth.signOut({ scope: 'local' }).catch(() => {});
+        cloudUser = null; state.session = null; ui.logoutAsk = false; ui.route = 'landing'; ui.menu = false; ui.more = false; ui.copilot = false; save(); render(); window.scrollTo(0, 0); return;
+      }
       case 'go': state.view = el.dataset.v; ui.more = false; ui.menu = false; ui.confirm = null; save(); render(); window.scrollTo(0, 0); return;
       case 'copy-support': copySupport(); return;
       case 'more': ui.more = true; break;

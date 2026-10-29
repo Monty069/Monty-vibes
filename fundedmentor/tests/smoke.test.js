@@ -229,5 +229,17 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   ok(!t.errors.length && !t2.errors.length, 'static/app: no errors');
 }
 
+// K. Logout: asks first, and clears the saved sign-in so a refresh can't log back in
+{ const t = boot(); t.act('demo');
+  t.w.localStorage.setItem('sb-zikowizjdkzgexgdjhuw-auth-token', '{"access_token":"x"}');
+  t.act('logout'); ok(/Log out\?/.test(t.root()) && /id="lp-static"/.test(t.root()) === false, 'logout: asks for confirmation first');
+  t.act('logout-no'); ok(!/Log out\?/.test(t.root()) && /Equity/i.test(t.root()), 'logout: Cancel keeps you signed in');
+  ok(!!t.w.localStorage.getItem('sb-zikowizjdkzgexgdjhuw-auth-token'), 'logout: Cancel keeps saved sign-in');
+  t.act('logout'); t.act('logout-yes');
+  ok(/id="lp-static"/.test(t.root()), 'logout: confirm returns to landing');
+  ok(!t.w.localStorage.getItem('sb-zikowizjdkzgexgdjhuw-auth-token'), 'logout: saved Google sign-in cleared immediately');
+  ok(!JSON.parse(t.w.localStorage.getItem('passrate.v1')).session, 'logout: app session cleared');
+  ok(!t.errors.length, 'logout: no errors'); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
