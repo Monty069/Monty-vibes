@@ -371,5 +371,16 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const t3 = boot({ state: base(manual()) }); t3.act('go', { v: 'plan' }); ok(/Risk per trade/.test(t3.root()), 'cpday: prop accounts keep the normal Daily Plan');
   ok(!t.errors.length && !t3.errors.length, 'cpday: no errors ' + t.errors.join(' | ')); }
 
+// S. WeMasterTrade partner link + FUNDEDMENTOR code
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document; const REF = 'https://my.wemastertrade.com/register?ref=390283';
+  t.act('wizard'); const wb = doc.querySelector('[data-act="w-firm"][data-id="wemastertrade"]'); ok(wb && /35% off/.test(wb.textContent), 'partner: deal shown on WeMasterTrade in Add account');
+  t.act('w-firm', { id: 'wemastertrade' }); t.act('w-next'); let h = t.root();
+  ok(h.includes(REF) && /FUNDEDMENTOR/.test(h) && /may earn a commission/.test(h), 'partner: link, code and disclosure on the model step');
+  t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'wemastertrade' }); h = t.root();
+  ok(h.includes(REF) && /Buy · 35% off/.test(h) && /FUNDEDMENTOR/.test(h), 'partner: Firm Rules shows buy link and code');
+  t.act('rule-firm', { id: 'ftmo' }); ok(!t.root().includes(REF), 'partner: other firms unaffected');
+  t.act('copy-code', { code: 'FUNDEDMENTOR' }); ok(/FUNDEDMENTOR/.test(t.root()), 'partner: copy code confirms');
+  ok(!t.errors.length, 'partner: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
