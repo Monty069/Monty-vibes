@@ -47,6 +47,7 @@
     chev: 'M6 9l6 6 6-6',
     ext: 'M14 3h7v7M21 3l-9 9M10 5H5v14h14v-5',
     mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+    compound: 'M3 17l6-6 4 4 8-8M14 7h7v7',
   };
   const icon = (k, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${P[k]}"/></svg>`;
 
@@ -68,7 +69,7 @@
   }
 
   const NAV = [
-    ['overview', 'Overview'], ['calendar', 'Performance'], ['finder', 'Find a Prop'], ['accounts', 'My Accounts'], ['plan', 'Daily Plan'], ['calc', 'Position Size'], ['check', 'Pre-Trade Check'],
+    ['overview', 'Overview'], ['calendar', 'Performance'], ['finder', 'Find a Prop'], ['accounts', 'My Accounts'], ['plan', 'Daily Plan'], ['calc', 'Position Size'], ['compound', 'Compounding'], ['check', 'Pre-Trade Check'],
     ['consistency', 'Consistency'], ['payout', 'Payout Center'], ['rules', 'Firm Rules'], ['trades', 'Trade History'], ['reports', 'Reports'], ['settings', 'Settings'],
   ];
   const TABS = [['overview', 'Home'], ['calendar', 'Calendar'], ['check', 'Check'], ['calc', 'Size'], ['more', 'More']];
@@ -362,12 +363,12 @@
     const acct = active();
     const c = acct ? compute(acct) : null;
     const v = state.view;
-    const body = !acct && !['rules', 'settings', 'accounts', 'finder'].includes(v) ? viewEmpty() : VIEWS[v] ? VIEWS[v](acct, c) : viewEmpty();
+    const body = !acct && !['rules', 'settings', 'accounts', 'finder', 'compound'].includes(v) ? viewEmpty() : VIEWS[v] ? VIEWS[v](acct, c) : viewEmpty();
     paint(`
       <div class="app">
         <aside class="side">
           <div class="brand"><div class="mark" aria-hidden="true">FM</div><div><b class="wm">Funded<span>Mentor</span></b><small>Prop challenge copilot</small></div></div>
-          <nav class="nav" aria-label="Main">${NAV.map(([k, l], i) => `${i === 9 ? '<div class="sep"></div>' : ''}<button data-act="go" data-v="${k}" ${v === k ? 'aria-current="page"' : ''}>${icon(k)}${l}</button>`).join('')}</nav>
+          <nav class="nav" aria-label="Main">${NAV.map(([k, l], i) => `${k === 'rules' ? '<div class="sep"></div>' : ''}<button data-act="go" data-v="${k}" ${v === k ? 'aria-current="page"' : ''}>${icon(k)}${l}</button>`).join('')}</nav>
           <a class="side-help" href="${esc(appSupportHref())}">${icon('mail')}Contact support</a>
           <div class="side-foot"><span class="acct-pill-ic">${esc(((state.profile && state.profile.name) || 'U').slice(0, 1).toUpperCase())}</span><span class="grow"><b>${esc((state.profile && state.profile.name) || 'Trader')}</b><small>${esc((state.profile && state.profile.email) || 'Signed in')}</small></span><button class="btn ghost sm" data-act="logout">Log out</button></div>
         </aside>
@@ -823,6 +824,88 @@
 
   // Position size calculator
   function calcDefaults(a) { return { inst: a.instrument || 'XAUUSD', mode: 'pct', risk: '0.5', stopBy: 'distance', dist: String(a.stopDistance || ''), entry: '', stop: '', tp: '', comm: String(a.commissionPerLot ?? ''), rate: '', cs: '' }; }
+  // ---------- compounding planner ----------
+  // The trader gives what they have and a profit % per trade; the app solves for trades/days to a target,
+  // or the balance after N days / N trades. Optional: a consistency cap and step-down % above balance levels.
+  function cpDefaults(a, c) { return { start: String(c ? Math.round(c.s.equity) : 10000), pct: '2', solve: 'target', target: String(c ? Math.round(c.s.equity * 1.1) : 12000), days: '20', trades: '20', perDay: '1', rr: '2', cons: '', tiers: [], inst: a && PR.INSTRUMENTS[a.instrument] ? a.instrument : 'XAUUSD', stop: a ? String(a.stopDistance || 5) : '5' }; }
+  function compoundPlan(f) {
+    const start = Number(f.start), base = Number(f.pct), perDay = Math.max(1, Math.floor(Number(f.perDay) || 1)), solve = f.solve || 'target', target = Number(f.target);
+    const tiers = (f.tiers || []).map((t) => ({ at: Number(t.at), pct: Number(t.pct) })).filter((t) => t.at > 0 && t.pct > 0).sort((x, y) => x.at - y.at);
+    const pctAt = (bal) => { let p = base; for (const t of tiers) if (bal >= t.at) p = t.pct; return p; };
+    if (!(start > 0)) return { err: 'Enter the amount you have now.' };
+    if (!(base > 0)) return { err: 'Enter your profit per trade (%).' };
+    if (solve === 'target' && !(target > start)) return { err: 'Set a target above the amount you have.' };
+    const limit = solve === 'trades' ? Math.floor(Number(f.trades)) : solve === 'days' ? Math.floor(Number(f.days)) * perDay : 5000;
+    if (!(limit > 0)) return { err: solve === 'trades' ? 'Enter how many trades.' : 'Enter how many days.' };
+    if (limit > 5000) return { err: 'Keep it under 5,000 trades.' };
+    const cons = Number(f.cons) > 0 ? Number(f.cons) : 0;
+    const dayCap = cons && solve === 'target' ? (target - start) * cons / 100 : Infinity;
+    let bal = start, n = 0, day = null; const days = [];
+    while (n < limit) {
+      if (!day || day.trades >= perDay || day.capped) { day = { d: days.length + 1, open: bal, profit: 0, trades: 0, pct: pctAt(bal) }; days.push(day); }
+      let gain = bal * pctAt(bal) / 100;
+      if (dayCap < Infinity) gain = Math.min(gain, dayCap - day.profit);
+      if (solve === 'target') gain = Math.min(gain, target - bal);
+      bal += gain; day.profit += gain; day.trades++; day.close = bal; n++;
+      if (dayCap < Infinity && day.profit >= dayCap - 1e-6) day.capped = true;
+      if (solve === 'target' && bal >= target - 1e-6) break;
+    }
+    if (solve === 'target' && bal < target - 1e-6) return { err: 'That target needs more than 5,000 trades at this %. Raise the % or lower the target.' };
+    const total = bal - start; const best = days.reduce((m, d) => Math.max(m, d.profit), 0);
+    const share = total > 0 ? best / total * 100 : 0;
+    const first = Math.min(start * pctAt(start) / 100, dayCap, solve === 'target' ? target - start : Infinity);
+    return { start, end: bal, total, trades: n, days, perDay, tiers, cons, share, consOk: !cons || share <= cons + 1e-6, dayCap, first, solve };
+  }
+  function cpNext(f, r) {
+    const rr = Number(f.rr) > 0 ? Number(f.rr) : 2; const spec = PR.INSTRUMENTS[f.inst]; const stop = Number(f.stop);
+    const out = { rr, profit: r.first, risk: r.first / rr };
+    if (!spec || !(stop > 0)) return Object.assign(out, { note: 'Pick an instrument and your usual stop to get a lot size.' });
+    const z = PR.positionSize({ spec, stopDistance: stop, risk: out.risk, riskMode: 'amount', equity: r.start, accountCcy: 'USD', commissionPerLot: 0 });
+    if (!z.ok || !z.lots) return Object.assign(out, { note: z.reason || 'Risk is below the minimum lot size for this stop.' });
+    return Object.assign(out, { lots: z.lots, actual: z.actualRisk, spec, stop, tp: stop * rr });
+  }
+  function cpOut(f) {
+    const r = compoundPlan(f);
+    if (r.err) return `<p class="muted">${esc(r.err)}</p>`;
+    const nx = cpNext(f, r); const dn = r.days.length;
+    const head = r.solve === 'target'
+      ? `<h2>${fmt$(r.end, 0)} in ${r.trades} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">At up to ${r.perDay} trade${r.perDay === 1 ? '' : 's'} a day. Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%).</p>`
+      : `<h2>${fmt$(r.end, 0)} after ${r.trades} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%) from ${fmt$(r.start, 0)}.</p>`;
+    const next = `<div class="panel" style="margin:12px 0"><span class="label">Next best trade</span>
+      ${nx.lots ? `<p style="margin:6px 0"><b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})</p>` : ''}
+      <dl class="kv"><dt>Aim to make</dt><dd>${fmt$(nx.profit)}</dd><dt>Risk</dt><dd>${fmt$(nx.actual != null ? nx.actual : nx.risk)}</dd><dt>Per-trade %</dt><dd>${r.days[0].pct}% of ${fmt$(r.start, 0)}</dd></dl>
+      ${nx.note ? `<p class="hint">${esc(nx.note)}</p>` : ''}</div>`;
+    let cons = '';
+    if (r.cons) cons = r.solve === 'target'
+      ? `<div class="alert ok">${icon('ok')}<span>Consistency ${r.cons}%: no day goes above ${fmt$(r.dayCap, 0)} (${r.cons}% of the ${fmt$(r.total, 0)} profit). Stop for the day once you hit it.</span></div>`
+      : r.consOk ? `<div class="alert ok">${icon('ok')}<span>Best day is ${r.share.toFixed(1)}% of total profit, inside your ${r.cons}% rule.</span></div>`
+        : `<div class="alert warn">${icon('warn')}<span>Best day would be ${r.share.toFixed(1)}% of total profit, over your ${r.cons}% rule. Switch to “Reach a target” to cap each day, or lower the % per trade.</span></div>`;
+    const tierNote = r.tiers.length ? `<p class="hint" style="margin-bottom:8px">Steps: ${r.tiers.map((t) => `${t.pct}% from ${fmt$(t.at, 0)}`).join(' · ')}.</p>` : '';
+    const rows = r.days.length > 45 ? r.days.slice(0, 30).concat([null], r.days.slice(-10)) : r.days;
+    const table = `<div class="tw"><table><thead><tr><th>Day</th><th class="r">Trades</th><th class="r">Start</th><th class="r">% / trade</th><th class="r">Profit</th><th class="r">End</th></tr></thead><tbody>
+      ${rows.map((d) => d ? `<tr><td>${d.d}</td><td class="r num">${d.trades}</td><td class="r num">${fmt$(d.open, 0)}</td><td class="r num">${d.pct}%</td><td class="r num pos">${sgn$(d.profit)}</td><td class="r num">${fmt$(d.close, 0)}</td></tr>` : `<tr><td colspan="6" class="muted">…</td></tr>`).join('')}</tbody></table></div>`;
+    return `${head}${next}${cons}${tierNote}${table}<p class="hint">Assumes every trade wins at your %. At 1:${nx.rr}, one loss wipes out ${(100 / nx.rr).toFixed(0)}% of a win. Update “Amount I have” after each trade and the plan resets.</p>`;
+  }
+  VIEWS.compound = (a, c) => {
+    const f = state.compound || (state.compound = cpDefaults(a, c)); f.tiers = f.tiers || [];
+    const num = (k, label, extra = '') => `<label class="field"><span>${label}</span><input class="input num" id="cp-${k}" type="number" inputmode="decimal" step="any" min="0" data-cp="${k}" value="${esc(f[k])}" ${extra}></label>`;
+    const solves = [['target', 'Reach a target'], ['days', 'In N days'], ['trades', 'In N trades']];
+    return `${pageHead('Compounding Planner', 'Tell it what you have and your profit per trade. It works out the rest and sizes your next trade.')}
+      <div class="grid g2">
+        <section class="panel"><div class="stack" style="gap:14px">
+          <div class="grid g2" style="gap:12px">${num('start', 'Amount I have ($)')}${num('pct', 'Profit per trade (%)')}</div>
+          <div class="field"><span>Work out</span><div class="seg" role="group">${solves.map(([k, l]) => `<button data-act="cp-solve" data-v="${k}" aria-pressed="${f.solve === k}">${l}</button>`).join('')}</div></div>
+          <div class="grid g2" style="gap:12px">${f.solve === 'target' ? num('target', 'Target balance ($)') : f.solve === 'days' ? num('days', 'Days') : num('trades', 'Total trades')}${num('perDay', 'Max trades a day', 'step="1" min="1"')}</div>
+          <div class="grid g2" style="gap:12px">${num('cons', 'Consistency rule (%)', 'placeholder="none"')}${num('rr', 'Reward : risk (1:x)')}</div>
+          <div class="grid g2" style="gap:12px"><label class="field"><span>Instrument</span><select class="input" id="cp-inst" data-cp="inst">${Object.keys(PR.INSTRUMENTS).map((k) => `<option ${k === f.inst ? 'selected' : ''}>${k}</option>`).join('')}</select></label>${num('stop', 'Usual stop (' + esc((PR.INSTRUMENTS[f.inst] || {}).distUnit || 'price') + ')')}</div>
+          <div class="field"><span>Change % at a balance</span>
+            ${f.tiers.map((t, i) => `<div class="row" style="gap:8px;flex-wrap:nowrap;margin-bottom:6px"><input class="input num" type="number" inputmode="decimal" min="0" step="any" data-cpt="${i}:at" value="${esc(t.at)}" placeholder="From balance $" aria-label="From balance"><input class="input num" type="number" inputmode="decimal" min="0" step="any" data-cpt="${i}:pct" value="${esc(t.pct)}" placeholder="% per trade" aria-label="Percent per trade"><button class="btn ghost sm" data-act="cp-tier-del" data-i="${i}" aria-label="Remove step">${icon('x', 'width="14" height="14"')}</button></div>`).join('')}
+            ${f.tiers.length < 4 ? `<button class="btn sm" data-act="cp-tier-add">${icon('plus', 'width="14" height="14"')}Add a step</button>` : ''}
+            <span class="hint">Example: from $15,000 drop to 1% per trade to protect gains.</span></div>
+        </div></section>
+        <section class="panel" id="cp-out">${cpOut(f)}</section>
+      </div>`;
+  };
   VIEWS.calc = (a, c) => {
     if (!c) return viewEmpty();
     const f = ui.calc || (ui.calc = calcDefaults(a));
@@ -1598,6 +1681,9 @@
       case 'go': state.view = el.dataset.v; ui.more = false; ui.menu = false; ui.confirm = null; save(); render(); window.scrollTo(0, 0); return;
       case 'copy-support': copySupport(); return;
       case 'more': ui.more = true; break;
+      case 'cp-solve': state.compound.solve = el.dataset.v; save(); break;
+      case 'cp-tier-add': state.compound.tiers.push({ at: '', pct: '' }); save(); break;
+      case 'cp-tier-del': state.compound.tiers.splice(Number(el.dataset.i), 1); save(); break;
       case 'close-more': ui.more = false; break;
       case 'menu': ui.menu = !ui.menu; break;
       case 'close-menu': ui.menu = false; break;
@@ -1724,6 +1810,11 @@
   // Inputs: update state and re-render only what depends on them, so focus stays put.
   document.addEventListener('input', (e) => {
     const el = e.target; const a = active(); const d = el.dataset;
+    if (d.cp !== undefined || d.cpt !== undefined) {
+      if (d.cp !== undefined) state.compound[d.cp] = el.value; else { const [i, k] = d.cpt.split(':'); state.compound.tiers[Number(i)][k] = el.value; }
+      save(); const o = $('#cp-out'); if (o) o.innerHTML = cpOut(state.compound);
+      if (d.cp === 'inst') render(); return;
+    }
     if (d.calc !== undefined) { ui.calc[d.calc] = el.value; if (d.full) { ui.calc.cs = ''; render(); } else { const o = $('#calc-out'); if (o) o.innerHTML = calcOut(a, compute(a)); } return; }
     if (d.check !== undefined) { ui.check[d.check] = el.value; if (d.full) { const s = PR.INSTRUMENTS[el.value]; ui.check.entry = String(s.sample); ui.check.stop = ''; ui.check.tp = ''; ui.check.lots = ''; render(); } else { const o = $('#check-out'); if (o) o.innerHTML = checkOut(a, compute(a)); } return; }
     if (d.w !== undefined) { ui.wizard[d.w] = el.value; if (d.w === 'q' || d.w === 'inst') { render(); const i = $('#w-' + d.w); if (i) { i.focus(); if (i.setSelectionRange && i.type === 'search') i.setSelectionRange(i.value.length, i.value.length); } } else { const btn = $('[data-act="w-next"]'); if (btn) { const w = ui.wizard; btn.disabled = w.step === 'profile' ? !(w.name && w.name.trim()) : w.step === 'model' ? !(w.modelId && Number(w.size) > 0 && w.phase && (w.firmId !== 'custom' || customRulesOk(w))) : w.step === 'config' ? !((w.aname || '').trim()) : btn.disabled; } } return; }

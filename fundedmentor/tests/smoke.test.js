@@ -34,7 +34,7 @@ const now = Date.now();
 const trade = (i, daysAgo, profit) => ({ id: 'm' + i, symbol: 'XAUUSD', side: 'buy', lots: 1, openTime: now - daysAgo * DAY - 3600e3, closeTime: now - daysAgo * DAY, profit, commission: -7, swap: 0, source: 'manual' });
 const base = (acct) => ({ v: 1, profile: { name: 'T', email: 't@x.com' }, session: { email: 't@x.com', ts: now }, view: 'overview', theme: 'system', libEdits: {}, ruleHistory: [], reports: [], accounts: [acct], activeId: acct.id });
 const manual = (extra = {}) => Object.assign({ id: 'acct-1', name: 'FTMO 100K', firmId: 'ftmo', modelId: 'ftmo-2step', phase: 'phase1', initialBalance: 100000, currency: 'USD', platform: 'MT5', purchaseTs: now - 5 * DAY, riskProfile: 'balanced', instrument: 'XAUUSD', stopDistance: 5, commissionPerLot: 7, openPnl: 0, createdTs: now - 5 * DAY, trades: [trade(1, 3, 500), trade(2, 2, -200)] }, extra);
-const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'check', 'consistency', 'payout', 'rules', 'trades', 'reports', 'settings'];
+const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'compound', 'check', 'consistency', 'payout', 'rules', 'trades', 'reports', 'settings'];
 
 // A. Landing (no session)
 { const t = boot(); const h = t.root();
@@ -259,6 +259,26 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   ok(a.firmId === 'custom' && a.initialBalance === 75000, 'custom: account created at 75K');
   ok(st.libEdits['custom-1step'].phase1.maxLossPct.value === 8 && st.libEdits['custom-1step'].phase1.consistencyPct.value === null, 'custom: rules saved (consistency off)');
   ok(!t.errors.length, 'custom: no errors ' + t.errors.join(' | ')); }
+
+// M. Compounding planner: solves target / days / trades, consistency cap, % steps, next trade
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); ok(/Compounding Planner/.test(t.root()), 'compound: view renders');
+  setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); setv('cp-perDay', '1'); setv('cp-cons', '');
+  let out = doc.getElementById('cp-out').textContent;
+  ok(/in 8 winning trades · 8 days/.test(out), 'compound: 1000 → 2000 at 10% = 8 trades (1.1^8 ≥ 2) ' + out.slice(0, 80));
+  ok(/Next best trade/.test(out) && /\$100\.00/.test(out) && /lots XAUUSD/.test(out), 'compound: next trade aims for $100 with a lot size');
+  setv('cp-cons', '20'); out = doc.getElementById('cp-out').textContent;
+  ok(/no day goes above \$200/.test(out), 'compound: consistency caps each day at 20% of profit');
+  const st = () => JSON.parse(t.w.localStorage.getItem('passrate.v1')).compound;
+  ok(st().cons === '20', 'compound: inputs saved');
+  setv('cp-cons', ''); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '3'); out = doc.getElementById('cp-out').textContent;
+  ok(/\$1,331 after 3 winning trades/.test(out), 'compound: 3 trades at 10% from 1000 = $1,331');
+  t.act('cp-tier-add'); const ins = doc.querySelectorAll('[data-cpt]'); ins[0].value = '1100'; ins[0].dispatchEvent(new t.w.Event('input', { bubbles: true })); ins[1].value = '5'; ins[1].dispatchEvent(new t.w.Event('input', { bubbles: true }));
+  out = doc.getElementById('cp-out').textContent; ok(/\$1,213 after 3/.test(out), "compound: step to 5% from $1,100 applies (1000→1100→1155→1212.75)");
+  t.act('cp-solve', { v: 'days' }); setv('cp-days', '0'); ok(/Enter how many days/.test(doc.getElementById('cp-out').textContent), 'compound: validates days');
+  const t2 = boot({ state: Object.assign(base(manual()), { accounts: [], activeId: null }) }); t2.act('go', { v: 'compound' }); ok(/Compounding Planner/.test(t2.root()), 'compound: works with no account');
+  ok(!t.errors.length && !t2.errors.length, 'compound: no errors ' + t.errors.concat(t2.errors).join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
