@@ -617,27 +617,33 @@
   }
   // Compounding account: after the next trade, record how it went so the balance and plan update.
   function cpNextFor(a, c) { const f = Object.assign({}, a.compound, { start: String(c.s.equity) }); const r = compoundPlan(f); return { f, r, nx: r.err ? null : cpNext(f, r) }; }
+  // The same three choices everywhere a next trade is shown: as planned, a different profit, or a loss.
+  function logChoices(win, loss, L, p) {
+    if (L.mode === 'profit' || L.mode === 'loss') return `<label class="field"><span>${L.mode === 'profit' ? 'Profit made ($)' : 'Loss taken ($)'}</span><input class="input num" id="${p}-log-amt" type="number" inputmode="decimal" min="0" step="any" data-${p === 'cp' ? 'cl' : 'nl'}="amt" value="${esc(L.amt)}"></label>
+      ${L.err ? `<p class="neg" style="font-size:13px">${esc(L.err)}</p>` : ''}
+      <div class="row"><button class="btn primary" data-act="${p}-log-save">${L.mode === 'profit' ? 'Add profit' : 'Record loss'}</button><button class="btn ghost" data-act="${p}-log-mode" data-m="menu">Back</button></div>`;
+    return `<div class="pick">
+      <button data-act="${p}-log-plan" ${win > 0 ? '' : 'disabled'}><b>Took it as planned · hit take profit</b><span class="muted" style="font-size:12px">${win > 0 ? `Logs ${sgn$(win)} at your plan` : 'No planned trade right now'}</span></button>
+      <button data-act="${p}-log-mode" data-m="profit"><b>Record a different profit</b><span class="muted" style="font-size:12px">Closed early or bigger win</span></button>
+      <button data-act="${p}-log-mode" data-m="loss"><b>Record a loss</b><span class="muted" style="font-size:12px">Stopped out or closed red</span></button></div>`;
+  }
+  function logResult(profit, lots, symbol) {
+    const a = active(); if (!a) return; const now = Date.now();
+    a.trades.push({ id: 'm-' + uid(), symbol: symbol || a.instrument, side: 'buy', lots: lots || null, openTime: now - 60000, closeTime: now, profit: Math.round(profit * 100) / 100, commission: 0, swap: 0, source: 'manual' });
+    ui.cpLog = null; ui.ntLog = null; ui.next = false; save(); toast(`Logged ${sgn$(profit)} · balance ${fmt$(compute(a).s.equity)}`);
+  }
   function cpLogSheet(a, c) {
     const { f, r, nx } = cpNextFor(a, c); const L = ui.cpLog;
     const win = nx ? (nx.actual != null ? nx.actual * nx.rr : nx.profit) : 0; const loss = nx ? (nx.actual != null ? nx.actual : nx.risk) : 0;
     const plan = r.err ? `<p class="muted">${esc(r.err)}</p>` : `<div class="panel"><span class="label">Planned trade</span><p style="margin:6px 0">${nx.lots ? `<b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})` : esc(nx.note || '')}</p><dl class="kv"><dt>Win</dt><dd class="pos">${sgn$(win)}</dd><dt>Loss</dt><dd class="neg">${sgn$(-loss)}</dd><dt>Balance now</dt><dd>${fmt$(c.s.equity)}</dd></dl></div>`;
-    const body = L.mode === 'profit' || L.mode === 'loss'
-      ? `<label class="field"><span>${L.mode === 'profit' ? 'Profit made ($)' : 'Loss taken ($)'}</span><input class="input num" id="cp-log-amt" type="number" inputmode="decimal" min="0" step="any" data-cl="amt" value="${esc(L.amt)}" autofocus></label>
-         ${L.err ? `<p class="neg" style="font-size:13px">${esc(L.err)}</p>` : ''}
-         <div class="row"><button class="btn primary" data-act="cp-log-save">${L.mode === 'profit' ? 'Add profit' : 'Record loss'}</button><button class="btn ghost" data-act="cp-log-mode" data-m="menu">Back</button></div>`
-      : `<div class="pick">
-          <button data-act="cp-log-plan" ${r.err || !win ? 'disabled' : ''}><b>Took it as planned · hit take profit</b><span class="muted" style="font-size:12px">Logs ${sgn$(win)} at your plan</span></button>
-          <button data-act="cp-log-mode" data-m="profit"><b>Record a different profit</b><span class="muted" style="font-size:12px">Closed early or bigger win</span></button>
-          <button data-act="cp-log-mode" data-m="loss"><b>Record a loss</b><span class="muted" style="font-size:12px">Stopped out or closed red</span></button></div>
-        <button class="btn ghost sm" data-act="go" data-v="compound" style="margin-top:10px">Open full plan</button>`;
+    const body = logChoices(r.err ? 0 : win, loss, L, 'cp') + (L.mode === 'menu' && state.view !== 'compound' ? '<button class="btn ghost sm" data-act="go" data-v="compound" style="margin-top:10px">Open full plan</button>' : '');
     return `<div class="overlay" data-act="cp-log-close"><div class="sheet" data-stop role="dialog" aria-label="Next trade">
       <div class="sheet-h"><div><h2>Next trade</h2><small class="muted">How did it go? Your balance and plan update right away.</small></div><button class="btn ghost sm" data-act="cp-log-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
       <div class="sheet-b"><div class="stack" style="gap:14px">${plan}${body}</div></div></div></div>`;
   }
   function cpLogTrade(profit) {
-    const a = active(); if (!a) return; const c = compute(a); const { nx } = cpNextFor(a, c); const now = Date.now();
-    a.trades.push({ id: 'm-' + uid(), symbol: a.compound.inst || a.instrument, side: 'buy', lots: nx && nx.lots ? nx.lots : null, openTime: now - 60000, closeTime: now, profit: Math.round(profit * 100) / 100, commission: 0, swap: 0, source: 'manual' });
-    ui.cpLog = null; save(); toast(`Logged ${sgn$(profit)} · balance ${fmt$(compute(a).s.equity)}`);
+    const a = active(); if (!a) return; const c = compute(a); const { nx } = cpNextFor(a, c);
+    logResult(profit, nx && nx.lots, a.compound.inst || a.instrument);
   }
   function nextBtn(a, c) {
     if (a.compound) {
@@ -691,6 +697,7 @@
         <p class="nt-why">${esc(t.why)}</p>${t.after ? `<p class="nt-why">${esc(t.after)}</p>` : ''}
         ${!t.stopReason && t.raw > t.cap ? `<p class="hint">This mode wanted ${fmt$(t.raw, 0)} of risk; it is capped at ${fmt$(t.cap, 0)} by your daily and drawdown limits.</p>` : ''}
         <div class="row" style="gap:10px"><button class="btn primary lg" style="flex:1" data-act="next-check">Check this trade</button><button class="btn lg" data-act="go" data-v="settings">Change setup</button></div>
+        <div class="stack" style="gap:10px;margin-top:6px"><h2 style="font-size:16px">Took the trade? Log how it went</h2>${logChoices(t.stopReason ? 0 : t.win, t.stopReason ? 0 : t.actual, ui.ntLog || { mode: 'menu' }, 'nt')}</div>
       </div></div></div>`;
   }
 
@@ -946,7 +953,7 @@
     const next = `<div class="panel" style="margin:12px 0"><span class="label">Next best trade</span>
       ${nx.lots ? `<p style="margin:6px 0"><b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})</p>` : ''}
       <dl class="kv"><dt>Aim to make</dt><dd>${fmt$(nx.profit)}</dd><dt>Risk</dt><dd>${fmt$(nx.actual != null ? nx.actual : nx.risk)}</dd><dt>Per-trade %</dt><dd>${r.days[0].pct}% of ${fmt$(r.start, 0)}</dd></dl>
-      ${nx.note ? `<p class="hint">${esc(nx.note)}</p>` : ''}</div>`;
+      ${nx.note ? `<p class="hint">${esc(nx.note)}</p>` : ''}${hist ? `<button class="btn primary sm" style="margin-top:10px" data-act="cp-log-open">Log this trade</button>` : ''}</div>`;
     let cons = '';
     if (r.cons) cons = r.solve === 'target'
       ? `<div class="alert ok">${icon('ok')}<span>Consistency ${r.cons}%: no day goes above ${fmt$(r.dayCap, 0)} (${r.cons}% of the ${fmt$(r.total, 0)} profit). Stop for the day once you hit it.</span></div>`
@@ -1755,8 +1762,8 @@
     switch (act) {
       case 'cal': ui.calMonth = el.dataset.m; ui.calDay = null; break;
       case 'cal-day': ui.calDay = el.dataset.k; break;
-      case 'next-open': ui.next = true; ui.ntMode = null; break;
-      case 'next-close': ui.next = false; break;
+      case 'next-open': ui.next = true; ui.ntMode = null; ui.ntLog = null; break;
+      case 'next-close': ui.next = false; ui.ntLog = null; break;
       case 'nt-mode': ui.ntMode = el.dataset.k; break;
       case 'next-check': ui.next = false; state.view = 'check'; ui.check = null; save(); render(); window.scrollTo(0, 0); return;
       case 'to-auth': if (state.session && state.session.demo) { state.session = null; save(); } ui.route = 'auth'; ui.authMode = el.dataset.mode || 'signup'; ui.authErr = null; render(); window.scrollTo(0, 0); return;
@@ -1789,6 +1796,10 @@
       case 'cp-tr-save': { const v = Number(ui.cpEditVal); if (!Number.isFinite(v) || ui.cpEditVal === '') { toast('Enter the result in dollars (negative for a loss).'); return; }
         updateAcct((x) => { const t = x.trades.find((y) => String(y.id) === el.dataset.id); if (t) t.profit = Math.round((v - (t.commission || 0) - (t.swap || 0)) * 100) / 100; }); ui.cpEdit = null; toast('Trade updated'); return; }
       case 'cp-tr-del': updateAcct((x) => { x.trades = x.trades.filter((t) => String(t.id) !== el.dataset.id); }); ui.cpEdit = null; toast('Trade removed'); return;
+      case 'nt-log-mode': { const a = active(); const c = a && compute(a); const t = c ? nextTrade(a, c, ui.ntMode || bestMode(a, c)) : null; const m = el.dataset.m;
+        ui.ntLog = { mode: m, err: null, amt: t && !t.stopReason && m === 'profit' ? String(Math.round(t.win * 100) / 100) : t && !t.stopReason && m === 'loss' ? String(Math.round(t.actual * 100) / 100) : '' }; break; }
+      case 'nt-log-plan': { const a = active(); const c = a && compute(a); const t = c ? nextTrade(a, c, ui.ntMode || bestMode(a, c)) : null; if (t && !t.stopReason) logResult(t.win, t.lots, a.instrument); return; }
+      case 'nt-log-save': { const v = Number(ui.ntLog && ui.ntLog.amt); if (!(v > 0)) { ui.ntLog.err = 'Enter an amount above 0.'; break; } const a = active(); const c = compute(a); const t = nextTrade(a, c, ui.ntMode || bestMode(a, c)); logResult(ui.ntLog.mode === 'loss' ? -v : v, t && t.lots, a.instrument); return; }
       case 'cp-log-open': ui.cpLog = { mode: 'menu', amt: '', err: null }; break;
       case 'cp-log-close': ui.cpLog = null; break;
       case 'cp-log-mode': { const a = active(); const c = a && compute(a); const n = a && a.compound && c ? cpNextFor(a, c).nx : null; const m = el.dataset.m;
@@ -1923,6 +1934,7 @@
     const el = e.target; const a = active(); const d = el.dataset;
     if (d.cl !== undefined) { if (ui.cpLog) ui.cpLog[d.cl] = el.value; return; }
     if (d.ce !== undefined) { ui.cpEditVal = el.value; return; }
+    if (d.nl !== undefined) { if (ui.ntLog) ui.ntLog[d.nl] = el.value; return; }
     if (d.cp !== undefined || d.cpt !== undefined) {
       const T = cpTarget(); if (d.cp !== undefined) T[d.cp] = el.value; else { const [i, k] = d.cpt.split(':'); T.tiers[Number(i)][k] = el.value; }
       if (a && a.compound) { render(); const i2 = el.id && $('#' + el.id); if (i2) i2.focus(); return; } save(); const o = $('#cp-out'); if (o) o.innerHTML = cpOut(T);

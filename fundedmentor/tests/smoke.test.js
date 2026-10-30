@@ -339,5 +339,21 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('cp-view', { v: 'day' }); ok(/Plan/.test(t.root()) && !doc.querySelector('[data-act="cp-tr-edit"]'), 'cplive: daily view');
   ok(!t.errors.length, 'cplive: no errors ' + t.errors.join(' | ')); }
 
+// Q. Same three log choices on prop accounts' Next trade and on the Compounding page
+{ const t = boot({ state: base(manual({ trades: [] })) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  const bal = () => { const st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts.find((x) => x.id === st.activeId); return a.trades.reduce((m, x) => m + x.profit, a.initialBalance); };
+  t.act('next-open'); let h = t.root();
+  ok(/Took the trade\? Log how it went/.test(h) && /Took it as planned/.test(h) && /Record a loss/.test(h), 'ntlog: prop next-trade sheet shows the three choices');
+  const winTxt = (h.match(/Logs \+\$([\d,.]+)/) || [])[1]; t.act('nt-log-plan'); const b1 = bal();
+  ok(winTxt && Math.abs(b1 - 100000 - Number(winTxt.replace(/,/g, ''))) < 0.01 && !/Your next trade/.test(t.root()), 'ntlog: planned win logged on prop account ' + winTxt);
+  t.act('next-open'); t.act('nt-log-mode', { m: 'loss' }); setv('nt-log-amt', '250'); t.act('nt-log-save'); ok(Math.abs(bal() - (b1 - 250)) < 0.01, 'ntlog: loss logged on prop account');
+  t.act('next-open'); t.act('nt-log-mode', { m: 'profit' }); setv('nt-log-amt', ''); t.act('nt-log-save'); ok(/Enter an amount above 0/.test(t.root()), 'ntlog: validates amount');
+  // compounding page button
+  t.act('next-close'); t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); t.act('cp-save'); t.act('go', { v: 'compound' });
+  ok(!!doc.querySelector('#cp-out [data-act="cp-log-open"]'), 'ntlog: Log this trade on the Compounding page');
+  t.act('cp-log-open'); ok(/Took it as planned/.test(t.root()) && !/Open full plan/.test(t.root()), 'ntlog: opens the three choices from the planner');
+  ok(!t.errors.length, 'ntlog: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
