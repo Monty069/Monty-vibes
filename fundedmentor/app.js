@@ -48,6 +48,7 @@
     ext: 'M14 3h7v7M21 3l-9 9M10 5H5v14h14v-5',
     mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
     compound: 'M3 17l6-6 4 4 8-8M14 7h7v7',
+    edit: 'M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4',
   };
   const icon = (k, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${P[k]}"/></svg>`;
 
@@ -877,12 +878,13 @@
     if (limit > 5000) return { err: 'Keep it under 5,000 trades.' };
     const cons = Number(f.cons) > 0 ? Number(f.cons) : 0;
     const dayCap = cons && solve === 'target' ? (target - start) * cons / 100 : Infinity;
-    let bal = start, n = 0, day = null; const days = [];
+    let bal = start, n = 0, day = null; const days = [], list = [];
     while (n < limit) {
       if (!day || day.trades >= perDay || day.capped) { day = { d: days.length + 1, open: bal, profit: 0, trades: 0, pct: pctAt(bal) }; days.push(day); }
       let gain = bal * pctAt(bal) / 100;
       if (dayCap < Infinity) gain = Math.min(gain, dayCap - day.profit);
       if (solve === 'target') gain = Math.min(gain, target - bal);
+      list.push({ n: n + 1, d: day.d, open: bal, pct: pctAt(bal), profit: gain, close: bal + gain });
       bal += gain; day.profit += gain; day.trades++; day.close = bal; n++;
       if (dayCap < Infinity && day.profit >= dayCap - 1e-6) day.capped = true;
       if (solve === 'target' && bal >= target - 1e-6) break;
@@ -891,7 +893,7 @@
     const total = bal - start; const best = days.reduce((m, d) => Math.max(m, d.profit), 0);
     const share = total > 0 ? best / total * 100 : 0;
     const first = Math.min(start * pctAt(start) / 100, dayCap, solve === 'target' ? target - start : Infinity);
-    return { start, end: bal, total, trades: n, days, perDay, tiers, cons, share, consOk: !cons || share <= cons + 1e-6, dayCap, first, solve };
+    return { start, end: bal, total, trades: n, days, list, perDay, tiers, cons, share, consOk: !cons || share <= cons + 1e-6, dayCap, first, solve };
   }
   function cpNext(f, r) {
     const rr = Number(f.rr) > 0 ? Number(f.rr) : 2; const spec = PR.INSTRUMENTS[f.inst]; const stop = Number(f.stop);
@@ -901,12 +903,45 @@
     if (!z.ok || !z.lots) return Object.assign(out, { note: z.reason || 'Risk is below the minimum lot size for this stop.' });
     return Object.assign(out, { lots: z.lots, actual: z.actualRisk, spec, stop, tp: stop * rr });
   }
-  function cpOut(f) {
+  function cpHistory(a) {
+    let bal = Number(a.initialBalance); const tr = [...(a.trades || [])].filter((t) => t.closeTime).sort((x, y) => x.closeTime - y.closeTime);
+    return tr.map((t) => { const net = (t.profit || 0) + (t.commission || 0) + (t.swap || 0); const row = { id: String(t.id), ts: t.closeTime, open: bal, profit: net, close: bal + net }; bal += net; return row; });
+  }
+  const dayKeyOf = (ts) => new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  function cpTable(r, hist) {
+    const view = ui.cpView || 'day'; const H = hist || [];
+    const seg = `<div class="row between" style="margin:10px 0 6px"><b style="font-size:13px">${H.length ? 'Done, then the plan' : 'The plan'}</b><div class="seg" role="group"><button data-act="cp-view" data-v="day" aria-pressed="${view === 'day'}">Daily</button><button data-act="cp-view" data-v="trade" aria-pressed="${view === 'trade'}">Per trade</button></div></div>`;
+    const cut = (arr) => arr.length > 45 ? arr.slice(0, 30).concat([null], arr.slice(-10)) : arr;
+    const pctTd = (p) => `<td class="r num">${+p.toFixed(2)}%</td>`;
+    const money = (v) => `<td class="r num ${v >= 0 ? 'pos' : 'neg'}">${sgn$(v)}</td>`;
+    const gap = (cols) => `<tr><td colspan="${cols}" class="muted">…</td></tr>`;
+    let head, rows;
+    if (view === 'trade') {
+      head = '<th>#</th><th class="r">Start</th><th class="r">%</th><th class="r">Profit</th><th class="r">End</th><th></th>';
+      const done = H.map((t, i) => {
+        const editing = ui.cpEdit === t.id;
+        const prof = editing ? `<td class="r"><input class="input num" style="max-width:110px" id="cp-edit-amt" type="number" step="any" inputmode="decimal" data-ce="amt" value="${esc(ui.cpEditVal)}" aria-label="Result in dollars"></td>` : money(t.profit);
+        const act = editing ? `<button class="btn sm primary" data-act="cp-tr-save" data-id="${esc(t.id)}">Save</button><button class="btn ghost sm" data-act="cp-tr-cancel">Cancel</button>`
+          : `<span class="chip ok nodot" style="font-size:11px" title="${dayKeyOf(t.ts)}">Done</span><button class="btn ghost sm" style="padding:0 6px" data-act="cp-tr-edit" data-id="${esc(t.id)}" aria-label="Edit trade">${icon('edit', 'width="14" height="14"')}</button><button class="btn ghost sm" style="padding:0 6px" data-act="cp-tr-del" data-id="${esc(t.id)}" aria-label="Delete trade">${icon('x', 'width="14" height="14"')}</button>`;
+        return `<tr><td>${i + 1}</td><td class="r num">${fmt$(t.open, 0)}</td>${pctTd(t.open ? t.profit / t.open * 100 : 0)}${prof}<td class="r num">${fmt$(editing ? t.open + (Number(ui.cpEditVal) || 0) : t.close, 0)}</td><td><span class="row" style="gap:4px;flex-wrap:nowrap;justify-content:flex-end">${act}</span></td></tr>`;
+      });
+      const plan = cut(r.list).map((t) => t ? `<tr><td>${H.length + t.n}</td><td class="r num">${fmt$(t.open, 0)}</td>${pctTd(t.pct)}${money(t.profit)}<td class="r num">${fmt$(t.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px" title="Plan day ${t.d}">Plan</span></td></tr>` : gap(6));
+      rows = done.concat(plan);
+    } else {
+      head = '<th>Day</th><th class="r">Trades</th><th class="r">Start</th><th class="r">Profit</th><th class="r">End</th><th></th>';
+      const g = []; for (const t of H) { const k = dayKeyOf(t.ts); let d = g[g.length - 1]; if (!d || d.k !== k) { d = { k, open: t.open, profit: 0, n: 0 }; g.push(d); } d.profit += t.profit; d.n++; d.close = t.close; }
+      const done = g.map((d, i) => `<tr><td>${i + 1}</td><td class="r num">${d.n}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip ok nodot" style="font-size:11px">${d.k}</span></td></tr>`);
+      const plan = cut(r.days).map((d) => d ? `<tr><td>${g.length + d.d}</td><td class="r num">${d.trades}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px">Plan</span></td></tr>` : gap(6));
+      rows = done.concat(plan);
+    }
+    return `${seg}<div class="tw"><table><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table></div>${H.length && view === 'day' ? '<p class="hint">Switch to Per trade to edit or delete a logged trade.</p>' : ''}`;
+  }
+  function cpOut(f, hist) {
     const r = compoundPlan(f);
     if (r.err) return `<p class="muted">${esc(r.err)}</p>`;
     const nx = cpNext(f, r); const dn = r.days.length;
     const head = r.solve === 'target'
-      ? `<h2>${fmt$(r.end, 0)} in ${r.trades} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">At up to ${r.perDay} trade${r.perDay === 1 ? '' : 's'} a day. Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%).</p>`
+      ? `<h2>${fmt$(r.end, 0)} in ${r.trades}${hist && hist.length ? ' more' : ''} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">At up to ${r.perDay} trade${r.perDay === 1 ? '' : 's'} a day. Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%).</p>`
       : `<h2>${fmt$(r.end, 0)} after ${r.trades} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%) from ${fmt$(r.start, 0)}.</p>`;
     const next = `<div class="panel" style="margin:12px 0"><span class="label">Next best trade</span>
       ${nx.lots ? `<p style="margin:6px 0"><b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})</p>` : ''}
@@ -918,20 +953,22 @@
       : r.consOk ? `<div class="alert ok">${icon('ok')}<span>Best day is ${r.share.toFixed(1)}% of total profit, inside your ${r.cons}% rule.</span></div>`
         : `<div class="alert warn">${icon('warn')}<span>Best day would be ${r.share.toFixed(1)}% of total profit, over your ${r.cons}% rule. Switch to “Reach a target” to cap each day, or lower the % per trade.</span></div>`;
     const tierNote = r.tiers.length ? `<p class="hint" style="margin-bottom:8px">Steps: ${r.tiers.map((t) => `${t.pct}% from ${fmt$(t.at, 0)}`).join(' · ')}.</p>` : '';
-    const rows = r.days.length > 45 ? r.days.slice(0, 30).concat([null], r.days.slice(-10)) : r.days;
-    const table = `<div class="tw"><table><thead><tr><th>Day</th><th class="r">Trades</th><th class="r">Start</th><th class="r">% / trade</th><th class="r">Profit</th><th class="r">End</th></tr></thead><tbody>
-      ${rows.map((d) => d ? `<tr><td>${d.d}</td><td class="r num">${d.trades}</td><td class="r num">${fmt$(d.open, 0)}</td><td class="r num">${d.pct}%</td><td class="r num pos">${sgn$(d.profit)}</td><td class="r num">${fmt$(d.close, 0)}</td></tr>` : `<tr><td colspan="6" class="muted">…</td></tr>`).join('')}</tbody></table></div>`;
-    return `${head}${next}${cons}${tierNote}${table}<p class="hint">Assumes every trade wins at your %. At 1:${nx.rr}, one loss wipes out ${(100 / nx.rr).toFixed(0)}% of a win. Update “Amount I have” after each trade and the plan resets.</p>`;
+    const H = hist || []; const doneNet = H.reduce((m, t) => m + t.profit, 0);
+    const prog = H.length ? `<p class="muted" style="margin-top:6px">So far: ${H.length} trade${H.length === 1 ? '' : 's'} logged · <span class="${doneNet >= 0 ? 'pos' : 'neg'}">${sgn$(doneNet)}</span> since ${fmt$(H[0].open, 0)}. The plan below starts from today’s ${fmt$(r.start, 0)}.</p>` : '';
+    return `${head}${prog}${next}${cons}${tierNote}${cpTable(r, H)}<p class="hint">Planned rows assume every trade wins at your %. At 1:${nx.rr}, one loss wipes out ${(100 / nx.rr).toFixed(0)}% of a win.${hist ? ' Log each trade from Next trade and everything recalculates.' : ''}</p>`;
   }
   VIEWS.compound = (a, c) => {
-    const linked = !!(a && a.compound && c); const f = linked ? a.compound : (state.compound || (state.compound = cpDefaults(a, c))); f.tiers = f.tiers || [];
+    const linked = !!(a && a.compound && c);
+    if (linked && (!ui.cpDraft || ui.cpDraft.id !== a.id)) ui.cpDraft = { id: a.id, f: clone(a.compound) };
+    const f = linked ? ui.cpDraft.f : (state.compound || (state.compound = cpDefaults(a, c))); f.tiers = f.tiers || [];
     if (linked) f.start = String(Math.round(c.s.equity * 100) / 100);
+    const dirty = linked && cpDirty(a);
     const num = (k, label, extra = '') => `<label class="field"><span>${label}</span><input class="input num" id="cp-${k}" type="number" inputmode="decimal" step="any" min="0" data-cp="${k}" value="${esc(f[k])}" ${extra}></label>`;
     const solves = [['target', 'Reach a target'], ['days', 'In N days'], ['trades', 'In N trades']];
     return `${pageHead('Compounding Planner', 'Tell it what you have and your profit per trade. It works out the rest and sizes your next trade.')}
       <div class="grid g2">
         <section class="panel"><div class="stack" style="gap:14px">
-          ${linked ? `<div class="alert info">${icon('info')}<span>Linked to <b>${esc(a.name)}</b>. Amount I have is its live balance; log trades to move it.</span></div>` : ''}
+          ${linked ? `<div class="alert info">${icon('info')}<span>Linked to <b>${esc(a.name)}</b>. Amount I have is its live balance. Change anything below to preview it, then press Update plan.</span></div>` : ''}
           <div class="grid g2" style="gap:12px">${num('start', 'Amount I have ($)', linked ? 'readonly' : '')}${num('pct', 'Profit per trade (%)')}</div>
           <div class="field"><span>Work out</span><div class="seg" role="group">${solves.map(([k, l]) => `<button data-act="cp-solve" data-v="${k}" aria-pressed="${f.solve === k}">${l}</button>`).join('')}</div></div>
           <div class="grid g2" style="gap:12px">${f.solve === 'target' ? num('target', 'Target balance ($)') : f.solve === 'days' ? num('days', 'Days') : num('trades', 'Total trades')}${num('perDay', 'Max trades a day', 'step="1" min="1"')}</div>
@@ -941,11 +978,14 @@
             ${f.tiers.map((t, i) => `<div class="row" style="gap:8px;flex-wrap:nowrap;margin-bottom:6px"><input class="input num" type="number" inputmode="decimal" min="0" step="any" data-cpt="${i}:at" value="${esc(t.at)}" placeholder="From balance $" aria-label="From balance"><input class="input num" type="number" inputmode="decimal" min="0" step="any" data-cpt="${i}:pct" value="${esc(t.pct)}" placeholder="% per trade" aria-label="Percent per trade"><button class="btn ghost sm" data-act="cp-tier-del" data-i="${i}" aria-label="Remove step">${icon('x', 'width="14" height="14"')}</button></div>`).join('')}
             ${f.tiers.length < 4 ? `<button class="btn sm" data-act="cp-tier-add">${icon('plus', 'width="14" height="14"')}Add a step</button>` : ''}
             <span class="hint">Example: from $15,000 drop to 1% per trade to protect gains.</span></div>
+        ${linked ? `<div class="row" style="gap:8px"><button class="btn primary" data-act="cp-update" ${dirty ? '' : 'disabled'}>Update plan</button>${dirty ? '<button class="btn ghost" data-act="cp-discard">Discard changes</button><span class="hint warnc">Previewing unsaved changes</span>' : '<span class="hint">Plan saved</span>'}</div>` : ''}
         </div></section>
-        <section class="panel"><div id="cp-out">${cpOut(f)}</div>${linked ? '' : `<div class="row" style="margin-top:12px"><button class="btn primary" data-act="cp-save">${icon('plus', 'width="14" height="14"')}Save as account</button><span class="hint">Track it like any account: log trades and the plan follows your balance.</span></div>`}</section>
+        <section class="panel"><div id="cp-out">${cpOut(f, linked ? cpHistory(a) : null)}</div>${linked ? '' : `<div class="row" style="margin-top:12px"><button class="btn primary" data-act="cp-save">${icon('plus', 'width="14" height="14"')}Save as account</button><span class="hint">Track it like any account: log trades and the plan follows your balance.</span></div>`}</section>
       </div>`;
   };
-  const cpTarget = () => { const a = active(); return a && a.compound ? a.compound : state.compound; };
+  const cpTarget = () => { const a = active(); return a && a.compound ? (ui.cpDraft && ui.cpDraft.id === a.id ? ui.cpDraft.f : a.compound) : state.compound; };
+  const cpKey = (f) => JSON.stringify(Object.assign({}, f, { start: null }));
+  function cpDirty(a) { return !!(ui.cpDraft && ui.cpDraft.id === a.id && cpKey(ui.cpDraft.f) !== cpKey(a.compound)); }
   function saveCompoundAccount() {
     const f = state.compound; const r = compoundPlan(f); if (r.err) { toast(r.err); return; }
     const now = Date.now(); const id = 'acct-' + uid();
@@ -1741,6 +1781,14 @@
       case 'cp-tier-add': cpTarget().tiers.push({ at: '', pct: '' }); save(); break;
       case 'cp-tier-del': cpTarget().tiers.splice(Number(el.dataset.i), 1); save(); break;
       case 'cp-save': saveCompoundAccount(); return;
+      case 'cp-view': ui.cpView = el.dataset.v; ui.cpEdit = null; break;
+      case 'cp-update': { const a = active(); if (a && a.compound && ui.cpDraft && ui.cpDraft.id === a.id) { a.compound = clone(ui.cpDraft.f); save(); toast('Plan updated'); } return; }
+      case 'cp-discard': ui.cpDraft = null; render(); document.querySelectorAll('input[data-cp], input[data-cpt]').forEach((x) => { if (x.hasAttribute('value')) x.value = x.getAttribute('value'); }); return;
+      case 'cp-tr-edit': { const a = active(); const t = a && a.trades.find((x) => String(x.id) === el.dataset.id); if (t) { ui.cpEdit = String(t.id); ui.cpEditVal = String(Math.round(((t.profit || 0) + (t.commission || 0) + (t.swap || 0)) * 100) / 100); } break; }
+      case 'cp-tr-cancel': ui.cpEdit = null; break;
+      case 'cp-tr-save': { const v = Number(ui.cpEditVal); if (!Number.isFinite(v) || ui.cpEditVal === '') { toast('Enter the result in dollars (negative for a loss).'); return; }
+        updateAcct((x) => { const t = x.trades.find((y) => String(y.id) === el.dataset.id); if (t) t.profit = Math.round((v - (t.commission || 0) - (t.swap || 0)) * 100) / 100; }); ui.cpEdit = null; toast('Trade updated'); return; }
+      case 'cp-tr-del': updateAcct((x) => { x.trades = x.trades.filter((t) => String(t.id) !== el.dataset.id); }); ui.cpEdit = null; toast('Trade removed'); return;
       case 'cp-log-open': ui.cpLog = { mode: 'menu', amt: '', err: null }; break;
       case 'cp-log-close': ui.cpLog = null; break;
       case 'cp-log-mode': { const a = active(); const c = a && compute(a); const n = a && a.compound && c ? cpNextFor(a, c).nx : null; const m = el.dataset.m;
@@ -1874,9 +1922,10 @@
   document.addEventListener('input', (e) => {
     const el = e.target; const a = active(); const d = el.dataset;
     if (d.cl !== undefined) { if (ui.cpLog) ui.cpLog[d.cl] = el.value; return; }
+    if (d.ce !== undefined) { ui.cpEditVal = el.value; return; }
     if (d.cp !== undefined || d.cpt !== undefined) {
       const T = cpTarget(); if (d.cp !== undefined) T[d.cp] = el.value; else { const [i, k] = d.cpt.split(':'); T.tiers[Number(i)][k] = el.value; }
-      save(); if (a && a.compound) { render(); const i2 = $('#' + el.id); if (i2) { i2.focus(); } return; } const o = $('#cp-out'); if (o) o.innerHTML = cpOut(T);
+      if (a && a.compound) { render(); const i2 = el.id && $('#' + el.id); if (i2) i2.focus(); return; } save(); const o = $('#cp-out'); if (o) o.innerHTML = cpOut(T);
       if (d.cp === 'inst') render(); return;
     }
     if (d.calc !== undefined) { ui.calc[d.calc] = el.value; if (d.full) { ui.calc.cs = ''; render(); } else { const o = $('#calc-out'); if (o) o.innerHTML = calcOut(a, compute(a)); } return; }

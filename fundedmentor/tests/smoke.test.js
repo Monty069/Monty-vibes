@@ -291,7 +291,10 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(/50%|of target/.test(t.root()) || /\$1,000 to go/.test(t.root()), 'cpacct: target ring uses plan target');
   t.act('go', { v: 'compound' }); ok(/Linked to/.test(t.root()) && !/Save as account/.test(t.root()), 'cpacct: planner linked to the account');
   setv('cp-pct', '5'); st = JSON.parse(t.w.localStorage.getItem('passrate.v1'));
-  ok(st.accounts.find((x) => x.id === a.id).compound.pct === '5', 'cpacct: planner edits save to the account');
+  ok(st.accounts.find((x) => x.id === a.id).compound.pct === '10' && /Previewing unsaved changes/.test(t.root()), 'cpacct: edits preview first, not saved yet');
+  t.act('cp-update'); st = JSON.parse(t.w.localStorage.getItem('passrate.v1'));
+  ok(st.accounts.find((x) => x.id === a.id).compound.pct === '5' && /Plan saved/.test(t.root()), 'cpacct: Update plan saves to the account');
+  setv('cp-pct', '7'); doc.activeElement.blur(); t.act('cp-discard'); ok(doc.getElementById('cp-pct').value === '5', 'cpacct: Discard restores the saved plan');
   for (const v of VIEWS) { t.act('go', { v }); const h = t.root(); ok(!/undefined|NaN/.test(h.replace(/data-[a-z-]+="[^"]*"/g, '')), `cpacct: view ${v} renders for a personal account`); }
   // wizard path
   const t2 = boot({ state: base(manual()) }); const d2 = t2.w.document;
@@ -318,6 +321,23 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'loss' }); setv('cp-log-amt', '0'); t.act('cp-log-save'); ok(/Enter an amount above 0/.test(t.root()), 'cplog: rejects empty amount');
   t.act('cp-log-close'); t.act('go', { v: 'compound' }); ok(doc.getElementById('cp-start').value === String(Math.round((b1 - 30) * 100) / 100), 'cplog: plan uses new balance');
   ok(!t.errors.length, 'cplog: no errors ' + t.errors.join(' | ')); }
+
+// P. Live table: logged trades first, then the plan; daily or per trade; edit and delete
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); t.act('cp-save');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '100'); t.act('cp-log-save');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'loss' }); setv('cp-log-amt', '50'); t.act('cp-log-save');
+  t.act('go', { v: 'compound' }); let h = t.root();
+  ok(/So far: 2 trades logged/.test(h) && /Done/.test(h) && /Plan/.test(h), 'cplive: done rows then plan rows');
+  ok(doc.getElementById('cp-start').value === '1050', 'cplive: plan starts from live balance 1050');
+  t.act('cp-view', { v: 'trade' }); h = t.root(); const rows = [...doc.querySelectorAll('#cp-out tbody tr')];
+  ok(/Per trade/.test(h) && rows.length > 2 && /^1/.test(rows[0].textContent.trim()) && /Plan/.test(rows[2].textContent), 'cplive: per-trade view numbers done trades then plan');
+  const id = doc.querySelector('[data-act="cp-tr-edit"]').dataset.id; t.act('cp-tr-edit', { id });
+  setv('cp-edit-amt', '150'); t.act('cp-tr-save', { id }); ok(doc.getElementById('cp-start') && /\$1,100/.test(doc.getElementById('cp-out').textContent), 'cplive: edit a logged trade updates balance (1000+150-50)');
+  t.act('cp-tr-del', { id: doc.querySelectorAll('[data-act="cp-tr-del"]')[1].dataset.id }); ok(/So far: 1 trade logged/.test(t.root()), 'cplive: delete a logged trade');
+  t.act('cp-view', { v: 'day' }); ok(/Plan/.test(t.root()) && !doc.querySelector('[data-act="cp-tr-edit"]'), 'cplive: daily view');
+  ok(!t.errors.length, 'cplive: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
