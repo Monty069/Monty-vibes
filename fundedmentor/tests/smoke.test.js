@@ -243,5 +243,22 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'ch
   const t3 = boot({ state: after }); ok(/id="lp-static"/.test(t3.root()) && !/Log out/.test(t3.root()), 'logout: refresh after logout stays on the landing (saved profile does not sign in)');
   ok(!t.errors.length && !t3.errors.length, 'logout: no errors'); }
 
+// L. Custom firm: selectable, any size, and the trader's own rules drive the plan
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  t.act('wizard'); const cb = doc.querySelector('[data-act="w-firm"][data-id="custom"]');
+  ok(cb && !cb.disabled, 'custom: Custom firm is selectable');
+  t.act('w-firm', { id: 'custom' }); t.act('w-next'); t.act('w-model', { id: 'custom-1step' });
+  ok(!!doc.getElementById('w-size') && !!doc.getElementById('w-cr_daily'), 'custom: free size input and rule fields shown');
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  setv('w-size', '75000'); setv('w-cr_target', '8'); setv('w-cr_daily', '4'); setv('w-cr_max', '8'); setv('w-cr_cons', '0');
+  ok(!doc.querySelector('[data-act="w-next"]').disabled, 'custom: Continue enabled with size + rules');
+  t.act('w-next'); t.act('w-goal-type', { v: 'pass' });
+  for (let i = 0; i < 4 && !/Your plan/.test(t.root()); i++) t.act('w-next');
+  ok(/Your plan/.test(t.root()) && /\$6,000/.test(t.root()) && /\$3,000/.test(t.root()), 'custom: plan uses entered rules (8% target = $6,000, 4% daily = $3,000 on 75K)');
+  t.act('w-finish'); const st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts[st.accounts.length - 1];
+  ok(a.firmId === 'custom' && a.initialBalance === 75000, 'custom: account created at 75K');
+  ok(st.libEdits['custom-1step'].phase1.maxLossPct.value === 8 && st.libEdits['custom-1step'].phase1.consistencyPct.value === null, 'custom: rules saved (consistency off)');
+  ok(!t.errors.length, 'custom: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

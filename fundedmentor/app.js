@@ -1347,7 +1347,8 @@
         ${model ? `<div class="field"><span>Account size</span>${model.sizes.length ? `<div class="pick">${model.sizes.map((s) => `<button data-act="w-size" data-v="${s}" aria-pressed="${Number(w.size) === s}"><b class="num">$${s.toLocaleString()}</b>${priceFor(model, s) != null ? `<span class="muted" style="font-size:12px">${model.priceCcy === 'EUR' ? '€' : '$'}${priceFor(model, s)}</span>` : ''}</button>`).join('')}</div>` : `<input class="input num" id="w-size" type="number" min="1000" step="1000" data-w="size" value="${esc(w.size || '')}" placeholder="e.g. 100000"><span class="hint">Sizes aren't published for this program. Enter the size you bought.</span>`}</div>
         <div class="field"><span>Current phase</span><div class="seg">${Object.values(model.phases).map((p) => `<button data-act="w-phase" data-k="${p.key}" aria-pressed="${w.phase === p.key}">${esc(p.label)}</button>`).join('')}</div></div>
         ${PR.verification(phaseRecords(model.id, w.phase || Object.keys(model.phases)[0], Number(w.size))).confirmed ? '' : `<div class="alert warn">${icon('info')}<span>These rules were checked on ${esc(firm.checkedAt || 'an earlier date')} from public sources and are not yet verified against the firm's own page. Review them in Firm Rules.</span></div>`}` : ''}`;
-      canNext = !!(model && Number(w.size) > 0 && w.phase);
+      if (firm.custom && model) body += customRuleFields(w);
+      canNext = !!(model && Number(w.size) > 0 && w.phase && (!firm.custom || customRulesOk(w)));
     } else if (w.step === 'goal') {
       w.goal = w.goal || defaultGoal(); w.legs = w.legs || [];
       body = `<h2>What are you trading this account for?</h2><p class="muted">Your answers turn the firm’s rules into lot sizes and trade counts for each pair you pick.</p>${goalForm(w.goal, w.legs, 'w', futuresModel(firm, model))}`;
@@ -1370,7 +1371,7 @@
         <div class="pick"><button disabled><b>MT4 / MT5 auto-sync</b><span class="chip info nodot" style="font-size:11px">Coming soon</span></button><button disabled><b>Broker API</b><span class="chip info nodot" style="font-size:11px">Coming soon</span></button></div>
         <p class="hint">You can track this account fully by hand: record trades, import CSV, and enter floating P&amp;L in Settings.</p>`;
     } else if (w.step === 'plan') {
-      const acct = draftAccount(w); const c = compute(acct);
+      if (firm.custom) saveCustomRules(w); const acct = draftAccount(w); const c = compute(acct);
       body = `<h2>Your plan</h2><p class="muted">${esc(firm.name)} · ${esc(model.name)} · ${esc(c.phase.label)} · ${fmt$(acct.initialBalance, 0)}</p>
         ${c.ver.confirmed ? '' : `<div class="alert warn">${icon('info')}<span>${c.ver.unverified.length} rules are unverified. Results are shown but not confirmed.</span></div>`}
         <div class="grid g2" style="gap:12px"><div class="panel"><dl class="kv"><dt>Profit target</dt><dd>${c.plan.target != null ? fmt$(c.plan.target, 0) : '—'}</dd><dt>Daily loss limit</dt><dd>${c.dl.applicable ? fmt$(c.dl.limit, 0) : '—'}</dd><dt>Max loss floor</dt><dd>${c.dd.applicable ? fmt$(c.dd.floor, 0) : '—'}</dd><dt>Min trading days</dt><dd>${c.td.min || '—'}</dd>${c.plan.dayCap != null ? `<dt>Consistency day cap</dt><dd>${fmt$(c.plan.dayCap, 0)}</dd>` : ''}</dl></div>
@@ -1383,6 +1384,29 @@
       <div class="sheet-b">${body}</div>
       <div class="sheet-f"><button class="btn ghost" data-act="w-back" ${i === 0 ? 'disabled' : ''}>Back</button>${w.step === 'plan' ? '<button class="btn primary" data-act="w-finish">Open dashboard</button>' : `<button class="btn primary" data-act="w-next" ${canNext ? '' : 'disabled'}>${w.step === 'import' ? (w.csvRes && w.csvRes.trades.length ? 'Continue' : 'Skip for now') : 'Continue'}</button>`}</div>
     </div></div>`;
+  }
+  // Custom firm: the trader types in their own firm's limits. Stored as user-configured rules.
+  const CR_DD = { static: 'Static', trailing_eod: 'Trailing (end of day)', trailing_intraday: 'Trailing (intraday)', trailing_balance: 'Trailing (closed balance)' };
+  function crDefaults(w) { const r = (findModel('custom-1step') || {}).model; const ph = r && r.phases[w.phase || 'phase1'] ? r.phases[w.phase || 'phase1'].rules : {}; const v = (k, d) => (ph[k] && ph[k].value != null ? ph[k].value : d);
+    return { cr_target: 10, cr_daily: v('dailyLossPct', 3), cr_max: v('maxLossPct', 6), cr_dd: v('ddType', 'trailing_eod'), cr_cons: v('consistencyPct', 0) }; }
+  function customRuleFields(w) {
+    const d = crDefaults(w); for (const k in d) if (w[k] == null) w[k] = d[k];
+    const num = (k, label, hint) => `<label class="field"><span>${label}</span><input class="input num" id="w-${k}" type="number" min="0" step="0.1" inputmode="decimal" data-w="${k}" value="${esc(w[k])}">${hint ? `<span class="hint">${hint}</span>` : ''}</label>`;
+    return `<h2 style="margin-top:14px">Your firm’s rules</h2><p class="muted">Copy these from your firm’s rules page. Percent of the starting balance. Change them any time in Firm Rules.</p>
+      <div class="grid g2" style="gap:12px">${w.phase === 'funded' ? '' : num('cr_target', 'Profit target (%)')}${num('cr_daily', 'Daily loss limit (%)', '0 if your firm has none')}${num('cr_max', 'Maximum loss (%)')}
+      <label class="field"><span>Drawdown type</span><select class="input" id="w-cr_dd" data-w="cr_dd">${Object.entries(CR_DD).map(([k, l]) => `<option value="${k}" ${w.cr_dd === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      ${num('cr_cons', 'Consistency rule (%)', '0 if your firm has none')}</div>`;
+  }
+  function customRulesOk(w) { const d = crDefaults(w); const g = (k) => Number(w[k] != null ? w[k] : d[k]); return g('cr_max') > 0 && g('cr_daily') >= 0 && g('cr_cons') >= 0 && (w.phase === 'funded' || g('cr_target') > 0); }
+  function saveCustomRules(w) {
+    const d = crDefaults(w); const g = (k) => (w[k] != null && w[k] !== '' ? w[k] : d[k]);
+    const rec = (value) => ({ value, status: 'user_configured', source: null, verifiedAt: null, effective: null, version: 1, notes: 'Entered by you when setting up this account.' });
+    const fm = findModel('custom-1step'); const lib = (state.libEdits['custom-1step'] = state.libEdits['custom-1step'] || {});
+    for (const ph of Object.keys(fm.model.phases)) {
+      const e = (lib[ph] = lib[ph] || {});
+      e.dailyLossPct = rec(Number(g('cr_daily')) || null); e.maxLossPct = rec(Number(g('cr_max'))); e.ddType = rec(g('cr_dd')); e.consistencyPct = rec(Number(g('cr_cons')) || null);
+      if (ph !== 'funded') e.profitTargetPct = rec(Number(g('cr_target')));
+    }
   }
   function draftAccount(w) {
     const firm = FIRMS.find((f) => f.id === w.firmId);
@@ -1607,7 +1631,7 @@
         const steps = state.profile && W.step !== 'profile' ? ['firm', 'model', 'goal', 'config', 'import', 'plan'] : ['profile', 'firm', 'model', 'goal', 'config', 'import', 'plan'];
         W.step = steps[steps.indexOf(W.step) + 1]; save(); break;
       }
-      case 'w-finish': { const acct = draftAccount(W); state.accounts.push(acct); state.activeId = acct.id; state.view = 'overview'; ui.wizard = null; ui.calc = null; ui.check = null; ui.chat = []; save(); toast('Account created'); return; }
+      case 'w-finish': { if (W.firmId === 'custom') saveCustomRules(W); const acct = draftAccount(W); state.accounts.push(acct); state.activeId = acct.id; state.view = 'overview'; ui.wizard = null; ui.calc = null; ui.check = null; ui.chat = []; save(); toast('Account created'); return; }
       case 'clear-examples': state.accounts = state.accounts.filter((x) => !x.example); state.activeId = state.accounts[0] ? state.accounts[0].id : null; save(); break;
       case 'restore-examples': { const s = seed(); state.accounts = state.accounts.filter((x) => !x.example).concat(s.accounts); state.activeId = state.activeId || s.activeId; save(); toast('Example accounts loaded'); return; }
       case 'confirm': ui.confirm = el.dataset.k; break;
@@ -1702,7 +1726,7 @@
     const el = e.target; const a = active(); const d = el.dataset;
     if (d.calc !== undefined) { ui.calc[d.calc] = el.value; if (d.full) { ui.calc.cs = ''; render(); } else { const o = $('#calc-out'); if (o) o.innerHTML = calcOut(a, compute(a)); } return; }
     if (d.check !== undefined) { ui.check[d.check] = el.value; if (d.full) { const s = PR.INSTRUMENTS[el.value]; ui.check.entry = String(s.sample); ui.check.stop = ''; ui.check.tp = ''; ui.check.lots = ''; render(); } else { const o = $('#check-out'); if (o) o.innerHTML = checkOut(a, compute(a)); } return; }
-    if (d.w !== undefined) { ui.wizard[d.w] = el.value; if (d.w === 'q' || d.w === 'inst') { render(); const i = $('#w-' + d.w); if (i) { i.focus(); if (i.setSelectionRange && i.type === 'search') i.setSelectionRange(i.value.length, i.value.length); } } else { const btn = $('[data-act="w-next"]'); if (btn) { const w = ui.wizard; btn.disabled = w.step === 'profile' ? !(w.name && w.name.trim()) : w.step === 'model' ? !(w.modelId && Number(w.size) > 0 && w.phase) : w.step === 'config' ? !((w.aname || '').trim()) : btn.disabled; } } return; }
+    if (d.w !== undefined) { ui.wizard[d.w] = el.value; if (d.w === 'q' || d.w === 'inst') { render(); const i = $('#w-' + d.w); if (i) { i.focus(); if (i.setSelectionRange && i.type === 'search') i.setSelectionRange(i.value.length, i.value.length); } } else { const btn = $('[data-act="w-next"]'); if (btn) { const w = ui.wizard; btn.disabled = w.step === 'profile' ? !(w.name && w.name.trim()) : w.step === 'model' ? !(w.modelId && Number(w.size) > 0 && w.phase && (w.firmId !== 'custom' || customRulesOk(w))) : w.step === 'config' ? !((w.aname || '').trim()) : btn.disabled; } } return; }
     if (d.nt !== undefined) { ui.newTrade[d.nt] = el.value; return; }
     if (d.ui !== undefined) {
       ui[d.ui] = el.value;

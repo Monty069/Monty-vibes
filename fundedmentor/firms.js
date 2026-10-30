@@ -50,9 +50,9 @@
 
   const CUSTOM = [
     {
-      id: 'custom', name: 'Custom firm', market: 'Any', site: null, timezone: 'America/New_York', resetHour: 17, custom: true,
+      id: 'custom', name: 'Custom firm', market: 'Any firm · enter your own rules', site: null, timezone: 'America/New_York', resetHour: 17, custom: true, status: 'active',
       models: [{
-        id: 'custom-1step', name: '1-Step · trailing EOD · 40% consistency', structure: 'One-step evaluation (template)', sizes: [25000, 50000, 100000, 150000], version: 1,
+        id: 'custom-1step', name: 'Your own rules', structure: 'Any program: enter your firm’s limits', sizes: [], version: 1,
         phases: phases(null, U,
           { dailyLossPct: 3, dailyLossBasis: 'initial', dailyLossReference: 'day_start_balance', dailyLossIncludesUnrealized: true, maxLossPct: 6, ddType: 'trailing_eod', ddBasis: 'equity', ddLockPct: 0, consistencyPct: 40, consistencyDenominator: 'total_profit', profitableDayMinPct: 0.2 },
           [['phase1', 'Evaluation', { profitTargetPct: 10, minTradingDays: 3 }], ['funded', 'Funded', { profitSplitPct: 90, payoutWaitDays: 7, payoutMinProfitableDays: 5, payoutMinAmount: 100 }]]),
