@@ -164,7 +164,7 @@
     const unverified = [];
     for (const k in rules) {
       const r = rules[k];
-      if (r && typeof r === 'object' && 'status' in r && r.status !== 'verified') unverified.push({ key: k, status: r.status });
+      if (r && typeof r === 'object' && 'status' in r && r.status !== 'verified' && r.status !== 'user_configured') unverified.push({ key: k, status: r.status });
     }
     return { confirmed: unverified.length === 0, unverified };
   }

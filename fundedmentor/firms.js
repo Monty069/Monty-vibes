@@ -59,7 +59,12 @@
       }],
     },
   ];
-  CUSTOM[0].checkedAt = null; CUSTOM[0].models.forEach((m) => { m.prices = {}; m.sizeRules = {}; m.rulesComplete = true; m.type = '1-step'; });
+  // Personal account: your own capital, no firm limits. Targets and consistency come from the account's compounding plan.
+  CUSTOM.push({
+    id: 'personal', name: 'Personal account', market: 'Own capital · compounding plan', site: null, timezone: 'America/New_York', resetHour: 17, custom: true, personal: true, status: 'active',
+    models: [{ id: 'personal-compound', name: 'Compounding plan', structure: 'Your own money: no firm limits', sizes: [], version: 1, phases: phases(null, U, {}, [['live', 'Live', {}]]) }],
+  });
+  CUSTOM[0].checkedAt = null; CUSTOM.forEach((f) => { f.checkedAt = null; f.models.forEach((m) => { m.prices = {}; m.sizeRules = {}; m.rulesComplete = true; m.type = f.personal ? 'personal' : '1-step'; }); });
   const FIRMS = (root.FIRMS_DATA || []).concat(CUSTOM);
   root.FIRMS = FIRMS; root.RULE_META = RULE_META;
 })(typeof window !== 'undefined' ? window : globalThis);

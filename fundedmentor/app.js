@@ -296,6 +296,11 @@
     const fm = findModel(acct.modelId); if (!fm) return null;
     const { firm, model } = fm;
     const records = phaseRecords(acct.modelId, acct.phase, acct.initialBalance);
+    if (acct.compound) {
+      const ur = (value) => ({ value, status: 'user_configured', source: null, verifiedAt: null, effective: null, version: 1, notes: 'From your compounding plan.' });
+      const tg = Number(acct.compound.target); if (acct.compound.solve === 'target' && tg > acct.initialBalance) records.profitTargetAmount = ur(tg - acct.initialBalance);
+      if (Number(acct.compound.cons) > 0) records.consistencyPct = ur(Number(acct.compound.cons));
+    }
     const rv = Object.assign(PR.ruleValues(records), { timezone: firm.timezone, resetHour: firm.resetHour, currency: acct.currency });
     const s = PR.accountState(acct, rv, now);
     const peaks = acct.peakEquity ? [acct.peakEquity] : [];
@@ -609,6 +614,13 @@
     return opts.reduce((m, x) => (x.actual < m.actual ? x : m)).mode;
   }
   function nextBtn(a, c) {
+    if (a.compound) {
+      const f = Object.assign({}, a.compound, { start: String(c.s.equity) }); const r = compoundPlan(f);
+      const today = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
+      const nx = r.err ? null : cpNext(f, r);
+      const v = r.err ? esc(r.err) : f.solve === 'target' && c.s.equity >= Number(f.target) ? 'Target reached' : today >= per ? 'Done for today' : nx.lots ? `${qty(nx.lots, nx.spec)} ${esc(f.inst)} · aim ${fmt$(nx.profit, 0)}` : 'Open plan';
+      return `<button class="next-btn" data-act="go" data-v="compound"><span class="next-l">Next trade</span><span class="next-v">${v}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
+    }
     const rec = bestMode(a, c); const t = nextTrade(a, c, rec);
     return `<button class="next-btn" data-act="next-open"><span class="next-l">Next trade</span><span class="next-v">${t.stopReason ? 'No trade · tap for why' : `${qty(t.lots, t.spec)} ${esc(a.instrument)} · risk ${fmt$(t.actual, 0)}`}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
   }
@@ -887,13 +899,15 @@
     return `${head}${next}${cons}${tierNote}${table}<p class="hint">Assumes every trade wins at your %. At 1:${nx.rr}, one loss wipes out ${(100 / nx.rr).toFixed(0)}% of a win. Update “Amount I have” after each trade and the plan resets.</p>`;
   }
   VIEWS.compound = (a, c) => {
-    const f = state.compound || (state.compound = cpDefaults(a, c)); f.tiers = f.tiers || [];
+    const linked = !!(a && a.compound && c); const f = linked ? a.compound : (state.compound || (state.compound = cpDefaults(a, c))); f.tiers = f.tiers || [];
+    if (linked) f.start = String(Math.round(c.s.equity * 100) / 100);
     const num = (k, label, extra = '') => `<label class="field"><span>${label}</span><input class="input num" id="cp-${k}" type="number" inputmode="decimal" step="any" min="0" data-cp="${k}" value="${esc(f[k])}" ${extra}></label>`;
     const solves = [['target', 'Reach a target'], ['days', 'In N days'], ['trades', 'In N trades']];
     return `${pageHead('Compounding Planner', 'Tell it what you have and your profit per trade. It works out the rest and sizes your next trade.')}
       <div class="grid g2">
         <section class="panel"><div class="stack" style="gap:14px">
-          <div class="grid g2" style="gap:12px">${num('start', 'Amount I have ($)')}${num('pct', 'Profit per trade (%)')}</div>
+          ${linked ? `<div class="alert info">${icon('info')}<span>Linked to <b>${esc(a.name)}</b>. Amount I have is its live balance; log trades to move it.</span></div>` : ''}
+          <div class="grid g2" style="gap:12px">${num('start', 'Amount I have ($)', linked ? 'readonly' : '')}${num('pct', 'Profit per trade (%)')}</div>
           <div class="field"><span>Work out</span><div class="seg" role="group">${solves.map(([k, l]) => `<button data-act="cp-solve" data-v="${k}" aria-pressed="${f.solve === k}">${l}</button>`).join('')}</div></div>
           <div class="grid g2" style="gap:12px">${f.solve === 'target' ? num('target', 'Target balance ($)') : f.solve === 'days' ? num('days', 'Days') : num('trades', 'Total trades')}${num('perDay', 'Max trades a day', 'step="1" min="1"')}</div>
           <div class="grid g2" style="gap:12px">${num('cons', 'Consistency rule (%)', 'placeholder="none"')}${num('rr', 'Reward : risk (1:x)')}</div>
@@ -903,9 +917,18 @@
             ${f.tiers.length < 4 ? `<button class="btn sm" data-act="cp-tier-add">${icon('plus', 'width="14" height="14"')}Add a step</button>` : ''}
             <span class="hint">Example: from $15,000 drop to 1% per trade to protect gains.</span></div>
         </div></section>
-        <section class="panel" id="cp-out">${cpOut(f)}</section>
+        <section class="panel"><div id="cp-out">${cpOut(f)}</div>${linked ? '' : `<div class="row" style="margin-top:12px"><button class="btn primary" data-act="cp-save">${icon('plus', 'width="14" height="14"')}Save as account</button><span class="hint">Track it like any account: log trades and the plan follows your balance.</span></div>`}</section>
       </div>`;
   };
+  const cpTarget = () => { const a = active(); return a && a.compound ? a.compound : state.compound; };
+  function saveCompoundAccount() {
+    const f = state.compound; const r = compoundPlan(f); if (r.err) { toast(r.err); return; }
+    const now = Date.now(); const id = 'acct-' + uid();
+    const acct = { id, name: `Compounding ${fmt$(Number(f.start), 0)}${r.solve === 'target' ? ' → ' + fmt$(Number(f.target), 0) : ''}`, firmId: 'personal', modelId: 'personal-compound', phase: 'live', initialBalance: Number(f.start), currency: 'USD', platform: 'Other',
+      purchaseTs: now, riskProfile: 'balanced', instrument: f.inst, stopDistance: Number(f.stop) || 5, goal: Object.assign(defaultGoal(), { rr: Number(f.rr) || 2 }), legs: [{ symbol: f.inst, stop: Number(f.stop) || 5 }], commissionPerLot: 0, openPnl: 0, createdTs: now, trades: [], timezone: 'America/New_York', compound: clone(f) };
+    if (state.session && state.session.demo) state.accounts = state.accounts.filter((x) => !x.example);
+    state.accounts.push(acct); state.activeId = id; state.view = 'overview'; save(); toast('Account created'); render(); window.scrollTo(0, 0);
+  }
   VIEWS.calc = (a, c) => {
     if (!c) return viewEmpty();
     const f = ui.calc || (ui.calc = calcDefaults(a));
@@ -1430,8 +1453,9 @@
         ${model ? `<div class="field"><span>Account size</span>${model.sizes.length ? `<div class="pick">${model.sizes.map((s) => `<button data-act="w-size" data-v="${s}" aria-pressed="${Number(w.size) === s}"><b class="num">$${s.toLocaleString()}</b>${priceFor(model, s) != null ? `<span class="muted" style="font-size:12px">${model.priceCcy === 'EUR' ? '€' : '$'}${priceFor(model, s)}</span>` : ''}</button>`).join('')}</div>` : `<input class="input num" id="w-size" type="number" min="1000" step="1000" data-w="size" value="${esc(w.size || '')}" placeholder="e.g. 100000"><span class="hint">Sizes aren't published for this program. Enter the size you bought.</span>`}</div>
         <div class="field"><span>Current phase</span><div class="seg">${Object.values(model.phases).map((p) => `<button data-act="w-phase" data-k="${p.key}" aria-pressed="${w.phase === p.key}">${esc(p.label)}</button>`).join('')}</div></div>
         ${PR.verification(phaseRecords(model.id, w.phase || Object.keys(model.phases)[0], Number(w.size))).confirmed ? '' : `<div class="alert warn">${icon('info')}<span>These rules were checked on ${esc(firm.checkedAt || 'an earlier date')} from public sources and are not yet verified against the firm's own page. Review them in Firm Rules.</span></div>`}` : ''}`;
-      if (firm.custom && model) body += customRuleFields(w);
-      canNext = !!(model && Number(w.size) > 0 && w.phase && (!firm.custom || customRulesOk(w)));
+      if (firm.id === 'custom' && model) body += customRuleFields(w);
+      if (firm.personal && model) body += personalFields(w);
+      canNext = !!(model && Number(w.size) > 0 && w.phase && (firm.id !== 'custom' || customRulesOk(w)) && (!firm.personal || Number(w.cp_pct) > 0));
     } else if (w.step === 'goal') {
       w.goal = w.goal || defaultGoal(); w.legs = w.legs || [];
       body = `<h2>What are you trading this account for?</h2><p class="muted">Your answers turn the firm’s rules into lot sizes and trade counts for each pair you pick.</p>${goalForm(w.goal, w.legs, 'w', futuresModel(firm, model))}`;
@@ -1454,7 +1478,7 @@
         <div class="pick"><button disabled><b>MT4 / MT5 auto-sync</b><span class="chip info nodot" style="font-size:11px">Coming soon</span></button><button disabled><b>Broker API</b><span class="chip info nodot" style="font-size:11px">Coming soon</span></button></div>
         <p class="hint">You can track this account fully by hand: record trades, import CSV, and enter floating P&amp;L in Settings.</p>`;
     } else if (w.step === 'plan') {
-      if (firm.custom) saveCustomRules(w); const acct = draftAccount(w); const c = compute(acct);
+      if (firm.id === 'custom') saveCustomRules(w); const acct = draftAccount(w); const c = compute(acct);
       body = `<h2>Your plan</h2><p class="muted">${esc(firm.name)} · ${esc(model.name)} · ${esc(c.phase.label)} · ${fmt$(acct.initialBalance, 0)}</p>
         ${c.ver.confirmed ? '' : `<div class="alert warn">${icon('info')}<span>${c.ver.unverified.length} rules are unverified. Results are shown but not confirmed.</span></div>`}
         <div class="grid g2" style="gap:12px"><div class="panel"><dl class="kv"><dt>Profit target</dt><dd>${c.plan.target != null ? fmt$(c.plan.target, 0) : '—'}</dd><dt>Daily loss limit</dt><dd>${c.dl.applicable ? fmt$(c.dl.limit, 0) : '—'}</dd><dt>Max loss floor</dt><dd>${c.dd.applicable ? fmt$(c.dd.floor, 0) : '—'}</dd><dt>Min trading days</dt><dd>${c.td.min || '—'}</dd>${c.plan.dayCap != null ? `<dt>Consistency day cap</dt><dd>${fmt$(c.plan.dayCap, 0)}</dd>` : ''}</dl></div>
@@ -1491,11 +1515,18 @@
       if (ph !== 'funded') e.profitTargetPct = rec(Number(g('cr_target')));
     }
   }
+  function personalFields(w) {
+    if (w.cp_pct == null) w.cp_pct = '2'; if (w.cp_perDay == null) w.cp_perDay = '1';
+    const num = (k, label, hint, extra = '') => `<label class="field"><span>${label}</span><input class="input num" id="w-${k}" type="number" min="0" step="any" inputmode="decimal" data-w="${k}" value="${esc(w[k] || '')}" ${extra}>${hint ? `<span class="hint">${hint}</span>` : ''}</label>`;
+    return `<h2 style="margin-top:14px">Your compounding plan</h2><p class="muted">Account size above is the amount you have. Change the plan any time on the Compounding page.</p>
+      <div class="grid g2" style="gap:12px">${num('cp_pct', 'Profit per trade (%)')}${num('cp_target', 'Target balance ($)', 'Leave empty for no target')}${num('cp_perDay', 'Max trades a day', '', 'step="1" min="1"')}${num('cp_cons', 'Consistency rule (%)', 'Leave empty for none')}</div>`;
+  }
   function draftAccount(w) {
     const firm = FIRMS.find((f) => f.id === w.firmId);
     return { id: 'acct-' + uid(), name: w.aname.trim(), firmId: w.firmId, modelId: w.modelId, phase: w.phase, initialBalance: Number(w.size), currency: w.ccy || 'USD', platform: w.platform || 'MT5',
       purchaseTs: Date.parse(w.date || '') || Date.now(), riskProfile: w.profile || 'balanced', instrument: (w.legs && w.legs[0] ? w.legs[0].symbol : 'XAUUSD'), stopDistance: Number(w.legs && w.legs[0] ? w.legs[0].stop : 5), goal: Object.assign({}, w.goal || defaultGoal()), legs: (w.legs || []).map((l) => ({ symbol: l.symbol, stop: Number(l.stop) })), commissionPerLot: Number(w.comm ?? 7), openPnl: 0, createdTs: Date.now(),
-      trades: w.csvRes ? w.csvRes.trades : [], timezone: firm.timezone };
+      trades: w.csvRes ? w.csvRes.trades : [], timezone: firm.timezone,
+      ...(firm.personal ? { compound: { start: String(Number(w.size)), pct: String(w.cp_pct || 2), solve: Number(w.cp_target) > Number(w.size) ? 'target' : 'trades', target: String(w.cp_target || ''), days: '20', trades: '20', perDay: String(w.cp_perDay || 1), rr: String((w.goal && w.goal.rr) || 2), cons: String(w.cp_cons || ''), tiers: [], inst: (w.legs && w.legs[0] ? w.legs[0].symbol : 'XAUUSD'), stop: String(w.legs && w.legs[0] ? w.legs[0].stop : 5) } } : {}) };
   }
 
   // ---------- copilot ----------
@@ -1681,9 +1712,10 @@
       case 'go': state.view = el.dataset.v; ui.more = false; ui.menu = false; ui.confirm = null; save(); render(); window.scrollTo(0, 0); return;
       case 'copy-support': copySupport(); return;
       case 'more': ui.more = true; break;
-      case 'cp-solve': state.compound.solve = el.dataset.v; save(); break;
-      case 'cp-tier-add': state.compound.tiers.push({ at: '', pct: '' }); save(); break;
-      case 'cp-tier-del': state.compound.tiers.splice(Number(el.dataset.i), 1); save(); break;
+      case 'cp-solve': cpTarget().solve = el.dataset.v; save(); break;
+      case 'cp-tier-add': cpTarget().tiers.push({ at: '', pct: '' }); save(); break;
+      case 'cp-tier-del': cpTarget().tiers.splice(Number(el.dataset.i), 1); save(); break;
+      case 'cp-save': saveCompoundAccount(); return;
       case 'close-more': ui.more = false; break;
       case 'menu': ui.menu = !ui.menu; break;
       case 'close-menu': ui.menu = false; break;
@@ -1811,13 +1843,13 @@
   document.addEventListener('input', (e) => {
     const el = e.target; const a = active(); const d = el.dataset;
     if (d.cp !== undefined || d.cpt !== undefined) {
-      if (d.cp !== undefined) state.compound[d.cp] = el.value; else { const [i, k] = d.cpt.split(':'); state.compound.tiers[Number(i)][k] = el.value; }
-      save(); const o = $('#cp-out'); if (o) o.innerHTML = cpOut(state.compound);
+      const T = cpTarget(); if (d.cp !== undefined) T[d.cp] = el.value; else { const [i, k] = d.cpt.split(':'); T.tiers[Number(i)][k] = el.value; }
+      save(); if (a && a.compound) { render(); const i2 = $('#' + el.id); if (i2) { i2.focus(); } return; } const o = $('#cp-out'); if (o) o.innerHTML = cpOut(T);
       if (d.cp === 'inst') render(); return;
     }
     if (d.calc !== undefined) { ui.calc[d.calc] = el.value; if (d.full) { ui.calc.cs = ''; render(); } else { const o = $('#calc-out'); if (o) o.innerHTML = calcOut(a, compute(a)); } return; }
     if (d.check !== undefined) { ui.check[d.check] = el.value; if (d.full) { const s = PR.INSTRUMENTS[el.value]; ui.check.entry = String(s.sample); ui.check.stop = ''; ui.check.tp = ''; ui.check.lots = ''; render(); } else { const o = $('#check-out'); if (o) o.innerHTML = checkOut(a, compute(a)); } return; }
-    if (d.w !== undefined) { ui.wizard[d.w] = el.value; if (d.w === 'q' || d.w === 'inst') { render(); const i = $('#w-' + d.w); if (i) { i.focus(); if (i.setSelectionRange && i.type === 'search') i.setSelectionRange(i.value.length, i.value.length); } } else { const btn = $('[data-act="w-next"]'); if (btn) { const w = ui.wizard; btn.disabled = w.step === 'profile' ? !(w.name && w.name.trim()) : w.step === 'model' ? !(w.modelId && Number(w.size) > 0 && w.phase && (w.firmId !== 'custom' || customRulesOk(w))) : w.step === 'config' ? !((w.aname || '').trim()) : btn.disabled; } } return; }
+    if (d.w !== undefined) { ui.wizard[d.w] = el.value; if (d.w === 'q' || d.w === 'inst') { render(); const i = $('#w-' + d.w); if (i) { i.focus(); if (i.setSelectionRange && i.type === 'search') i.setSelectionRange(i.value.length, i.value.length); } } else { const btn = $('[data-act="w-next"]'); if (btn) { const w = ui.wizard; btn.disabled = w.step === 'profile' ? !(w.name && w.name.trim()) : w.step === 'model' ? !(w.modelId && Number(w.size) > 0 && w.phase && (w.firmId !== 'custom' || customRulesOk(w)) && (w.firmId !== 'personal' || Number(w.cp_pct) > 0)) : w.step === 'config' ? !((w.aname || '').trim()) : btn.disabled; } } return; }
     if (d.nt !== undefined) { ui.newTrade[d.nt] = el.value; return; }
     if (d.ui !== undefined) {
       ui[d.ui] = el.value;

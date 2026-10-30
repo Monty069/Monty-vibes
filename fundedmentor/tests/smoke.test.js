@@ -280,5 +280,30 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const t2 = boot({ state: Object.assign(base(manual()), { accounts: [], activeId: null }) }); t2.act('go', { v: 'compound' }); ok(/Compounding Planner/.test(t2.root()), 'compound: works with no account');
   ok(!t.errors.length && !t2.errors.length, 'compound: no errors ' + t.errors.concat(t2.errors).join(' | ')); }
 
+// N. Compounding as an account: save from the planner, and Personal account in the wizard
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000');
+  ok(/Save as account/.test(t.root()), 'cpacct: Save as account offered');
+  t.act('cp-save'); let st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts.find((x) => x.firmId === 'personal');
+  ok(a && a.initialBalance === 1000 && a.compound && a.compound.pct === '10' && st.activeId === a.id, 'cpacct: personal account created and active');
+  ok(/Next trade/.test(t.root()) && /aim \$100/.test(t.root()), 'cpacct: overview next trade comes from the plan');
+  ok(/50%|of target/.test(t.root()) || /\$1,000 to go/.test(t.root()), 'cpacct: target ring uses plan target');
+  t.act('go', { v: 'compound' }); ok(/Linked to/.test(t.root()) && !/Save as account/.test(t.root()), 'cpacct: planner linked to the account');
+  setv('cp-pct', '5'); st = JSON.parse(t.w.localStorage.getItem('passrate.v1'));
+  ok(st.accounts.find((x) => x.id === a.id).compound.pct === '5', 'cpacct: planner edits save to the account');
+  for (const v of VIEWS) { t.act('go', { v }); const h = t.root(); ok(!/undefined|NaN/.test(h.replace(/data-[a-z-]+="[^"]*"/g, '')), `cpacct: view ${v} renders for a personal account`); }
+  // wizard path
+  const t2 = boot({ state: base(manual()) }); const d2 = t2.w.document;
+  const set2 = (id, v) => { const el = d2.getElementById(id); el.value = v; el.dispatchEvent(new t2.w.Event('input', { bubbles: true })); };
+  t2.act('wizard'); const pb = d2.querySelector('[data-act="w-firm"][data-id="personal"]'); ok(pb && !pb.disabled, 'cpacct: Personal account selectable in wizard');
+  t2.act('w-firm', { id: 'personal' }); t2.act('w-next'); t2.act('w-model', { id: 'personal-compound' });
+  set2('w-size', '5000'); set2('w-cp_pct', '3'); set2('w-cp_target', '6000');
+  ok(!d2.querySelector('[data-act="w-next"]').disabled, 'cpacct: wizard continues with amount + %');
+  for (let i = 0; i < 5 && !/Your plan/.test(t2.root()); i++) t2.act('w-next');
+  t2.act('w-finish'); const s2 = JSON.parse(t2.w.localStorage.getItem('passrate.v1')); const b = s2.accounts[s2.accounts.length - 1];
+  ok(b.firmId === 'personal' && b.compound.pct === '3' && b.compound.solve === 'target' && b.compound.target === '6000', 'cpacct: wizard saves the compounding plan');
+  ok(!t.errors.length && !t2.errors.length, 'cpacct: no errors ' + t.errors.concat(t2.errors).join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
