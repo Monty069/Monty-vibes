@@ -355,5 +355,21 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('cp-log-open'); ok(/Took it as planned/.test(t.root()) && !/Open full plan/.test(t.root()), 'ntlog: opens the three choices from the planner');
   ok(!t.errors.length, 'ntlog: no errors ' + t.errors.join(' | ')); }
 
+// R. Daily Plan follows the compounding plan
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); setv('cp-perDay', '2'); t.act('cp-save');
+  t.act('go', { v: 'plan' }); let h = t.root(); const txt = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  ok(/From your compounding plan: 10% per trade to \$2,000/.test(txt), 'cpday: Daily Plan uses the compounding plan');
+  ok(/Aim for today\s*\$210\.00/.test(txt) && /Trades today\s*0 of 2/.test(txt), 'cpday: today = 2 trades');
+  ok(/Today’s trades/.test(txt) && /\$1,100/.test(txt) && /\$1,210/.test(txt), 'cpday: lists today’s trades from live balance');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '100'); t.act('cp-log-save');
+  t.act('go', { v: 'plan' }); const t2 = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  ok(/Trades today\s*1 of 2/.test(t2) && /Aim for today\s*\$110\.00/.test(t2), 'cpday: re-plans after a logged trade');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '110'); t.act('cp-log-save');
+  t.act('go', { v: 'plan' }); ok(/Done for today/.test(doc.getElementById('root').textContent), 'cpday: done for today after 2 trades');
+  const t3 = boot({ state: base(manual()) }); t3.act('go', { v: 'plan' }); ok(/Risk per trade/.test(t3.root()), 'cpday: prop accounts keep the normal Daily Plan');
+  ok(!t.errors.length && !t3.errors.length, 'cpday: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

@@ -829,6 +829,7 @@
   // Daily plan
   VIEWS.plan = (a, c) => {
     if (!c) return viewEmpty();
+    if (a.compound) return compoundDailyPlan(a, c);
     const p = c.plan;
     const seg = Object.entries(PR.PROFILES).map(([k, v]) => `<button data-act="profile" data-k="${k}" aria-pressed="${(a.riskProfile || 'balanced') === k}">${v.label}</button>`).join('');
     const instOpts = Object.keys(PR.INSTRUMENTS).map((s) => `<option ${s === a.instrument ? 'selected' : ''}>${s}</option>`).join('');
@@ -942,6 +943,52 @@
       rows = done.concat(plan);
     }
     return `${seg}<div class="tw"><table><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table></div>${H.length && view === 'day' ? '<p class="hint">Switch to Per trade to edit or delete a logged trade.</p>' : ''}`;
+  }
+  // Daily Plan for a compounding account: today's trades from the live balance, then where you stand.
+  function cpSize(f, profit, bal) {
+    const rr = Number(f.rr) > 0 ? Number(f.rr) : 2; const spec = PR.INSTRUMENTS[f.inst]; const stop = Number(f.stop); const risk = profit / rr;
+    if (!spec || !(stop > 0) || !(risk > 0)) return { risk };
+    const z = PR.positionSize({ spec, stopDistance: stop, risk, riskMode: 'amount', equity: bal, accountCcy: 'USD', commissionPerLot: 0 });
+    return z.ok && z.lots ? { risk: z.actualRisk, lots: z.lots, win: z.actualRisk * rr, spec } : { risk, note: z.reason || 'Below the minimum lot size.' };
+  }
+  function compoundDailyPlan(a, c) {
+    const f = a.compound; const eq = c.s.equity; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
+    const doneToday = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const left = Math.max(0, per - doneToday);
+    const target = f.solve === 'target' ? Number(f.target) : null; const reached = target && eq >= target;
+    const full = compoundPlan(Object.assign({}, f, { start: String(eq) }));
+    const cap = full.dayCap && full.dayCap < Infinity ? Math.max(0, full.dayCap - Math.max(0, c.s.todayPnl)) : null;
+    const today = []; let bal = eq, room = cap;
+    if (!full.err && !reached) for (let i = 0; i < left; i++) {
+      let p = full.list[i] ? bal * full.list[i].pct / 100 : 0;
+      if (room != null) p = Math.min(p, room); if (target) p = Math.min(p, target - bal);
+      if (!(p > 0.005)) break;
+      const z = cpSize(f, p, bal); const w = z.win != null ? z.win : p; today.push({ n: doneToday + i + 1, open: bal, aim: w, z }); bal += w; if (room != null) room -= w;
+    }
+    const dayAim = today.reduce((m, t) => m + t.aim, 0); const H = cpHistory(a); const prof = eq - Number(a.initialBalance);
+    const prog = target ? Math.max(0, Math.min(100, prof / (target - Number(a.initialBalance)) * 100)) : null;
+    const status = full.err ? full.err : reached ? 'Target reached. No more trades needed on this plan.' : !left ? `You have taken ${doneToday} of ${per} trade${per === 1 ? '' : 's'} today. Done for today.` : !today.length ? 'Today’s consistency room is used up. Stop for today.' : '';
+    return `${pageHead('Daily Plan', `From your compounding plan: ${esc(f.pct)}% per trade${target ? ' to ' + fmt$(target, 0) : ''}, up to ${per} trade${per === 1 ? '' : 's'} a day. Updates with every trade you log.`, `<button class="btn" data-act="go" data-v="compound">Edit plan</button>`)}
+      <div class="grid g3" style="margin-bottom:16px">
+        <section class="panel"><div class="panel-h"><h2>Today</h2><span class="chip nodot">Live</span></div>
+          <div class="label">Aim for today</div><div class="big" style="margin:4px 0 12px">${status ? '—' : fmt$(dayAim)}</div>
+          <dl class="kv"><dt>Trades today</dt><dd>${doneToday} of ${per}</dd><dt>Today’s P&amp;L</dt><dd class="${cls(c.s.todayPnl)}">${sgn$(c.s.todayPnl)}</dd>
+            ${cap != null ? `<dt>Consistency room left</dt><dd>${fmt$(cap)}</dd>` : ''}<dt>Balance now</dt><dd>${fmt$(eq)}</dd></dl>
+          <button class="btn primary" style="margin-top:12px;width:100%" data-act="cp-log-open">Log a trade</button></section>
+        <section class="panel"><div class="panel-h"><h2>Where you stand</h2><span class="chip nodot">History</span></div>
+          <dl class="kv"><dt>Started with</dt><dd>${fmt$(Number(a.initialBalance))}</dd><dt>Profit so far</dt><dd class="${cls(prof)}">${sgn$(prof)}</dd>
+            ${target ? `<dt>Target</dt><dd>${fmt$(target)}</dd><dt>Still to make</dt><dd>${fmt$(Math.max(0, target - eq))}</dd>` : ''}
+            <dt>Trades logged</dt><dd>${H.length}</dd>${!full.err && !reached ? `<dt>At this pace</dt><dd>${full.trades} more trade${full.trades === 1 ? '' : 's'} · ${full.days.length} day${full.days.length === 1 ? '' : 's'}</dd>` : ''}</dl>
+          ${prog != null ? `<div class="bar acc" style="margin-top:14px"><i style="width:${prog}%"></i></div><p class="hint" style="margin-top:6px">${pct(prog)} of the target</p>` : ''}</section>
+        <section class="panel"><div class="panel-h"><h2>Next trade</h2><span class="chip nodot">${esc(f.inst)}</span></div>
+          ${today[0] && today[0].z.lots ? `<div class="big">${qtyNum(today[0].z.lots, today[0].z.spec)}<small style="font-size:14px" class="muted">${qtyUnit(today[0].z.spec)}</small></div>
+            <dl class="kv" style="margin-top:8px"><dt>Aim</dt><dd class="pos">${sgn$(today[0].z.win)}</dd><dt>Risk</dt><dd>${fmt$(today[0].z.risk)}</dd><dt>Stop · take profit</dt><dd>${esc(f.stop)} · ${+(Number(f.stop) * (Number(f.rr) || 2)).toFixed(4)}</dd></dl>`
+            : `<p class="muted">${esc(status || (today[0] && today[0].z.note) || 'Set your instrument and stop on the Compounding page.')}</p>`}</section>
+      </div>
+      <section class="panel"><div class="panel-h"><h2>Today’s trades</h2><span class="hint">Each one assumes the one before it won. Log every trade and this list re-plans.</span></div>
+        ${today.length ? `<div class="tw"><table><thead><tr><th>#</th><th class="r">Start</th><th class="r">Aim</th><th class="r">Risk</th><th class="r">Size</th><th class="r">If it wins</th></tr></thead><tbody>
+          ${today.map((t) => `<tr><td>${t.n}</td><td class="r num">${fmt$(t.open, 0)}</td><td class="r num pos">${sgn$(t.aim)}</td><td class="r num">${fmt$(t.z.risk)}</td><td class="r num">${t.z.lots ? qty(t.z.lots, t.z.spec) : '—'}</td><td class="r num">${fmt$(t.open + t.aim, 0)}</td></tr>`).join('')}</tbody></table></div>`
+          : `<p class="muted">${esc(status || 'No trades planned for today.')}</p>`}
+      </section>`;
   }
   function cpOut(f, hist) {
     const r = compoundPlan(f);
