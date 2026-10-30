@@ -305,5 +305,19 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(b.firmId === 'personal' && b.compound.pct === '3' && b.compound.solve === 'target' && b.compound.target === '6000', 'cpacct: wizard saves the compounding plan');
   ok(!t.errors.length && !t2.errors.length, 'cpacct: no errors ' + t.errors.concat(t2.errors).join(' | ')); }
 
+// O. Compounding account: Next trade asks how it went and updates the balance
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '5000'); setv('cp-pct', '3'); setv('cp-target', '6000'); t.act('cp-save');
+  const bal = () => { const st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts.find((x) => x.id === st.activeId); return a.trades.reduce((m, x) => m + x.profit, a.initialBalance); };
+  t.act('cp-log-open'); let h = t.root();
+  ok(/Took it as planned/.test(h) && /Record a different profit/.test(h) && /Record a loss/.test(h), 'cplog: three choices shown');
+  t.act('cp-log-plan'); const b1 = bal(); ok(b1 > 5100 && b1 < 5200 && !/Took it as planned/.test(t.root()), 'cplog: planned win logged (~$144 at 0.12 lots × 6 × 2) ' + b1);
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '50'); t.act('cp-log-save'); ok(Math.abs(bal() - (b1 + 50)) < 0.01, 'cplog: custom profit adds to balance');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'loss' }); setv('cp-log-amt', '80'); t.act('cp-log-save'); ok(Math.abs(bal() - (b1 - 30)) < 0.01, 'cplog: loss subtracts from balance');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'loss' }); setv('cp-log-amt', '0'); t.act('cp-log-save'); ok(/Enter an amount above 0/.test(t.root()), 'cplog: rejects empty amount');
+  t.act('cp-log-close'); t.act('go', { v: 'compound' }); ok(doc.getElementById('cp-start').value === String(Math.round((b1 - 30) * 100) / 100), 'cplog: plan uses new balance');
+  ok(!t.errors.length, 'cplog: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

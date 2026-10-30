@@ -397,6 +397,7 @@
       ${ui.next && acct && c ? nextSheet(acct, c) : ''}
       ${ui.copilot && acct ? copilot(acct, c) : ''}
       ${ui.upgrade ? upgradeSheet() : ''}
+      ${ui.cpLog && acct && acct.compound && c ? cpLogSheet(acct, c) : ''}
       ${ui.logoutAsk ? `<div class="overlay" data-act="logout-no"><div class="sheet" data-stop role="dialog" aria-label="Log out"><div class="sheet-h"><h2>Log out?</h2><button class="btn ghost sm" data-act="logout-no" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div><div class="sheet-b"><div class="stack" style="gap:14px"><p class="muted">Your accounts and trades stay saved to your Google sign-in. Sign in again any time to pick up where you left off.</p><div class="row"><button class="btn primary" data-act="logout-yes">Log out</button><button class="btn ghost" data-act="logout-no">Cancel</button></div></div></div></div></div>` : ''}
       ${ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : ''}`);
     if (ui.copilot) { const m = $('.msgs'); if (m) m.scrollTop = m.scrollHeight; }
@@ -613,13 +614,37 @@
     if (!opts.length) return 'pace';
     return opts.reduce((m, x) => (x.actual < m.actual ? x : m)).mode;
   }
+  // Compounding account: after the next trade, record how it went so the balance and plan update.
+  function cpNextFor(a, c) { const f = Object.assign({}, a.compound, { start: String(c.s.equity) }); const r = compoundPlan(f); return { f, r, nx: r.err ? null : cpNext(f, r) }; }
+  function cpLogSheet(a, c) {
+    const { f, r, nx } = cpNextFor(a, c); const L = ui.cpLog;
+    const win = nx ? (nx.actual != null ? nx.actual * nx.rr : nx.profit) : 0; const loss = nx ? (nx.actual != null ? nx.actual : nx.risk) : 0;
+    const plan = r.err ? `<p class="muted">${esc(r.err)}</p>` : `<div class="panel"><span class="label">Planned trade</span><p style="margin:6px 0">${nx.lots ? `<b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})` : esc(nx.note || '')}</p><dl class="kv"><dt>Win</dt><dd class="pos">${sgn$(win)}</dd><dt>Loss</dt><dd class="neg">${sgn$(-loss)}</dd><dt>Balance now</dt><dd>${fmt$(c.s.equity)}</dd></dl></div>`;
+    const body = L.mode === 'profit' || L.mode === 'loss'
+      ? `<label class="field"><span>${L.mode === 'profit' ? 'Profit made ($)' : 'Loss taken ($)'}</span><input class="input num" id="cp-log-amt" type="number" inputmode="decimal" min="0" step="any" data-cl="amt" value="${esc(L.amt)}" autofocus></label>
+         ${L.err ? `<p class="neg" style="font-size:13px">${esc(L.err)}</p>` : ''}
+         <div class="row"><button class="btn primary" data-act="cp-log-save">${L.mode === 'profit' ? 'Add profit' : 'Record loss'}</button><button class="btn ghost" data-act="cp-log-mode" data-m="menu">Back</button></div>`
+      : `<div class="pick">
+          <button data-act="cp-log-plan" ${r.err || !win ? 'disabled' : ''}><b>Took it as planned · hit take profit</b><span class="muted" style="font-size:12px">Logs ${sgn$(win)} at your plan</span></button>
+          <button data-act="cp-log-mode" data-m="profit"><b>Record a different profit</b><span class="muted" style="font-size:12px">Closed early or bigger win</span></button>
+          <button data-act="cp-log-mode" data-m="loss"><b>Record a loss</b><span class="muted" style="font-size:12px">Stopped out or closed red</span></button></div>
+        <button class="btn ghost sm" data-act="go" data-v="compound" style="margin-top:10px">Open full plan</button>`;
+    return `<div class="overlay" data-act="cp-log-close"><div class="sheet" data-stop role="dialog" aria-label="Next trade">
+      <div class="sheet-h"><div><h2>Next trade</h2><small class="muted">How did it go? Your balance and plan update right away.</small></div><button class="btn ghost sm" data-act="cp-log-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
+      <div class="sheet-b"><div class="stack" style="gap:14px">${plan}${body}</div></div></div></div>`;
+  }
+  function cpLogTrade(profit) {
+    const a = active(); if (!a) return; const c = compute(a); const { nx } = cpNextFor(a, c); const now = Date.now();
+    a.trades.push({ id: 'm-' + uid(), symbol: a.compound.inst || a.instrument, side: 'buy', lots: nx && nx.lots ? nx.lots : null, openTime: now - 60000, closeTime: now, profit: Math.round(profit * 100) / 100, commission: 0, swap: 0, source: 'manual' });
+    ui.cpLog = null; save(); toast(`Logged ${sgn$(profit)} · balance ${fmt$(compute(a).s.equity)}`);
+  }
   function nextBtn(a, c) {
     if (a.compound) {
       const f = Object.assign({}, a.compound, { start: String(c.s.equity) }); const r = compoundPlan(f);
       const today = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
       const nx = r.err ? null : cpNext(f, r);
       const v = r.err ? esc(r.err) : f.solve === 'target' && c.s.equity >= Number(f.target) ? 'Target reached' : today >= per ? 'Done for today' : nx.lots ? `${qty(nx.lots, nx.spec)} ${esc(f.inst)} · aim ${fmt$(nx.profit, 0)}` : 'Open plan';
-      return `<button class="next-btn" data-act="go" data-v="compound"><span class="next-l">Next trade</span><span class="next-v">${v}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
+      return `<button class="next-btn" data-act="cp-log-open"><span class="next-l">Next trade</span><span class="next-v">${v}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
     }
     const rec = bestMode(a, c); const t = nextTrade(a, c, rec);
     return `<button class="next-btn" data-act="next-open"><span class="next-l">Next trade</span><span class="next-v">${t.stopReason ? 'No trade · tap for why' : `${qty(t.lots, t.spec)} ${esc(a.instrument)} · risk ${fmt$(t.actual, 0)}`}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
@@ -1716,6 +1741,12 @@
       case 'cp-tier-add': cpTarget().tiers.push({ at: '', pct: '' }); save(); break;
       case 'cp-tier-del': cpTarget().tiers.splice(Number(el.dataset.i), 1); save(); break;
       case 'cp-save': saveCompoundAccount(); return;
+      case 'cp-log-open': ui.cpLog = { mode: 'menu', amt: '', err: null }; break;
+      case 'cp-log-close': ui.cpLog = null; break;
+      case 'cp-log-mode': { const a = active(); const c = a && compute(a); const n = a && a.compound && c ? cpNextFor(a, c).nx : null; const m = el.dataset.m;
+        ui.cpLog = { mode: m, err: null, amt: n && m === 'profit' ? String(Math.round((n.actual != null ? n.actual * n.rr : n.profit) * 100) / 100) : n && m === 'loss' ? String(Math.round((n.actual != null ? n.actual : n.risk) * 100) / 100) : '' }; break; }
+      case 'cp-log-plan': { const a = active(); const c = a && compute(a); const n = a && a.compound && c ? cpNextFor(a, c).nx : null; if (n) cpLogTrade(n.actual != null ? n.actual * n.rr : n.profit); return; }
+      case 'cp-log-save': { const v = Number(ui.cpLog.amt); if (!(v > 0)) { ui.cpLog.err = 'Enter an amount above 0.'; break; } cpLogTrade(ui.cpLog.mode === 'loss' ? -v : v); return; }
       case 'close-more': ui.more = false; break;
       case 'menu': ui.menu = !ui.menu; break;
       case 'close-menu': ui.menu = false; break;
@@ -1842,6 +1873,7 @@
   // Inputs: update state and re-render only what depends on them, so focus stays put.
   document.addEventListener('input', (e) => {
     const el = e.target; const a = active(); const d = el.dataset;
+    if (d.cl !== undefined) { if (ui.cpLog) ui.cpLog[d.cl] = el.value; return; }
     if (d.cp !== undefined || d.cpt !== undefined) {
       const T = cpTarget(); if (d.cp !== undefined) T[d.cp] = el.value; else { const [i, k] = d.cpt.split(':'); T.tiers[Number(i)][k] = el.value; }
       save(); if (a && a.compound) { render(); const i2 = $('#' + el.id); if (i2) { i2.focus(); } return; } const o = $('#cp-out'); if (o) o.innerHTML = cpOut(T);
@@ -1884,7 +1916,7 @@
     if (el.id === 'csv-file' && el.files && el.files[0]) { const r = new FileReader(); r.onload = () => { ui.csvText = String(r.result); ui.csv = PR.importTrades(ui.csvText, a.trades); render(); }; r.readAsText(el.files[0]); return; }
     if (d.w === 'ccy' || d.w === 'platform' || d.w === 'date') { ui.wizard[d.w] = el.value; }
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (ui.next) ui.next = false; else if (ui.wizard) ui.wizard = null; else if (ui.copilot) ui.copilot = false; else if (ui.more) ui.more = false; else if (ui.menu) ui.menu = false; else return; render(); } });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (ui.cpLog) ui.cpLog = null; else if (ui.next) ui.next = false; else if (ui.wizard) ui.wizard = null; else if (ui.copilot) ui.copilot = false; else if (ui.more) ui.more = false; else if (ui.menu) ui.menu = false; else return; render(); } });
 
   // Keep "today" fresh if the page stays open across a firm day reset.
   setInterval(() => { if (!document.activeElement || !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) render(); }, 60000);
