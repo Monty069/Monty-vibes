@@ -388,6 +388,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('w-firm', { id: 'fundingpips' }); t.act('w-next'); let h = t.root(); ok(h.includes(REF) && /Use code/.test(h) && /51LM3ZBC/.test(h) && !/null/.test(h), 'fpips: link and code on program step');
   t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'fundingpips' }); h = t.root(); ok(h.includes(REF) && /Buy via partner link/.test(h), 'fpips: Firm Rules buy link');
   t.act('rule-firm', { id: 'wemastertrade' }); ok(/Buy · 35% off/.test(t.root()), 'fpips: WeMasterTrade unchanged');
+  t.act('rule-firm', { id: 'topstep' }); h = t.root(); ok(/Buy · 15% off/.test(h) && /TS-7AUMKSO2JXGXT/.test(h), 'fpips: Topstep 15% off code');
   ok(!t.errors.length, 'fpips: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);

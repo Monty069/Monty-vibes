@@ -293,6 +293,7 @@
   const PARTNERS = {
     wemastertrade: { url: 'https://my.wemastertrade.com/register?ref=390283', code: 'FUNDEDMENTOR', deal: '35% off' },
     fundingpips: { url: 'https://app.fundingpips.com/register?referral_code=51LM3ZBC', code: '51LM3ZBC', deal: null },
+    topstep: { url: 'https://topstep.com', code: 'TS-7AUMKSO2JXGXT', deal: '15% off' },
   };
   const dealLabel = (p) => p.deal || 'Partner code';
   const buyLabel = (p) => p.deal ? 'Buy · ' + p.deal : 'Buy via partner link';
