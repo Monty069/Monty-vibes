@@ -382,5 +382,13 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('copy-code', { code: 'FUNDEDMENTOR' }); ok(/FUNDEDMENTOR/.test(t.root()), 'partner: copy code confirms');
   ok(!t.errors.length, 'partner: no errors ' + t.errors.join(' | ')); }
 
+// T. Funding Pips partner link + referral code
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document; const REF = 'https://app.fundingpips.com/register?referral_code=51LM3ZBC';
+  t.act('wizard'); const fb = doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'); ok(fb && /Partner code/.test(fb.textContent), 'fpips: tag in Add account');
+  t.act('w-firm', { id: 'fundingpips' }); t.act('w-next'); let h = t.root(); ok(h.includes(REF) && /Use code/.test(h) && /51LM3ZBC/.test(h) && !/null/.test(h), 'fpips: link and code on program step');
+  t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'fundingpips' }); h = t.root(); ok(h.includes(REF) && /Buy via partner link/.test(h), 'fpips: Firm Rules buy link');
+  t.act('rule-firm', { id: 'wemastertrade' }); ok(/Buy · 35% off/.test(t.root()), 'fpips: WeMasterTrade unchanged');
+  ok(!t.errors.length, 'fpips: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

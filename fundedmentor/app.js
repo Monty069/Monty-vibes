@@ -290,12 +290,17 @@
   const qtyUnit = (spec) => isFut(spec) ? ' contracts' : ' lots';
   function priceFor(m, size) { return m.prices && m.prices[size] != null ? m.prices[size] : null; }
   // Partner links and discount codes FundedMentor has with firms (disclosed wherever shown).
-  const PARTNERS = { wemastertrade: { url: 'https://my.wemastertrade.com/register?ref=390283', code: 'FUNDEDMENTOR', deal: '35% off' } };
+  const PARTNERS = {
+    wemastertrade: { url: 'https://my.wemastertrade.com/register?ref=390283', code: 'FUNDEDMENTOR', deal: '35% off' },
+    fundingpips: { url: 'https://app.fundingpips.com/register?referral_code=51LM3ZBC', code: '51LM3ZBC', deal: null },
+  };
+  const dealLabel = (p) => p.deal || 'Partner code';
+  const buyLabel = (p) => p.deal ? 'Buy · ' + p.deal : 'Buy via partner link';
   const partnerOf = (firm) => (firm && PARTNERS[firm.id]) || null;
   function buyLink(firm) { return (state.affiliates || {})[firm.id] || (partnerOf(firm) || {}).url || firm.site || null; }
   function dealBox(firm, compact) {
     const p = partnerOf(firm); if (!p) return '';
-    return `<div class="alert ok" style="${compact ? 'margin:0' : 'margin-bottom:12px'}">${icon('ok')}<span><b>${p.deal} ${esc(firm.name)}</b> with code <b class="num">${p.code}</b>. <a href="${esc(p.url)}" target="_blank" rel="noopener sponsored">Buy through our link</a> · <button class="btn ghost sm" style="padding:0 6px;height:auto" data-act="copy-code" data-code="${p.code}">Copy code</button><br><span class="hint">Partner link: FundedMentor may earn a commission. Rules shown are unaffected.</span></span></div>`;
+    return `<div class="alert ok" style="${compact ? 'margin:0' : 'margin-bottom:12px'}">${icon('ok')}<span>${p.deal ? `<b>${p.deal} ${esc(firm.name)}</b> with code` : `Buying ${esc(firm.name)}? Use code`} <b class="num">${p.code}</b>. <a href="${esc(p.url)}" target="_blank" rel="noopener sponsored">Buy through our link</a> · <button class="btn ghost sm" style="padding:0 6px;height:auto" data-act="copy-code" data-code="${p.code}">Copy code</button><br><span class="hint">Partner link: FundedMentor may earn a commission. Rules shown are unaffected.</span></span></div>`;
   }
   function specFor(sym, acct) { const base = PR.INSTRUMENTS[sym]; if (!base) return null; return Object.assign({}, base, ((acct && acct.specOverrides) || {})[sym] || {}); }
   const active = () => state.accounts.find((a) => a.id === state.activeId) || state.accounts[0] || null;
@@ -1232,7 +1237,7 @@
     if (firm.custom) return '';
     const aff = (state.affiliates || {})[firm.id] || '';
     return `<section class="panel"><div class="panel-h"><div><h2>${esc(firm.name)}</h2><p class="muted" style="font-size:13px">${esc(firm.market)} · ${firm.platforms.length ? esc(firm.platforms.join(', ')) : 'Platforms not listed'} · data checked ${esc(firm.checkedAt || '—')}</p></div>
-      <div class="row">${firm.status !== 'active' ? '<span class="chip bad">Status uncertain</span>' : ''}${firm.dataConfidence === 'low' ? '<span class="chip warn">Low-confidence data</span>' : ''}${firm.site ? `<a class="btn sm" href="${esc(firm.site)}" target="_blank" rel="noopener">${icon('ext', 'width="14" height="14"')}Official site</a>` : ''}${partnerOf(firm) ? `<a class="btn sm primary" href="${esc(partnerOf(firm).url)}" target="_blank" rel="noopener sponsored">Buy · ${partnerOf(firm).deal}</a>` : ''}</div></div>
+      <div class="row">${firm.status !== 'active' ? '<span class="chip bad">Status uncertain</span>' : ''}${firm.dataConfidence === 'low' ? '<span class="chip warn">Low-confidence data</span>' : ''}${firm.site ? `<a class="btn sm" href="${esc(firm.site)}" target="_blank" rel="noopener">${icon('ext', 'width="14" height="14"')}Official site</a>` : ''}${partnerOf(firm) ? `<a class="btn sm primary" href="${esc(partnerOf(firm).url)}" target="_blank" rel="noopener sponsored">${buyLabel(partnerOf(firm))}</a>` : ''}</div></div>
       ${dealBox(firm)}
       ${firm.riskFlag ? `<div class="alert bad" style="margin-bottom:12px">${icon('warn')}<span>${esc(firm.riskFlag)}</span></div>` : ''}
       ${firm.tzNote ? `<p class="hint" style="margin-bottom:10px">Daily reset: ${esc(firm.tzNote)}. Using UTC midnight until confirmed.</p>` : ''}
@@ -1408,7 +1413,7 @@
           <p style="margin-top:6px;font-size:13px"><b class="num">$${(x.size / 1000).toLocaleString()}K</b> · ${x.price != null ? `<b class="num">${x.m.priceCcy === 'EUR' ? '€' : '$'}${x.price}</b>${/month|monthly/i.test(x.m.priceNote || '') ? '/mo' : ''}` : 'price not published'}${x.split ? ` · ${x.split}% split` : ''} · ${esc(fmtRule(x.r1))}</p>
           <div class="row" style="margin-top:8px;gap:6px">${x.pros.map((p) => `<span class="chip ok">${esc(p)}</span>`).join('')}${x.cons.map((p) => `<span class="chip warn">${esc(p)}</span>`).join('')}</div>
           ${x.m.priceNote || x.m.priceConfidence ? `<p class="hint" style="margin-top:8px">${esc([x.m.priceNote, x.m.priceConfidence].filter(Boolean).join(' · '))}</p>` : ''}</div>
-        <div class="stack" style="gap:6px;align-items:stretch;min-width:150px">${buyLink(x.f) ? `<a class="btn primary" href="${esc(buyLink(x.f))}" target="_blank" rel="noopener sponsored">${partnerOf(x.f) && !(state.affiliates || {})[x.f.id] ? 'Buy · ' + partnerOf(x.f).deal : (state.affiliates || {})[x.f.id] ? 'Buy via partner link' : 'Buy on ' + esc(x.f.name)}</a>${partnerOf(x.f) ? `<button class="btn ghost sm" data-act="copy-code" data-code="${partnerOf(x.f).code}">Code ${partnerOf(x.f).code}</button>` : ''}` : ''}
+        <div class="stack" style="gap:6px;align-items:stretch;min-width:150px">${buyLink(x.f) ? `<a class="btn primary" href="${esc(buyLink(x.f))}" target="_blank" rel="noopener sponsored">${partnerOf(x.f) && !(state.affiliates || {})[x.f.id] ? buyLabel(partnerOf(x.f)) : (state.affiliates || {})[x.f.id] ? 'Buy via partner link' : 'Buy on ' + esc(x.f.name)}</a>${partnerOf(x.f) ? `<button class="btn ghost sm" data-act="copy-code" data-code="${partnerOf(x.f).code}">Code ${partnerOf(x.f).code}</button>` : ''}` : ''}
           <button class="btn" data-act="finder-track" data-f="${x.f.id}" data-m="${x.m.id}" data-s="${x.size}">Track this account</button>
           <button class="btn ghost sm" data-act="finder-rules" data-f="${x.f.id}">Full rules</button></div></div></section>`).join('')}</div>`
         : `<div class="panel empty"><p>No program matches all six answers. Loosen the budget or path.</p></div>`}
@@ -1573,7 +1578,7 @@
     } else if (w.step === 'firm') {
       const q = (w.q || '').toLowerCase();
       body = `<h2>Which firm is your account with?</h2><input class="input" id="w-q" type="search" placeholder="Search firms" data-w="q" value="${esc(w.q || '')}">
-        <div class="pick">${FIRMS.filter((f) => !q || f.name.toLowerCase().includes(q)).map((f) => { const ok = f.models.some((m) => m.rulesComplete) && f.status === 'active'; return `<button data-act="w-firm" data-id="${f.id}" aria-pressed="${w.firmId === f.id}" ${ok ? '' : 'disabled'}><b>${esc(f.name)}${partnerOf(f) ? ` <span class="chip ok nodot" style="font-size:11px">${partnerOf(f).deal}</span>` : ''}</b><span class="muted" style="font-size:12px">${ok ? esc(f.market) + ' · ' + f.models.filter((m) => m.rulesComplete).length + ' programs' : f.status !== 'active' ? 'Status uncertain' : 'Rules not published yet'}</span>${f.riskFlag ? '<span class="warnc" style="font-size:11px">Trust warning</span>' : ''}</button>`; }).join('')}</div>`;
+        <div class="pick">${FIRMS.filter((f) => !q || f.name.toLowerCase().includes(q)).map((f) => { const ok = f.models.some((m) => m.rulesComplete) && f.status === 'active'; return `<button data-act="w-firm" data-id="${f.id}" aria-pressed="${w.firmId === f.id}" ${ok ? '' : 'disabled'}><b>${esc(f.name)}${partnerOf(f) ? ` <span class="chip ok nodot" style="font-size:11px">${dealLabel(partnerOf(f))}</span>` : ''}</b><span class="muted" style="font-size:12px">${ok ? esc(f.market) + ' · ' + f.models.filter((m) => m.rulesComplete).length + ' programs' : f.status !== 'active' ? 'Status uncertain' : 'Rules not published yet'}</span>${f.riskFlag ? '<span class="warnc" style="font-size:11px">Trust warning</span>' : ''}</button>`; }).join('')}</div>`;
       canNext = !!(firm && firm.models.some((m) => m.rulesComplete));
     } else if (w.step === 'model') {
       body = `<h2>Which ${esc(firm.name)} account did you buy?</h2>${dealBox(firm)}${firm.riskFlag ? `<div class="alert bad">${icon('warn')}<span>${esc(firm.riskFlag)}</span></div>` : ''}<div class="pick">${firm.models.map((m) => `<button data-act="w-model" data-id="${m.id}" aria-pressed="${w.modelId === m.id}" ${m.rulesComplete && !m.invitationOnly ? '' : 'disabled'}><b>${esc(m.name)}</b><span class="muted" style="font-size:12px">${esc(m.structure)}${m.invitationOnly ? ' · invitation only' : m.rulesComplete ? '' : ' · rules not published'}</span></button>`).join('')}</div>
