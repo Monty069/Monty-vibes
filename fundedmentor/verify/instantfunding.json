@@ -1,0 +1,114 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://instantfunding.com/trading-rules/"
+ ],
+ "firm": {
+  "timezone": "UTC",
+  "resetHour": 0
+ },
+ "models": {
+  "if-micro": {
+   "source": "https://instantfunding.com/trading-rules/",
+   "prices": {},
+   "priceNote": "See instantfunding.com for current fees.",
+   "notes": [
+    "Instant Funding doesn't publish exactly how the daily limit is measured. FundedMentor measures it from your day-start balance, including open trades.",
+    "Payouts on demand."
+   ],
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true,
+      "newsRestricted": false,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "if-1phase": {
+   "source": "https://instantfunding.com/trading-rules/",
+   "prices": {},
+   "priceNote": "See instantfunding.com for current fees.",
+   "notes": [
+    "Instant Funding doesn't publish exactly how the daily limit is measured. FundedMentor measures it from your day-start balance, including open trades.",
+    "Funded: no trades within 4 minutes of major news.",
+    "Split rises to 90% after 10% gain and 90 days."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 10,
+      "minTradingDays": 3,
+      "dailyLossPct": 3,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true,
+      "newsRestricted": false
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "if-2phase": {
+   "source": "https://instantfunding.com/trading-rules/",
+   "prices": {},
+   "priceNote": "See instantfunding.com for current fees.",
+   "notes": [
+    "Instant Funding doesn't publish exactly how the daily limit is measured. FundedMentor measures it from your day-start balance, including open trades.",
+    "Funded: no trades within 4 minutes of major news.",
+    "Split rises to 90% after 10% gain and 90 days."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 8,
+      "minTradingDays": 3,
+      "dailyLossPct": 5,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true,
+      "newsRestricted": false
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 5,
+      "minTradingDays": 3,
+      "dailyLossPct": 5,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true,
+      "newsRestricted": false
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 5,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,64 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://help.fundedtradingplus.com/2-step-classic-program-information/"
+ ],
+ "firm": {
+  "timezone": "UTC",
+  "resetHour": 0
+ },
+ "models": {
+  "ftp-2step": {
+   "source": "https://help.fundedtradingplus.com/2-step-classic-program-information/",
+   "sizes": [],
+   "prices": {},
+   "priceNote": "See fundedtradingplus.com for current fees.",
+   "notes": [
+    "Daily limit is measured from the prior day's closed balance; resets 23:59 server time.",
+    "Hard breach: 3% loss on one instrument (from the prior day's 16:59 EST balance).",
+    "Trade at least once every 30 days. First withdrawal 10 days after account creation."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 7,
+      "dailyLossPct": 4,
+      "dailyLossReference": "day_start_balance",
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "consistencyPct": 35,
+      "consistencyDenominator": "total_profit",
+      "weekendHolding": true
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 7,
+      "dailyLossPct": 4,
+      "dailyLossReference": "day_start_balance",
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "consistencyPct": 35,
+      "consistencyDenominator": "total_profit",
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossReference": "day_start_balance",
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "consistencyPct": 50,
+      "consistencyDenominator": "total_profit",
+      "weekendHolding": true,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  }
+ }
+}

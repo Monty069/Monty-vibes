@@ -1,0 +1,52 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://fortraders.com/our-rules"
+ ],
+ "firm": {
+  "timezone": "UTC",
+  "resetHour": 0
+ },
+ "models": {
+  "ft-fast-static": {
+   "source": "https://fortraders.com/our-rules",
+   "sizes": [
+    6000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {},
+   "priceNote": "See fortraders.com for current fees.",
+   "notes": [
+    "For Traders doesn't publish exactly how the daily limit is measured. FundedMentor measures it from your day-start balance, including open trades.",
+    "Profitable day = at least 0.5% of the start. Master: no new trades within 5 minutes of high-impact news."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 10,
+      "minProfitableDays": 3,
+      "profitableDayMinPct": 0.5,
+      "dailyLossPct": 3,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": true,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,194 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://www.breakoutprop.com/program-rules/"
+ ],
+ "firm": {
+  "timezone": "UTC",
+  "resetHour": 0
+ },
+ "models": {
+  "bo-classic": {
+   "source": "https://www.breakoutprop.com/program-rules/",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {},
+   "priceNote": "See breakoutprop.com for current fees.",
+   "notes": [
+    "Daily limit is a % of your balance at 00:30 UTC (open trades excluded from that balance); equity is checked against it at all times.",
+    "90/10 split available as an add-on at purchase."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   },
+   "sizeRules": {
+    "phase1@5000": {
+     "profitTargetAmount": 500
+    },
+    "phase1@10000": {
+     "profitTargetAmount": 1000
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 2500
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 5000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 10000
+    }
+   }
+  },
+  "bo-pro": {
+   "source": "https://www.breakoutprop.com/program-rules/",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {},
+   "priceNote": "See breakoutprop.com for current fees.",
+   "notes": [
+    "Daily limit is a % of your balance at 00:30 UTC (open trades excluded from that balance); equity is checked against it at all times.",
+    "90/10 split available as an add-on at purchase."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   },
+   "sizeRules": {
+    "phase1@5000": {
+     "profitTargetAmount": 600
+    },
+    "phase1@10000": {
+     "profitTargetAmount": 1200
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 3000
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 6000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 12000
+    },
+    "phase1@200000": {
+     "profitTargetAmount": 24000
+    }
+   }
+  },
+  "bo-turbo": {
+   "source": "https://www.breakoutprop.com/program-rules/",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {},
+   "priceNote": "See breakoutprop.com for current fees.",
+   "notes": [
+    "Daily limit is a % of your balance at 00:30 UTC (open trades excluded from that balance); equity is checked against it at all times.",
+    "90/10 split available as an add-on at purchase."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 3,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 3,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   },
+   "sizeRules": {
+    "phase1@5000": {
+     "profitTargetAmount": 450
+    },
+    "phase1@10000": {
+     "profitTargetAmount": 900
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 2250
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 4500
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 9000
+    },
+    "phase1@200000": {
+     "profitTargetAmount": 18000
+    }
+   }
+  }
+ }
+}

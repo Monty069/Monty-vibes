@@ -1,0 +1,476 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://maventrading.com/challenges/2-step",
+  "https://maventrading.com/challenges/1-step",
+  "https://maventrading.com/challenges/3-step",
+  "https://maventrading.com/faqs"
+ ],
+ "firm": {
+  "timezone": "UTC",
+  "resetHour": 0
+ },
+ "models": {
+  "mv-2step": {
+   "source": "https://maventrading.com/challenges/2-step",
+   "sizes": [
+    2000,
+    5000,
+    10000,
+    20000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "2000": 19,
+    "5000": 22,
+    "10000": 44,
+    "20000": 88,
+    "50000": 220,
+    "100000": 440
+   },
+   "priceNote": "List price; refundable on the third withdrawal.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 8,
+      "dailyLossPct": {
+       "value": 4,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 8,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 5,
+      "dailyLossPct": {
+       "value": 4,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 8,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 4,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 8,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "mv-1step": {
+   "source": "https://maventrading.com/challenges/1-step",
+   "sizes": [
+    2000,
+    5000,
+    10000,
+    20000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "2000": 15,
+    "5000": 19,
+    "10000": 37,
+    "20000": 68,
+    "50000": 170,
+    "100000": 380
+   },
+   "priceNote": "List price; refundable on the third withdrawal.",
+   "notes": [
+    "Max loss trails your highest running equity, including open profit."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 8,
+      "dailyLossPct": {
+       "value": 3,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 5,
+      "ddType": {
+       "value": "trailing_intraday",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://maventrading.com/faqs"
+      }
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 3,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 5,
+      "ddType": {
+       "value": "trailing_intraday",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://maventrading.com/faqs"
+      },
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "mv-3step": {
+   "source": "https://maventrading.com/challenges/3-step",
+   "sizes": [
+    2000,
+    5000,
+    10000,
+    20000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "2000": 13,
+    "5000": 17,
+    "10000": 38,
+    "20000": 76,
+    "50000": 190,
+    "100000": 299
+   },
+   "priceNote": "List price; refundable on the third withdrawal.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 3,
+      "dailyLossPct": {
+       "value": 2,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 3,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 3,
+      "dailyLossPct": {
+       "value": 2,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 3,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "phase3": {
+     "rules": {
+      "profitTargetPct": 3,
+      "dailyLossPct": {
+       "value": 2,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 3,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 2,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 3,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "mv-omo": {
+   "source": "https://maventrading.com/faqs",
+   "prices": {},
+   "priceNote": "See maventrading.com for current fees.",
+   "notes": [
+    "180 days total across both phases.",
+    "M2 Account Saver: if floating loss reaches 2% of balance, open trades close and the funded split drops to 50%.",
+    "Funded trades must last at least 150 seconds; news profit capped at 0.5% of balance per event."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 6,
+      "minProfitableDays": 4,
+      "profitableDayMinPct": 0.5,
+      "dailyLossPct": {
+       "value": 4,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 8,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 8,
+      "minProfitableDays": 4,
+      "profitableDayMinPct": 0.5,
+      "dailyLossPct": {
+       "value": 4,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 8,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 4,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 8,
+      "ddType": {
+       "value": "static",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": "equity",
+      "payoutMinProfitableDays": 4,
+      "profitableDayMinPct": 0.5
+     }
+    }
+   }
+  },
+  "mv-instant": {
+   "source": "https://maventrading.com/faqs",
+   "prices": {},
+   "priceNote": "See maventrading.com for current fees.",
+   "notes": [
+    "1% max risk: floating loss can't exceed 1% of current balance.",
+    "Payout on demand once profit reaches 3% of the start and consistency is 20% or less.",
+    "At least half of trades must last 60 seconds or more."
+   ],
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 2,
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://maventrading.com/faqs"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://maventrading.com/faqs"
+      },
+      "maxLossPct": 3,
+      "ddType": {
+       "value": "trailing_intraday",
+       "source": "https://maventrading.com/faqs"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://maventrading.com/faqs"
+      },
+      "consistencyPct": 20,
+      "consistencyDenominator": "total_profit",
+      "newsRestricted": false,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  }
+ }
+}

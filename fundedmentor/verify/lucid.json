@@ -1,0 +1,174 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://support.lucidtrading.com/en/articles/12890029-lucidpro-evaluation-account",
+  "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown",
+  "https://support.lucidtrading.com/en/articles/12945790-lucidflex-evaluation-account",
+  "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown",
+  "https://support.lucidtrading.com/en/articles/12945795-lucidflex-funded-account"
+ ],
+ "firm": {
+  "timezone": "America/New_York",
+  "resetHour": 17
+ },
+ "models": {
+  "lucid-pro": {
+   "source": "https://support.lucidtrading.com/en/articles/12890029-lucidpro-evaluation-account",
+   "prices": {},
+   "priceNote": "One-time fee, no monthly rebill. See lucidtrading.com for current prices.",
+   "notes": [
+    "Max loss trails on end-of-day closing balance and locks at start + $100 once the balance passes start + max loss + $100.",
+    "Funded LucidPro payout rules and any funded daily loss limit: check Lucid's help centre."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown"
+      },
+      "ddLockAmount": {
+       "value": 100,
+       "source": "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown"
+      }
+     }
+    },
+    "funded": {
+     "label": "LucidPro Funded",
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown"
+      },
+      "ddLockAmount": {
+       "value": 100,
+       "source": "https://support.lucidtrading.com/en/articles/12890136-lucidpro-drawdown"
+      }
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "maxLots": 2
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1250
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 4
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000,
+     "dailyLossAmount": 1200
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 6
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000,
+     "dailyLossAmount": 1800
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 10
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000,
+     "dailyLossAmount": 2700
+    }
+   }
+  },
+  "lucid-flex": {
+   "source": "https://support.lucidtrading.com/en/articles/12945790-lucidflex-evaluation-account",
+   "prices": {},
+   "priceNote": "One-time fee. See lucidtrading.com for current prices.",
+   "notes": [
+    "Daily loss limit is optional (chosen at checkout); set it in Settings if you added it.",
+    "Consistency 40% (50% with the add-on, which also lowers minimum days to 2)."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+      },
+      "ddLockAmount": {
+       "value": 100,
+       "source": "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+      },
+      "minTradingDays": 3,
+      "consistencyPct": 40,
+      "consistencyDenominator": "total_profit"
+     }
+    },
+    "funded": {
+     "label": "LucidFlex Funded",
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+      },
+      "ddLockAmount": {
+       "value": 100,
+       "source": "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+      },
+      "profitSplitPct": {
+       "value": 90,
+       "source": "https://support.lucidtrading.com/en/articles/12945795-lucidflex-funded-account"
+      }
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "maxLots": 2
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1250
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 4
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 6
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 10
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    }
+   }
+  }
+ }
+}

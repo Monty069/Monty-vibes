@@ -1,0 +1,303 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://alpha-futures.com/how-it-works",
+  "https://alpha-futures.com/"
+ ],
+ "firm": {
+  "timezone": "America/New_York",
+  "resetHour": 17
+ },
+ "models": {
+  "af-zero": {
+   "source": "https://alpha-futures.com/how-it-works",
+   "prices": {
+    "25000": 89,
+    "50000": 139,
+    "100000": 279
+   },
+   "priceNote": "Monthly, full listed price.",
+   "notes": [
+    "Qualified: max payout $1,000 / $1,500 / $2,500; payouts after 5 winning days of $200+, up to 50% of profit per request."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "minTradingDays": 1,
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    },
+    "funded": {
+     "label": "Qualified",
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "minTradingDays": 5,
+      "consistencyPct": 40,
+      "consistencyDenominator": "total_profit",
+      "profitSplitPct": 90,
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "dailyLossAmount": 500,
+     "maxLots": 1
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "dailyLossAmount": 1000,
+     "maxLots": 3
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "dailyLossAmount": 2000,
+     "maxLots": 6
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1500
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    }
+   }
+  },
+  "af-standard": {
+   "source": "https://alpha-futures.com/how-it-works",
+   "name": "Standard",
+   "prices": {
+    "50000": 129,
+    "100000": 239,
+    "150000": 349
+   },
+   "priceNote": "Monthly, full listed price.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "minTradingDays": 2,
+      "consistencyPct": 50,
+      "consistencyDenominator": "total_profit",
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    },
+    "funded": {
+     "label": "Qualified",
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "minTradingDays": 5,
+      "consistencyPct": 40,
+      "consistencyDenominator": "total_profit",
+      "profitSplitPct": 90,
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    }
+   },
+   "sizeRules": {
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 5
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 10
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 15
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    },
+    "funded@50000": {
+     "dailyLossAmount": 1000
+    },
+    "funded@100000": {
+     "dailyLossAmount": 2000
+    },
+    "funded@150000": {
+     "dailyLossAmount": 3000
+    }
+   }
+  },
+  "af-advanced": {
+   "source": "https://alpha-futures.com/how-it-works",
+   "prices": {
+    "50000": 209,
+    "100000": 349,
+    "150000": 489
+   },
+   "priceNote": "Monthly, full listed price.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "minTradingDays": 3,
+      "consistencyPct": 40,
+      "consistencyDenominator": "total_profit",
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    },
+    "funded": {
+     "label": "Qualified",
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "minTradingDays": 5,
+      "profitSplitPct": 90,
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    }
+   },
+   "sizeRules": {
+    "50000": {
+     "maxLossAmount": 1750,
+     "maxLots": 5
+    },
+    "100000": {
+     "maxLossAmount": 3500,
+     "maxLots": 10
+    },
+    "150000": {
+     "maxLossAmount": 5250,
+     "maxLots": 15
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 4000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 8000
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 12000
+    }
+   }
+  },
+  "af-direct": {
+   "source": "https://alpha-futures.com/how-it-works",
+   "prices": {
+    "25000": 349,
+    "50000": 519,
+    "100000": 689,
+    "150000": 859
+   },
+   "priceNote": "One-time price.",
+   "notes": [
+    "First payout needs $1,500 / $3,000 / $6,000 / $9,000 profit, then $1,000 / $2,000 / $4,000 / $6,000."
+   ],
+   "phases": {
+    "funded": {
+     "label": "Direct",
+     "rules": {
+      "ddType": {
+       "value": "trailing_eod",
+       "source": "https://alpha-futures.com/"
+      },
+      "ddBasis": {
+       "value": "balance",
+       "source": "https://alpha-futures.com/"
+      },
+      "consistencyPct": 20,
+      "consistencyDenominator": "total_profit",
+      "ddLockAmount": {
+       "value": 0,
+       "source": "https://alpha-futures.com/"
+      }
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "dailyLossAmount": 500,
+     "maxLots": 2
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "dailyLossAmount": 1000,
+     "maxLots": 4
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "dailyLossAmount": 2000,
+     "maxLots": 8
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "dailyLossAmount": 3000,
+     "maxLots": 10
+    }
+   }
+  }
+ }
+}

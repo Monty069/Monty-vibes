@@ -1,0 +1,62 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://mentfunding.com/"
+ ],
+ "firm": {
+  "timezone": "America/New_York",
+  "resetHour": 17
+ },
+ "models": {
+  "ment-1step": {
+   "source": "https://mentfunding.com/",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    200000,
+    400000,
+    1000000,
+    2000000
+   ],
+   "prices": {},
+   "priceNote": "See mentfunding.com for current fees.",
+   "notes": [
+    "No opening or closing trades within 3 minutes of a news event (holding through is fine).",
+    "Close by 3:45 PM ET Friday unless you bought the weekend add-on.",
+    "Max loss locks at the starting balance after the first payout. 90% split available as an add-on.",
+    "Accounts above $1M have a 35% consistency requirement."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": true,
+      "weekendHolding": false,
+      "profitTargetPct": 10
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": true,
+      "weekendHolding": false,
+      "profitSplitPct": 75
+     }
+    }
+   }
+  }
+ }
+}
