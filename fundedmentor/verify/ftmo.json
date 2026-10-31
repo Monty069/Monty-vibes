@@ -1,0 +1,24 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": ["https://ftmo.com/en/trading-objectives/", "https://ftmo.com/en/"],
+ "firm": { "timezone": "Europe/Prague", "resetHour": 0 },
+ "models": {
+  "ftmo-2step": { "prices": {}, "priceNote": "See ftmo.com for current fees.",
+   "phases": {
+    "phase1": { "rules": { "profitTargetPct": 10, "minTradingDays": 4, "dailyLossPct": 5, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "static", "ddBasis": "equity" } },
+    "phase2": { "rules": { "profitTargetPct": 5, "minTradingDays": 4, "dailyLossPct": 5, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "static", "ddBasis": "equity" } },
+    "funded": { "rules": { "dailyLossPct": 5, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "static", "ddBasis": "equity" } } } },
+  "ftmo-2step-swing": { "prices": {}, "priceNote": "See ftmo.com for current fees.",
+   "phases": {
+    "phase1": { "rules": { "profitTargetPct": 10, "minTradingDays": 4, "dailyLossPct": 5, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "static", "ddBasis": "equity", "newsRestricted": { "value": false, "source": "https://ftmo.com/en/" }, "weekendHolding": { "value": true, "source": "https://ftmo.com/en/" } } },
+    "phase2": { "rules": { "profitTargetPct": 5, "minTradingDays": 4, "dailyLossPct": 5, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "static", "ddBasis": "equity", "newsRestricted": { "value": false, "source": "https://ftmo.com/en/" }, "weekendHolding": { "value": true, "source": "https://ftmo.com/en/" } } },
+    "funded": { "rules": { "dailyLossPct": 5, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "static", "ddBasis": "equity", "newsRestricted": { "value": false, "source": "https://ftmo.com/en/" }, "weekendHolding": { "value": true, "source": "https://ftmo.com/en/" } } } } },
+  "ftmo-1step": { "prices": {}, "priceNote": "See ftmo.com for current fees.",
+   "phases": {
+    "phase1": { "rules": { "profitTargetPct": 10, "dailyLossPct": 3, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "trailing_eod", "ddBasis": "balance", "consistencyPct": 50, "consistencyDenominator": "total_profit" } },
+    "funded": { "rules": { "dailyLossPct": 3, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "trailing_eod", "ddBasis": "balance", "consistencyPct": 50, "consistencyDenominator": "total_profit" } } } },
+  "ftmo-instant": { "prices": {}, "priceNote": "See ftmo.com for current fees.",
+   "phases": {
+    "funded": { "rules": { "dailyLossPct": 3, "dailyLossBasis": "initial", "dailyLossReference": "day_start_balance", "dailyLossIncludesUnrealized": true, "maxLossPct": 10, "ddType": "trailing_balance", "ddBasis": "balance", "consistencyPct": 30, "consistencyDenominator": "total_profit", "profitSplitPct": { "value": 90, "source": "https://ftmo.com/en/" } } } } }
+ }
+}

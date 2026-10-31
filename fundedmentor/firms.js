@@ -23,6 +23,7 @@
     profitTargetPct: { label: 'Profit target', unit: '%', group: 'Targets' },
     minTradingDays: { label: 'Minimum trading days', unit: 'days', group: 'Targets' },
     maxTradingDays: { label: 'Maximum trading days', unit: 'days', group: 'Targets' },
+    minProfitableDays: { label: 'Minimum profitable days', unit: 'days', group: 'Targets' },
     dailyLossPct: { label: 'Daily loss limit', unit: '%', group: 'Daily loss' },
     dailyLossBasis: { label: 'Daily limit measured on', unit: 'enum', options: { initial: 'Initial balance', day_start: 'Day-start reference' }, group: 'Daily loss' },
     dailyLossReference: { label: 'Daily floor reference', unit: 'enum', options: { day_start_balance: 'Day-start balance', day_start_equity: 'Day-start equity', day_start_higher: 'Higher of balance/equity at day start' }, group: 'Daily loss' },

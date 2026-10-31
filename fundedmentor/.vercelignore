@@ -4,3 +4,4 @@ supabase
 *.md
 # Logo source file (kept in the repo, not served)
 brand/fundedmentor-logo.png
+verify

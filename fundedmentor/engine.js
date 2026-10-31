@@ -285,6 +285,8 @@
 
   // ---------- Trading days ----------
   function tradingDays(rule, s) {
+    // Firms that count profitable days (e.g. at least 0.5% of the start) instead of any day traded.
+    if (rule.minProfitableDays) { const m = Number(rule.minProfitableDays); return { min: m, count: s.profitableDays, remaining: Math.max(0, m - s.profitableDays), met: s.profitableDays >= m, maxDays: rule.maxTradingDays || null, profitable: true }; }
     const minD = rule.minTradingDays || 0;
     return { min: minD, count: s.tradingDays, remaining: Math.max(0, minD - s.tradingDays), met: s.tradingDays >= minD, maxDays: rule.maxTradingDays || null };
   }

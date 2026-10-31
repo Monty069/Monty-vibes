@@ -1,0 +1,238 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://fundednext.com/cfds/stellar-2-step",
+  "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+ ],
+ "firm": {
+  "timezone": "Europe/Athens",
+  "resetHour": 0,
+  "tzNote": "00:00 server time (GMT+2, GMT+3 in summer)"
+ },
+ "models": {
+  "fn-stellar-2step": {
+   "source": "https://fundednext.com/cfds/stellar-2-step",
+   "sizes": [
+    6000,
+    15000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "6000": 34.99,
+    "15000": 95.99,
+    "25000": 159.99,
+    "50000": 239.99,
+    "100000": 549.99,
+    "200000": 1099.99
+   },
+   "priceNote": "One-time fee, sale price shown on 31 Oct 2026.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 8,
+      "minTradingDays": 5,
+      "dailyLossPct": 5,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 5,
+      "minTradingDays": 5,
+      "dailyLossPct": 5,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "profitSplitPct": 80,
+      "dailyLossPct": 5,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    }
+   }
+  },
+  "fn-stellar-1step": {
+   "source": "https://fundednext.com/cfds/stellar-2-step",
+   "prices": {},
+   "priceNote": "See fundednext.com for current fees.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 10,
+      "minTradingDays": 2,
+      "dailyLossPct": 3,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    }
+   }
+  },
+  "fn-stellar-lite": {
+   "source": "https://fundednext.com/cfds/stellar-2-step",
+   "prices": {},
+   "priceNote": "See fundednext.com for current fees.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "profitTargetPct": 8,
+      "minTradingDays": 2,
+      "dailyLossPct": 4,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    },
+    "phase2": {
+     "rules": {
+      "profitTargetPct": 4,
+      "minTradingDays": 2,
+      "dailyLossPct": 4,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "profitSplitPct": 80,
+      "dailyLossPct": 4,
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossReference": {
+       "value": "day_start_balance",
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://help.fundednext.com/en/articles/8019811-how-can-i-calculate-the-daily-loss-limit"
+      },
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "newsRestricted": false,
+      "weekendHolding": true
+     }
+    }
+   }
+  }
+ }
+}

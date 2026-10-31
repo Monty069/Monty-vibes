@@ -255,17 +255,24 @@
   }
 
   // ---------- library ----------
+  // Only programs whose rules were confirmed on the firm's official page are offered. Unpublished ones stay
+  // loadable so existing accounts keep working, but they are not listed anywhere.
+  const pubModels = (f) => f.models.filter((m) => m.published !== false);
+  const PUB = FIRMS.filter((f) => f.custom || (f.published !== false && pubModels(f).length));
   function findModel(modelId) { for (const f of FIRMS) for (const m of f.models) if (m.id === modelId) return { firm: f, model: m }; return null; }
   // Size-specific limits (futures dollar rules) are layered under any admin edits.
   function sizeRecords(fm, phaseKey, size) {
-    const sr = size != null && fm.model.sizeRules ? fm.model.sizeRules[size] : null;
+    // sizeRules[size] applies to every phase; sizeRules['<phase>@<size>'] adds or overrides for one phase.
+    const all = fm.model.sizeRules || {};
+    const sr = size != null && (all[size] || all[phaseKey + '@' + size]) ? Object.assign({}, all[size] || {}, all[phaseKey + '@' + size] || {}) : null;
     if (!sr) return {};
+    const ver = fm.model.verifiedAt;
     const src = (fm.firm.sources && fm.firm.sources[0]) || {};
     const out = {};
     for (const k in sr) {
       if (sr[k] == null) continue;
       if (k === 'profitTargetAmount' && phaseKey === 'funded') continue;
-      out[k] = { value: sr[k], status: 'needs_verification', source: src.url || null, checkedAt: fm.firm.checkedAt, verifiedAt: null, version: 1, notes: `Size-specific value for $${Number(size).toLocaleString()}.` };
+      out[k] = { value: sr[k], status: ver ? 'verified' : 'needs_verification', source: (ver && fm.model.verifySource) || src.url || null, checkedAt: ver || fm.firm.checkedAt, verifiedAt: ver || null, version: ver ? 2 : 1, notes: ver ? `Confirmed on the firm's official page on ${ver} for $${Number(size).toLocaleString()}.` : `Size-specific value for $${Number(size).toLocaleString()}.` };
     }
     return out;
   }
@@ -400,7 +407,7 @@
           </div>
           ${state.accounts.some((a) => a.example) && !(state.session && state.session.demo) ? `<div class="banner"><span>You are looking at example accounts with sample trades. ${state.profile ? '' : 'Create your profile and add the account you bought.'}</span><span class="row"><button class="btn sm primary" data-act="wizard">Set up my account</button><button class="btn sm ghost" data-act="clear-examples">Remove examples</button></span></div>` : ''}
           ${body}
-          <p class="disclaimer">FundedMentor is a planning and risk-management tool. It does not execute trades, guarantee that you pass an evaluation, or guarantee a payout. Rules marked “Needs verification” are sample values; always confirm with your firm’s official rules.</p>
+          <p class="disclaimer">FundedMentor is a planning and risk-management tool. It does not execute trades, guarantee that you pass an evaluation, or guarantee a payout. Firm rules are checked against each firm’s official page (see the date and source on every rule). Firms change rules often, so confirm on your firm’s site before relying on them.</p>
         </main>
       </div>
       <nav class="tabbar" aria-label="Main">${TABS.map(([k, l]) => `<button data-act="${k === 'more' ? 'more' : 'go'}" data-v="${k}" ${v === k || (k === 'more' && !TABS.some((t) => t[0] === v)) ? 'aria-current="page"' : ''}>${icon(k)}${l}</button>`).join('')}</nav>
@@ -1199,13 +1206,13 @@
   // Firm rules library + admin
   VIEWS.rules = (a) => {
     const q = ui.ruleSearch.toLowerCase();
-    const firms = FIRMS.filter((f) => !q || f.name.toLowerCase().includes(q) || f.models.some((m) => m.name.toLowerCase().includes(q)));
-    const firm = FIRMS.find((f) => f.id === ui.ruleFirm) || FIRMS[0];
+    const firms = PUB.filter((f) => !f.custom && (!q || f.name.toLowerCase().includes(q) || pubModels(f).some((m) => m.name.toLowerCase().includes(q))));
+    const firm = PUB.find((f) => f.id === ui.ruleFirm && !f.custom) || firms[0] || PUB.find((f) => !f.custom);
     return `${pageHead('Firm Rules', 'Every rule shows its source, version and verification status. Edits keep the previous version for audit.')}
       <div class="grid" style="grid-template-columns:minmax(0,260px) minmax(0,1fr);align-items:start" id="rules-grid">
         <section class="panel" style="padding:12px"><input class="input" id="rule-search" type="search" placeholder="Search firms" data-ui="ruleSearch" value="${esc(ui.ruleSearch)}" aria-label="Search firms">
           <div class="nav" style="margin-top:10px">${firms.map((f) => `<button data-act="rule-firm" data-id="${f.id}" ${f.id === firm.id ? 'aria-current="page"' : ''}><span style="flex:1">${esc(f.name)}</span><span class="faint" style="font-size:11px">${f.models.length ? f.models.length + ' model' : f.market}</span></button>`).join('') || '<p class="hint" style="padding:8px">No firm matches.</p>'}</div></section>
-        <div class="stack">${firmPanel(firm)}${firm.models.length ? firm.models.map((m) => modelRules(firm, m)).join('') : `<section class="panel empty"><h2>${esc(firm.name)}</h2><p>${esc(firm.note || 'No models loaded yet.')}</p></section>`}
+        <div class="stack">${firmPanel(firm)}${pubModels(firm).length ? pubModels(firm).map((m) => modelRules(firm, m)).join('') : `<section class="panel empty"><h2>${esc(firm.name)}</h2><p>${esc(firm.note || 'No models loaded yet.')}</p></section>`}
           ${historyPanel()}</div>
       </div>
       <style>@media (max-width:860px){#rules-grid{grid-template-columns:minmax(0,1fr)!important}}</style>`;
@@ -1346,9 +1353,9 @@
   function finderResults(a) {
     const want = Number(a.size || 100000);
     const out = [];
-    for (const f of FIRMS) {
+    for (const f of PUB) {
       if (f.custom || f.status !== 'active') continue;
-      for (const m of f.models) {
+      for (const m of pubModels(f)) {
         if (!m.rulesComplete || m.invitationOnly || !m.sizes.length) continue;
         const mk = marketOf(f, m);
         if (a.market && a.market !== 'any' && mk !== a.market) continue;
@@ -1579,10 +1586,10 @@
     } else if (w.step === 'firm') {
       const q = (w.q || '').toLowerCase();
       body = `<h2>Which firm is your account with?</h2><input class="input" id="w-q" type="search" placeholder="Search firms" data-w="q" value="${esc(w.q || '')}">
-        <div class="pick">${FIRMS.filter((f) => !q || f.name.toLowerCase().includes(q)).map((f) => { const ok = f.models.some((m) => m.rulesComplete) && f.status === 'active'; return `<button data-act="w-firm" data-id="${f.id}" aria-pressed="${w.firmId === f.id}" ${ok ? '' : 'disabled'}><b>${esc(f.name)}${partnerOf(f) ? ` <span class="chip ok nodot" style="font-size:11px">${dealLabel(partnerOf(f))}</span>` : ''}</b><span class="muted" style="font-size:12px">${ok ? esc(f.market) + ' · ' + f.models.filter((m) => m.rulesComplete).length + ' programs' : f.status !== 'active' ? 'Status uncertain' : 'Rules not published yet'}</span>${f.riskFlag ? '<span class="warnc" style="font-size:11px">Trust warning</span>' : ''}</button>`; }).join('')}</div>`;
-      canNext = !!(firm && firm.models.some((m) => m.rulesComplete));
+        <div class="pick">${PUB.filter((f) => !q || f.name.toLowerCase().includes(q)).map((f) => { const ok = pubModels(f).some((m) => m.rulesComplete) && f.status === 'active'; return `<button data-act="w-firm" data-id="${f.id}" aria-pressed="${w.firmId === f.id}" ${ok ? '' : 'disabled'}><b>${esc(f.name)}${partnerOf(f) ? ` <span class="chip ok nodot" style="font-size:11px">${dealLabel(partnerOf(f))}</span>` : ''}</b><span class="muted" style="font-size:12px">${ok ? esc(f.market) + ' · ' + pubModels(f).filter((m) => m.rulesComplete).length + ' verified program' + (pubModels(f).filter((m) => m.rulesComplete).length === 1 ? '' : 's') : f.status !== 'active' ? 'Status uncertain' : 'Rules not published yet'}</span>${f.riskFlag ? '<span class="warnc" style="font-size:11px">Trust warning</span>' : ''}</button>`; }).join('')}</div>`;
+      canNext = !!(firm && pubModels(firm).some((m) => m.rulesComplete));
     } else if (w.step === 'model') {
-      body = `<h2>Which ${esc(firm.name)} account did you buy?</h2>${dealBox(firm)}${firm.riskFlag ? `<div class="alert bad">${icon('warn')}<span>${esc(firm.riskFlag)}</span></div>` : ''}<div class="pick">${firm.models.map((m) => `<button data-act="w-model" data-id="${m.id}" aria-pressed="${w.modelId === m.id}" ${m.rulesComplete && !m.invitationOnly ? '' : 'disabled'}><b>${esc(m.name)}</b><span class="muted" style="font-size:12px">${esc(m.structure)}${m.invitationOnly ? ' · invitation only' : m.rulesComplete ? '' : ' · rules not published'}</span></button>`).join('')}</div>
+      body = `<h2>Which ${esc(firm.name)} account did you buy?</h2>${dealBox(firm)}${firm.riskFlag ? `<div class="alert bad">${icon('warn')}<span>${esc(firm.riskFlag)}</span></div>` : ''}<div class="pick">${pubModels(firm).map((m) => `<button data-act="w-model" data-id="${m.id}" aria-pressed="${w.modelId === m.id}" ${m.rulesComplete && !m.invitationOnly ? '' : 'disabled'}><b>${esc(m.name)}</b><span class="muted" style="font-size:12px">${esc(m.structure)}${m.invitationOnly ? ' · invitation only' : m.rulesComplete ? '' : ' · rules not published'}</span></button>`).join('')}</div>
         ${model ? `<div class="field"><span>Account size</span>${model.sizes.length ? `<div class="pick">${model.sizes.map((s) => `<button data-act="w-size" data-v="${s}" aria-pressed="${Number(w.size) === s}"><b class="num">$${s.toLocaleString()}</b>${priceFor(model, s) != null ? `<span class="muted" style="font-size:12px">${model.priceCcy === 'EUR' ? '€' : '$'}${priceFor(model, s)}</span>` : ''}</button>`).join('')}</div>` : `<input class="input num" id="w-size" type="number" min="1000" step="1000" data-w="size" value="${esc(w.size || '')}" placeholder="e.g. 100000"><span class="hint">Sizes aren't published for this program. Enter the size you bought.</span>`}</div>
         <div class="field"><span>Current phase</span><div class="seg">${Object.values(model.phases).map((p) => `<button data-act="w-phase" data-k="${p.key}" aria-pressed="${w.phase === p.key}">${esc(p.label)}</button>`).join('')}</div></div>
         ${PR.verification(phaseRecords(model.id, w.phase || Object.keys(model.phases)[0], Number(w.size))).confirmed ? '' : `<div class="alert warn">${icon('info')}<span>These rules were checked on ${esc(firm.checkedAt || 'an earlier date')} from public sources and are not yet verified against the firm's own page. Review them in Firm Rules.</span></div>`}` : ''}`;
@@ -1739,7 +1746,7 @@
   }
   function landing() {
     if (STATIC_LP) return STATIC_LP;
-    const n = FIRMS.filter((f) => !f.custom).length;
+    const n = PUB.filter((f) => !f.custom).length;
     const F = [
       ['spark', 'Your next trade, sized', 'Lots, stop and target for the next trade, from your target, compounding or consistency rule.'],
       ['check', 'Live loss limits', 'Daily loss and drawdown left, measured the way your firm measures them.'],
@@ -1782,7 +1789,7 @@
     return `<div class="auth">
       <aside class="auth-side"><button class="lp-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></button>
         <div class="auth-side-mid"><h2 class="lp-h2">Know your limit before the market finds it.</h2>${demoCard()}</div>
-        <p class="hint">Rules for ${FIRMS.filter((f) => !f.custom).length} prop firms, sized to your account.</p></aside>
+        <p class="hint">Rules for ${PUB.filter((f) => !f.custom).length} prop firms, sized to your account.</p></aside>
       <main class="auth-main"><div class="auth-card">
         <button type="button" class="lp-brand auth-mobile-brand" data-act="to-landing"><span class="mark" aria-hidden="true">FM</span><b class="wm">Funded<span>Mentor</span></b></button>
         <h1>Sign in</h1>

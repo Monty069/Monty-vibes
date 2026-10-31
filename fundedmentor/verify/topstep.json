@@ -1,0 +1,16 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": ["https://www.topstep.com/think-lp", "https://intercom.help/topstep-llc/en/articles/8284204", "https://intercom.help/topstep-llc/en/articles/8284197", "https://intercom.help/topstep-llc/en/articles/8284207"],
+ "firm": { "timezone": "America/Chicago", "resetHour": 17 },
+ "models": {
+  "ts-combine": { "source": "https://www.topstep.com/think-lp",
+   "prices": { "50000": 49, "100000": 99, "150000": 199 }, "priceNote": "Monthly subscription.",
+   "notes": ["Daily Loss Limit is an objective, not a breach: hitting it liquidates you for the rest of the session. TopstepX accounts have no Daily Loss Limit.", "Consistency: best day should stay under 55% of the profit target. No minimum days; you can pass in two days."],
+   "phases": {
+    "phase1": { "rules": { "ddType": { "value": "trailing_eod", "source": "https://intercom.help/topstep-llc/en/articles/8284204" }, "ddBasis": { "value": "balance", "source": "https://intercom.help/topstep-llc/en/articles/8284204" }, "ddLockAmount": { "value": 0, "source": "https://intercom.help/topstep-llc/en/articles/8284204" }, "dailyLossBasis": { "value": "initial", "source": "https://intercom.help/topstep-llc/en/articles/8284207" }, "dailyLossReference": { "value": "day_start_balance", "source": "https://intercom.help/topstep-llc/en/articles/8284207" }, "dailyLossIncludesUnrealized": { "value": true, "source": "https://intercom.help/topstep-llc/en/articles/8284207" }, "consistencyPct": { "value": 55, "source": "https://intercom.help/topstep-llc/en/articles/8284197" }, "consistencyDenominator": { "value": "total_profit", "source": "https://intercom.help/topstep-llc/en/articles/8284197" } } },
+    "funded": { "label": "Express Funded", "rules": { "ddType": { "value": "trailing_eod", "source": "https://intercom.help/topstep-llc/en/articles/8284204" }, "ddBasis": { "value": "balance", "source": "https://intercom.help/topstep-llc/en/articles/8284204" }, "ddLockAmount": { "value": 0, "source": "https://intercom.help/topstep-llc/en/articles/8284204" }, "profitSplitPct": 90 } } },
+   "sizeRules": {
+    "50000": { "maxLossAmount": 2000, "maxLots": 5 }, "100000": { "maxLossAmount": 3000, "maxLots": 10 }, "150000": { "maxLossAmount": 4500, "maxLots": 15 },
+    "phase1@50000": { "profitTargetAmount": 3000, "dailyLossAmount": 1000 }, "phase1@100000": { "profitTargetAmount": 6000, "dailyLossAmount": 2000 }, "phase1@150000": { "profitTargetAmount": 9000, "dailyLossAmount": 3000 } } }
+ }
+}

@@ -1,0 +1,58 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://apextraderfunding.com"
+ ],
+ "firm": {
+  "timezone": "America/New_York",
+  "resetHour": 17
+ },
+ "models": {
+  "apex-intraday": {
+   "source": "https://apextraderfunding.com",
+   "name": "Intraday Trail \u00b7 No Activation Fee",
+   "sizes": [
+    150000
+   ],
+   "prices": {
+    "150000": 189
+   },
+   "priceNote": "One-time fee shown on Apex's product page (sale price). Evaluation active 30 days, no rebill or resets.",
+   "notes": [
+    "Only the 150K size is confirmed so far; other sizes are being verified.",
+    "Performance Account has a Daily Loss Limit (amount not published on the product card): check your PA dashboard.",
+    "PA activation must happen within 7 days of passing; payouts every 5 trading days."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 1,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity"
+     }
+    },
+    "funded": {
+     "label": "Performance Account",
+     "rules": {
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "consistencyPct": 50,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "sizeRules": {
+    "150000": {
+     "maxLossAmount": 4000
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000,
+     "maxLots": 12
+    },
+    "funded@150000": {
+     "maxLots": 10
+    }
+   }
+  }
+ }
+}

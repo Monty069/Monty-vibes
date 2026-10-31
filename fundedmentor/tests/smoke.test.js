@@ -214,7 +214,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(!!d.getElementById('lp-static') && /Pass your challenge\. Keep your account\./.test(txt), 'static: hero visible without JS');
   for (const id of ['how', 'features', 'compare', 'who', 'pricing', 'faq', 'contact']) ok(!!d.getElementById(id), `static: section #${id} present without JS`);
   ok(/Is it connected to Ment Funding\?/.test(txt) && /no affiliation to Ment Funding/.test(txt), 'static: Ment Funding FAQ present');
-  ok(/public rules pages/.test(txt) && /last checked 14 Oct 2026/.test(txt), 'static: honest rule-source note present');
+  ok(/official rules page/.test(txt) && /last checked 31 Oct 2026/.test(txt) && /not listed/.test(txt), 'static: honest rule-source note present');
   ok(!/measured the way your firm|verified rules|guaranteed (accurate|correct)|exact rules|100% accurate/i.test(txt), 'static: no over-claims about rule accuracy');
   ok(d.querySelector('.boot') && noJs.window.getComputedStyle ? true : true, 'static: loader kept for signed-in users');
   const pro = [...d.querySelectorAll('button')].filter((b) => /Pro — Coming Soon/.test(b.textContent));
@@ -371,25 +371,27 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const t3 = boot({ state: base(manual()) }); t3.act('go', { v: 'plan' }); ok(/Risk per trade/.test(t3.root()), 'cpday: prop accounts keep the normal Daily Plan');
   ok(!t.errors.length && !t3.errors.length, 'cpday: no errors ' + t.errors.join(' | ')); }
 
-// S. WeMasterTrade partner link + FUNDEDMENTOR code
-{ const t = boot({ state: base(manual()) }); const doc = t.w.document; const REF = 'https://my.wemastertrade.com/register?ref=390283';
-  t.act('wizard'); const wb = doc.querySelector('[data-act="w-firm"][data-id="wemastertrade"]'); ok(wb && /35% off/.test(wb.textContent), 'partner: deal shown on WeMasterTrade in Add account');
-  t.act('w-firm', { id: 'wemastertrade' }); t.act('w-next'); let h = t.root();
-  ok(h.includes(REF) && /FUNDEDMENTOR/.test(h) && /may earn a commission/.test(h), 'partner: link, code and disclosure on the model step');
-  t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'wemastertrade' }); h = t.root();
-  ok(h.includes(REF) && /Buy · 35% off/.test(h) && /FUNDEDMENTOR/.test(h), 'partner: Firm Rules shows buy link and code');
-  t.act('rule-firm', { id: 'ftmo' }); ok(!t.root().includes(REF), 'partner: other firms unaffected');
-  t.act('copy-code', { code: 'FUNDEDMENTOR' }); ok(/FUNDEDMENTOR/.test(t.root()), 'partner: copy code confirms');
+// S. Partner links + codes (only firms with verified rules are listed)
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  t.act('wizard'); const tb = doc.querySelector('[data-act="w-firm"][data-id="topstep"]');
+  ok(tb && /15% off/.test(tb.textContent), 'partner: Topstep 15% off tag in Add account');
+  ok(!doc.querySelector('[data-act="w-firm"][data-id="wemastertrade"]') && !doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'), 'partner: unverified firms are not listed, even with a partner deal');
+  t.act('w-firm', { id: 'topstep' }); t.act('w-next'); let h = t.root();
+  ok(/TS-7AUMKSO2JXGXT/.test(h) && /may earn a commission/.test(h), 'partner: code and disclosure on the program step');
+  t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'topstep' }); h = t.root();
+  ok(/Buy · 15% off/.test(h) && /TS-7AUMKSO2JXGXT/.test(h), 'partner: Firm Rules shows buy button and code');
+  t.act('rule-firm', { id: 'ftmo' }); ok(!/TS-7AUMKSO2JXGXT/.test(t.root()), 'partner: other firms unaffected');
+  t.act('copy-code', { code: 'TS-7AUMKSO2JXGXT' }); ok(/TS-7AUMKSO2JXGXT/.test(t.root()), 'partner: copy code confirms');
   ok(!t.errors.length, 'partner: no errors ' + t.errors.join(' | ')); }
 
-// T. Funding Pips partner link + referral code
-{ const t = boot({ state: base(manual()) }); const doc = t.w.document; const REF = 'https://app.fundingpips.com/register?referral_code=51LM3ZBC';
-  t.act('wizard'); const fb = doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'); ok(fb && /Partner code/.test(fb.textContent), 'fpips: tag in Add account');
-  t.act('w-firm', { id: 'fundingpips' }); t.act('w-next'); let h = t.root(); ok(h.includes(REF) && /Use code/.test(h) && /51LM3ZBC/.test(h) && !/null/.test(h), 'fpips: link and code on program step');
-  t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'fundingpips' }); h = t.root(); ok(h.includes(REF) && /Buy via partner link/.test(h), 'fpips: Firm Rules buy link');
-  t.act('rule-firm', { id: 'wemastertrade' }); ok(/Buy · 35% off/.test(t.root()), 'fpips: WeMasterTrade unchanged');
-  t.act('rule-firm', { id: 'topstep' }); h = t.root(); ok(/Buy · 15% off/.test(h) && /TS-7AUMKSO2JXGXT/.test(h), 'fpips: Topstep 15% off code');
-  ok(!t.errors.length, 'fpips: no errors ' + t.errors.join(' | ')); }
+// T. Verified-only catalogue
+{ const t = boot({ state: base(manual()) }); const F = t.w.FIRMS;
+  const pub = F.filter((f) => !f.custom && f.published); const progs = pub.flatMap((f) => f.models.filter((m) => m.published));
+  ok(progs.length > 0 && progs.every((m) => Object.values(m.phases).every((p) => Object.values(p.rules).every((r) => r.status === 'verified' && /^https?:/.test(r.source)))), 'verified: every listed rule is verified with a source link (' + progs.length + ' programs)');
+  t.act('wizard'); const listed = [...t.w.document.querySelectorAll('[data-act="w-firm"]')].map((b) => b.dataset.id).filter((id) => !['custom', 'personal'].includes(id));
+  ok(listed.every((id) => pub.some((f) => f.id === id)) && listed.length === pub.length, 'verified: Add account lists only verified firms');
+  t.act('w-close'); t.act('go', { v: 'rules' }); ok(!/unverified|Sourced · confirm|Needs verification/i.test(t.root().replace(/data-[a-z-]+="[^"]*"/g, '')), 'verified: Firm Rules shows no unverified values');
+  ok(!t.errors.length, 'verified: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

@@ -1,0 +1,117 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://the5ers.com/high-stakes/",
+  "https://the5ers.com/challenge-programs-bootcamp-high-stakes-hyper-growth-explained/",
+  "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+ ],
+ "firm": {
+  "timezone": "Europe/Athens",
+  "resetHour": 0
+ },
+ "models": {
+  "t5-hs-new": {
+   "source": "https://the5ers.com/high-stakes/",
+   "name": "High Stakes (2-Step)",
+   "sizes": [
+    2500,
+    5000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {},
+   "priceNote": "See the5ers.com for current fees.",
+   "notes": [
+    "Profitable day = closed profit of at least 0.5% of the starting balance.",
+    "No trades within 2 minutes before or after high-impact news.",
+    "Accounts inactive for 30 days expire."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "maxLossPct": 10,
+      "ddType": {
+       "value": "static",
+       "source": "https://the5ers.com/challenge-programs-bootcamp-high-stakes-hyper-growth-explained/"
+      },
+      "ddBasis": "equity",
+      "newsRestricted": true,
+      "weekendHolding": true,
+      "profitTargetPct": 10,
+      "minProfitableDays": 3,
+      "profitableDayMinPct": 0.5
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "maxLossPct": 10,
+      "ddType": {
+       "value": "static",
+       "source": "https://the5ers.com/challenge-programs-bootcamp-high-stakes-hyper-growth-explained/"
+      },
+      "ddBasis": "equity",
+      "newsRestricted": true,
+      "weekendHolding": true,
+      "profitTargetPct": 5,
+      "minProfitableDays": 3,
+      "profitableDayMinPct": 0.5
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": {
+       "value": "day_start",
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://the5ers.com/faqs/2-step-plan-rules-specifications/"
+      },
+      "maxLossPct": 10,
+      "ddType": {
+       "value": "static",
+       "source": "https://the5ers.com/challenge-programs-bootcamp-high-stakes-hyper-growth-explained/"
+      },
+      "ddBasis": "equity",
+      "newsRestricted": true,
+      "weekendHolding": true,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  }
+ }
+}

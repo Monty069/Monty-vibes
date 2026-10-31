@@ -1,0 +1,119 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://myfundedfutures.com/plans/rapid",
+  "https://myfundedfutures.com/plans/pro"
+ ],
+ "firm": {
+  "timezone": "America/Chicago",
+  "resetHour": 17
+ },
+ "models": {
+  "mffu-rapid": {
+   "source": "https://myfundedfutures.com/plans/rapid",
+   "prices": {},
+   "priceNote": "See myfundedfutures.com for current prices.",
+   "notes": [
+    "No daily loss limit.",
+    "Sim funded: intraday trailing drawdown until your buffer reaches start + $100, then it stops trailing."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 2,
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 50,
+      "consistencyDenominator": "total_profit"
+     }
+    },
+    "funded": {
+     "label": "Sim Funded",
+     "rules": {
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "ddLockAmount": 100,
+      "profitSplitPct": 90
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000
+    },
+    "50000": {
+     "maxLossAmount": 2000
+    },
+    "100000": {
+     "maxLossAmount": 3000
+    },
+    "150000": {
+     "maxLossAmount": 4500
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1500
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    }
+   }
+  },
+  "mffu-pro": {
+   "source": "https://myfundedfutures.com/plans/pro",
+   "prices": {},
+   "priceNote": "See myfundedfutures.com for current prices.",
+   "notes": [
+    "No daily loss limit.",
+    "Sim funded max loss locks permanently at start + $100 after the first approved payout."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 2,
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 50,
+      "consistencyDenominator": "total_profit"
+     }
+    },
+    "funded": {
+     "label": "Sim Funded",
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "profitSplitPct": 80
+     }
+    }
+   },
+   "sizeRules": {
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 3
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 6
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 9
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    }
+   }
+  }
+ }
+}
