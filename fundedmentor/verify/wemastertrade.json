@@ -1,0 +1,332 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://wemastertrade.com/us/",
+  "https://wemastertrade.com/us/package-comparison/",
+  "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/",
+  "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/",
+  "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+ ],
+ "models": {
+  "wmt-2step": {
+   "source": "https://wemastertrade.com/us/",
+   "sizes": [
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "10000": 62,
+    "25000": 126,
+    "50000": 240,
+    "100000": 445
+   },
+   "priceNote": "One-time fee, refunded when funded.",
+   "notes": [
+    "Phase 2 pays a 30% reward share on its profits.",
+    "Profit consistency (best day \u2264 20% of total profit) applies in Phase 2, not Phase 1 or the funded account."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 5,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "maxLossPct": {
+       "value": 10,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "ddType": {
+       "value": "static",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "profitTargetPct": 8
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 5,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "maxLossPct": {
+       "value": 10,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "ddType": {
+       "value": "static",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "profitTargetPct": 6,
+      "consistencyPct": {
+       "value": 20,
+       "source": "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+      },
+      "consistencyDenominator": {
+       "value": "total_profit",
+       "source": "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+      }
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 5,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "maxLossPct": {
+       "value": 10,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "ddType": {
+       "value": "static",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "profitSplitPct": 90
+     }
+    }
+   }
+  },
+  "wmt-51010": {
+   "source": "https://wemastertrade.com/us/package-comparison/",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "5000": 55,
+    "10000": 95,
+    "25000": 245,
+    "50000": 425,
+    "100000": 820,
+    "200000": 1580
+   },
+   "priceNote": "List price (discounts often shown on the site).",
+   "notes": [
+    "Withdrawals unlock after 10% profit. No minimum trading days."
+   ],
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 5,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "maxLossPct": {
+       "value": 10,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "ddType": {
+       "value": "static",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "consistencyPct": {
+       "value": 20,
+       "source": "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+      },
+      "consistencyDenominator": {
+       "value": "total_profit",
+       "source": "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+      },
+      "profitSplitPct": 90
+     }
+    }
+   }
+  },
+  "wmt-510zero": {
+   "source": "https://wemastertrade.com/us/package-comparison/",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "5000": 65,
+    "10000": 105,
+    "25000": 275,
+    "50000": 450,
+    "100000": 885,
+    "200000": 1725
+   },
+   "priceNote": "List price (discounts often shown on the site).",
+   "notes": [
+    "No profit target. If performance is below 6%, the reward share is a fixed 10%."
+   ],
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 5,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "maxLossPct": {
+       "value": 10,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "ddType": {
+       "value": "static",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "consistencyPct": {
+       "value": 20,
+       "source": "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+      },
+      "consistencyDenominator": {
+       "value": "total_profit",
+       "source": "https://faq.wemastertrade.com/what-is-the-profit-consistency-rule/"
+      },
+      "profitSplitPct": 90
+     }
+    }
+   }
+  },
+  "wmt-custom": {
+   "source": "https://wemastertrade.com/us/package-comparison/",
+   "name": "Instant NoPC",
+   "sizes": [
+    10000,
+    25000,
+    50000,
+    100000,
+    200000,
+    400000
+   ],
+   "prices": {
+    "10000": 35,
+    "25000": 88,
+    "50000": 175,
+    "100000": 345,
+    "200000": 690,
+    "400000": 1380
+   },
+   "priceNote": "Price shown on the site on 31 Oct 2026.",
+   "notes": [
+    "Withdrawals unlock after 6% profit. No profit consistency rule."
+   ],
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": {
+       "value": 2,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "dailyLossBasis": {
+       "value": "initial",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossReference": {
+       "value": "day_start_higher",
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "dailyLossIncludesUnrealized": {
+       "value": true,
+       "source": "https://faq.wemastertrade.com/what-is-the-daily-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "maxLossPct": {
+       "value": 4,
+       "source": "https://wemastertrade.com/us/"
+      },
+      "ddType": {
+       "value": "static",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "ddBasis": {
+       "value": "equity",
+       "source": "https://faq.wemastertrade.com/what-is-the-max-loss-limit-and-what-happens-if-i-break-it/"
+      },
+      "profitSplitPct": 90
+     }
+    }
+   }
+  }
+ }
+}

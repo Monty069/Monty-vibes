@@ -1,0 +1,59 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://holaprime.com"
+ ],
+ "firm": {
+  "timezone": "UTC",
+  "resetHour": 0
+ },
+ "models": {
+  "hp-1step-prime": {
+   "source": "https://holaprime.com",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000
+   ],
+   "prices": {
+    "5000": 81,
+    "10000": 161,
+    "25000": 274,
+    "50000": 411
+   },
+   "priceNote": "Fee shown on holaprime.com on 31 Oct 2026.",
+   "notes": [
+    "Daily limit is 3% of the previous day's closing balance, plus any profit made that day.",
+    "Hola Prime's page lists 2 minimum trading days in most places and 3 in one table.",
+    "Split is chosen at purchase: weekly 65%, bi-weekly 80% or monthly 95%."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 10,
+      "minTradingDays": 2
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "day_start",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    }
+   }
+  }
+ }
+}

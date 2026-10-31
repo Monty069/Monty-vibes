@@ -1,0 +1,94 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://steady.fundedfuturesnetwork.com/"
+ ],
+ "firm": {
+  "timezone": "America/New_York",
+  "resetHour": 17
+ },
+ "models": {
+  "ffn-steady": {
+   "source": "https://steady.fundedfuturesnetwork.com/",
+   "name": "Steady",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    150000,
+    250000
+   ],
+   "prices": {
+    "25000": 149,
+    "50000": 229,
+    "100000": 308,
+    "150000": 585,
+    "250000": 750
+   },
+   "priceNote": "List price (50% off codes often run).",
+   "notes": [
+    "Winning day = at least $100 / $150 / $200 / $250 / $350 profit (by size).",
+    "No daily loss limit. Drawdown locks at start + $100.",
+    "No consistency rule once funded; up to 90/10 split."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minProfitableDays": 2,
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "ddLockAmount": 100,
+      "consistencyPct": 52,
+      "consistencyDenominator": "total_profit"
+     }
+    },
+    "funded": {
+     "label": "Funded",
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "ddLockAmount": 100,
+      "profitSplitPct": 90
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1200
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 2000,
+     "profitableDayMinPct": 0.4
+    },
+    "50000": {
+     "maxLossAmount": 2000
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000,
+     "profitableDayMinPct": 0.3
+    },
+    "100000": {
+     "maxLossAmount": 3200
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000,
+     "profitableDayMinPct": 0.2
+    },
+    "150000": {
+     "maxLossAmount": 4700
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000,
+     "profitableDayMinPct": 0.1667
+    },
+    "250000": {
+     "maxLossAmount": 5500
+    },
+    "phase1@250000": {
+     "profitTargetAmount": 15000,
+     "profitableDayMinPct": 0.14
+    }
+   }
+  }
+ }
+}

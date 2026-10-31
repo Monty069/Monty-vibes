@@ -1,0 +1,77 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://www.earn2trade.com/gauntlet-mini",
+  "https://www.earn2trade.com/trader-career-path"
+ ],
+ "firm": {
+  "timezone": "America/Chicago",
+  "resetHour": 16
+ },
+ "models": {
+  "e2t-gauntlet": {
+   "source": "https://www.earn2trade.com/gauntlet-mini",
+   "sizes": [
+    50000
+   ],
+   "prices": {
+    "50000": 170
+   },
+   "priceNote": "Monthly, starting price.",
+   "notes": [
+    "Only the 50K size is published in full on Earn2Trade's page.",
+    "Funded split: 50% under $2,250 profit, 80% above."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 30,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "sizeRules": {
+    "50000": {
+     "profitTargetAmount": 3000,
+     "maxLossAmount": 2000,
+     "dailyLossAmount": 1100,
+     "maxLots": 6
+    }
+   }
+  },
+  "e2t-tcp": {
+   "source": "https://www.earn2trade.com/trader-career-path",
+   "sizes": [
+    25000
+   ],
+   "prices": {
+    "25000": 150
+   },
+   "priceNote": "Monthly, starting price.",
+   "notes": [
+    "Only the 25K size is published in full on Earn2Trade's page.",
+    "Funded split: 50% under $1,500 profit, 80% above."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 30,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "profitTargetAmount": 1750,
+     "maxLossAmount": 1500,
+     "dailyLossAmount": 550,
+     "maxLots": 3
+    }
+   }
+  }
+ }
+}

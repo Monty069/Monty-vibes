@@ -1,0 +1,197 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://tradeday.com"
+ ],
+ "firm": {
+  "timezone": "America/Chicago",
+  "resetHour": 16
+ },
+ "models": {
+  "td-quickpay-intraday": {
+   "source": "https://tradeday.com",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    150000
+   ],
+   "prices": {
+    "25000": 100,
+    "50000": 131,
+    "100000": 240,
+    "150000": 360
+   },
+   "priceNote": "Monthly list price (sale prices often shown).",
+   "notes": [
+    "No daily loss limit.",
+    "Funded split: 50/50 below $4k net profit, 80/20 above, 90/10 in Funded Live.",
+    "TradeDay's page lists the Funded Sim drawdown as calculated intraday, even on EOD plans: check your dashboard."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 5,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "consistencyPct": 30,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "maxLots": 2
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1500
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 5
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 10
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 15
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    }
+   }
+  },
+  "td-quickpay-eod": {
+   "source": "https://tradeday.com",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    150000
+   ],
+   "prices": {
+    "25000": 120,
+    "50000": 175,
+    "100000": 285,
+    "150000": 400
+   },
+   "priceNote": "Monthly list price (sale prices often shown).",
+   "notes": [
+    "No daily loss limit.",
+    "Funded split: 50/50 below $4k net profit, 80/20 above, 90/10 in Funded Live.",
+    "TradeDay's page lists the Funded Sim drawdown as calculated intraday, even on EOD plans: check your dashboard."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 5,
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 30,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "maxLots": 2
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1500
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 5
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 10
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 15
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    }
+   }
+  },
+  "td-fastpass": {
+   "source": "https://tradeday.com",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    150000
+   ],
+   "prices": {
+    "25000": 130,
+    "50000": 189,
+    "100000": 350,
+    "150000": 530
+   },
+   "priceNote": "Monthly list price (sale prices often shown).",
+   "notes": [
+    "Contracts start at 1/2/3/4 and scale +1 per $2k of end-of-day profit.",
+    "Payouts need 5 profitable days of $100/$150/$200/$250 (by size). Funded split 80/20 sim, 90/10 live."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 3,
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 45,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000,
+     "maxLots": 1
+    },
+    "phase1@25000": {
+     "profitTargetAmount": 1500
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "maxLots": 2
+    },
+    "phase1@50000": {
+     "profitTargetAmount": 3000
+    },
+    "100000": {
+     "maxLossAmount": 3000,
+     "maxLots": 3
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    },
+    "150000": {
+     "maxLossAmount": 4500,
+     "maxLots": 4
+    },
+    "phase1@150000": {
+     "profitTargetAmount": 9000
+    }
+   }
+  }
+ }
+}

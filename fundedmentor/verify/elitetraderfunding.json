@@ -1,0 +1,83 @@
+{
+ "verifiedAt": "2026-10-31",
+ "sources": [
+  "https://elitetraderfunding.app/1-step-evaluation",
+  "https://elitetraderfunding.app/fast-track-evaluation"
+ ],
+ "firm": {
+  "timezone": "America/New_York",
+  "resetHour": 17
+ },
+ "models": {
+  "etf-live-trailing": {
+   "source": "https://elitetraderfunding.app/1-step-evaluation",
+   "name": "1 Step (Live Trailing)",
+   "sizes": [
+    50000,
+    100000,
+    250000
+   ],
+   "prices": {},
+   "priceNote": "Billed monthly; see elitetraderfunding.app for current prices.",
+   "notes": [
+    "Drawdown trails your highest unrealized profit during the day and never falls back.",
+    "Funded: once realized profit reaches max drawdown + $100 the drawdown is removed for payout eligibility. First payout needs 8 qualified days; up to $3,000 per cycle."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 5,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity"
+     }
+    }
+   },
+   "sizeRules": {
+    "50000": {
+     "profitTargetAmount": 3000,
+     "maxLossAmount": 2000,
+     "maxLots": 8
+    },
+    "100000": {
+     "profitTargetAmount": 6000,
+     "maxLossAmount": 3000,
+     "maxLots": 14
+    },
+    "250000": {
+     "profitTargetAmount": 15000,
+     "maxLossAmount": 6500,
+     "maxLots": 24
+    }
+   }
+  },
+  "etf-fasttrack": {
+   "source": "https://elitetraderfunding.app/fast-track-evaluation",
+   "name": "Fast Track (10K, EOD)",
+   "sizes": [
+    10000
+   ],
+   "prices": {},
+   "priceNote": "Under $100, billed monthly.",
+   "notes": [
+    "A Static variant also exists (floor fixed at $9,500).",
+    "Close all trades one minute before market close. 8 qualified days before the first payout."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "minTradingDays": 3,
+      "ddType": "trailing_eod",
+      "ddBasis": "balance"
+     }
+    }
+   },
+   "sizeRules": {
+    "10000": {
+     "profitTargetAmount": 2000,
+     "maxLossAmount": 500,
+     "maxLots": 1
+    }
+   }
+  }
+ }
+}

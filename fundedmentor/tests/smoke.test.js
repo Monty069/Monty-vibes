@@ -375,7 +375,8 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 { const t = boot({ state: base(manual()) }); const doc = t.w.document;
   t.act('wizard'); const tb = doc.querySelector('[data-act="w-firm"][data-id="topstep"]');
   ok(tb && /15% off/.test(tb.textContent), 'partner: Topstep 15% off tag in Add account');
-  ok(!doc.querySelector('[data-act="w-firm"][data-id="wemastertrade"]') && !doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'), 'partner: unverified firms are not listed, even with a partner deal');
+  const wb = doc.querySelector('[data-act="w-firm"][data-id="wemastertrade"]'); ok(wb && /35% off/.test(wb.textContent), 'partner: WeMasterTrade (verified) shows 35% off');
+  ok(!doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'), 'partner: unverified firms are not listed, even with a partner deal');
   t.act('w-firm', { id: 'topstep' }); t.act('w-next'); let h = t.root();
   ok(/TS-7AUMKSO2JXGXT/.test(h) && /may earn a commission/.test(h), 'partner: code and disclosure on the program step');
   t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'topstep' }); h = t.root();
