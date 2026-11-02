@@ -434,7 +434,7 @@
   const TV_SYM = { XAUUSD: 'OANDA:XAUUSD', US30: 'OANDA:US30USD', NAS100: 'OANDA:NAS100USD', GER40: 'OANDA:DE30EUR', ES: 'CME_MINI:ES1!', MES: 'CME_MINI:MES1!', NQ: 'CME_MINI:NQ1!', MNQ: 'CME_MINI:MNQ1!', YM: 'CBOT_MINI:YM1!', MYM: 'CBOT_MINI:MYM1!', GC: 'COMEX:GC1!', MGC: 'COMEX:MGC1!', CL: 'NYMEX:CL1!', MCL: 'NYMEX:MCL1!' };
   const tvSym = (s) => TV_SYM[s] || (/^[A-Z]{6}$/.test(s) ? 'FX:' + s : null);
   function tickerHTML() {
-    return `<div class="tv-wrap"><div class="tradingview-widget-container" id="tv-ticker"><div class="tradingview-widget-container__widget"></div></div><p class="tv-attr">Live prices by <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">TradingView</a></p></div>`;
+    return `<div class="tv-wrap"><div class="tv-row"><span class="tv-live"><i></i>Live</span><div class="tradingview-widget-container" id="tv-ticker"><div class="tradingview-widget-container__widget"></div></div></div><p class="tv-attr">Live prices by <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">TradingView</a></p></div>`;
   }
   function mountTicker(acct) {
     const host = document.getElementById('tv-ticker'); if (!host || host.dataset.mounted || !/^https?:/.test(location.protocol)) return;
@@ -700,7 +700,7 @@
     const left = Math.max(0, goal - made); const hit = goal > 0 && made >= goal - 0.005;
     const tradesLeft = Math.max(0, per - trades);
     let status = day.err || '';
-    if (!status && !f.weekends && isWeekend(new Date())) status = 'Weekend: your plan skips weekends. Next trading day is Monday.';
+    if (!status && !f.weekends && isWeekend(fxDate(Date.now()))) status = 'Weekend: your plan skips weekends. Next trading day is Monday.';
     if (!status && reached) status = 'Plan target reached.';
     else if (!status && hit) status = 'Today’s target hit. Stop for today.';
     else if (!status && !tradesLeft) status = `All ${per} trade${per === 1 ? '' : 's'} for today used, ${fmt$(left, 0)} short of today’s target. Stop for today.`;
@@ -1056,7 +1056,11 @@
     let bal = Number(a.initialBalance); const tr = [...(a.trades || [])].filter((t) => t.closeTime).sort((x, y) => x.closeTime - y.closeTime);
     return tr.map((t) => { const net = (t.profit || 0) + (t.commission || 0) + (t.swap || 0); const row = { id: String(t.id), ts: t.closeTime, open: bal, profit: net, close: bal + net }; bal += net; return row; });
   }
-  const dayKeyOf = (ts) => new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // Trading days follow the forex clock, not the local calendar: a day runs 5 PM New York to 5 PM New York,
+  // so a Sunday-evening trade in Toronto belongs to Monday, and Saturday is the only full weekend day.
+  const fxKey = (ts) => PR.firmDayKey(ts, 'America/New_York', 17);
+  const fxDate = (ts) => new Date(fxKey(ts) + 'T12:00:00Z');
+  const dayKeyOf = (ts) => fxDate(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
   function cpTable(r, hist) {
     const view = ui.cpView || 'day'; const H = hist || [];
     const seg = `<div class="row between" style="margin:10px 0 6px"><b style="font-size:13px">${H.length ? 'Done, then the plan' : 'The plan'}</b><div class="seg" role="group"><button data-act="cp-view" data-v="day" aria-pressed="${view === 'day'}">Daily</button><button data-act="cp-view" data-v="trade" aria-pressed="${view === 'trade'}">Per trade</button></div></div>`;
@@ -1133,13 +1137,13 @@
       </section>`;
   }
   // Calendar dates for plan days. Weekends are skipped unless the plan trades them (crypto, some CFD firms).
-  const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
+  const isWeekend = (d) => d.getUTCDay() === 0 || d.getUTCDay() === 6; // d is a forex trading date (UTC noon)
   function tradingDates(fromTs, n, weekends) {
-    const out = []; const d = new Date(fromTs); d.setHours(12, 0, 0, 0);
-    while (out.length < n) { if (weekends || !isWeekend(d)) out.push(new Date(d)); d.setDate(d.getDate() + 1); }
+    const out = []; const d = fxDate(fromTs);
+    while (out.length < n) { if (weekends || !isWeekend(d)) out.push(new Date(d)); d.setUTCDate(d.getUTCDate() + 1); }
     return out;
   }
-  const shortDate = (d) => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const shortDate = (d) => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
   function datePlan(r, f, fromTs) { if (r.err) return r; const ds = tradingDates(fromTs || Date.now(), r.days.length, !!f.weekends); r.days.forEach((d, i) => { d.date = ds[i]; }); r.list.forEach((t) => { t.date = ds[t.d - 1]; }); r.endDate = ds[ds.length - 1]; return r; }
   function cpOut(f, hist) {
     const r = datePlan(compoundPlan(f), f);

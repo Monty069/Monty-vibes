@@ -485,5 +485,13 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const sc = doc.querySelector('#tv-ticker script'); ok(sc && JSON.parse(sc.text).colorTheme === 'dark', 'ticker: dark theme to match the site');
   ok(!t.errors.length, 'weekends: no errors ' + t.errors.join(' | ')); }
 
+// AB. Forex clock: Sunday evening (after 5 PM New York) counts as Monday
+{ const t = boot({ state: base(manual()) }); const PR = t.w.PR;
+  const sunEve = Date.UTC(2026, 10, 1, 23, 30); // Sun 1 Nov, 6:30 PM New York
+  const sunAm = Date.UTC(2026, 10, 1, 15, 0); // Sun 1 Nov, 10 AM New York
+  ok(PR.firmDayKey(sunEve, 'America/New_York', 17) === '2026-11-02', 'fx: Sunday 6:30 PM New York is Monday’s trading day');
+  ok(PR.firmDayKey(sunAm, 'America/New_York', 17) === '2026-11-01', 'fx: Sunday morning is still Sunday (market closed)');
+  ok(!t.errors.length, 'fx: no errors'); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

@@ -406,10 +406,16 @@ td.r, th.r { text-align: right; }
 .lp-feat { background: var(--surface); padding: 26px; display: flex; flex-direction: column; gap: 10px; }
 .lp-ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
 .lp-ic svg { width: 19px; height: 19px; }
-.tv-wrap { margin: 0 0 16px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-height: 48px; }
-.tv-wrap .tradingview-widget-container { min-height: 46px; }
-.tv-attr { margin: 0; padding: 2px 12px 6px; font-size: 10.5px; color: var(--faint, var(--muted)); text-align: right; }
-.tv-attr a { color: inherit; }
+.tv-wrap { margin: 0 0 16px; border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 14px; overflow: hidden;
+  background: linear-gradient(90deg, rgba(220,190,125,.16) 0%, rgba(220,190,125,.07) 35%, var(--surface-2) 100%); box-shadow: inset 0 1px 0 var(--hi), 0 0 24px var(--glow); }
+.tv-row { display: flex; align-items: center; min-height: 46px; }
+.tv-live { flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px 0 14px; align-self: stretch; font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); background: var(--gold); }
+.tv-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-ink); animation: tvpulse 1.6s ease-in-out infinite; }
+@keyframes tvpulse { 50% { opacity: .25; } }
+.tv-wrap .tradingview-widget-container { flex: 1; min-width: 0; min-height: 46px; }
+.tv-wrap iframe { filter: sepia(.45) saturate(1.25) brightness(1.02); }
+.tv-attr { margin: 0; padding: 3px 12px 5px; font-size: 10.5px; color: var(--muted); text-align: right; border-top: 1px solid color-mix(in srgb, var(--accent) 14%, transparent); }
+.tv-attr a { color: var(--accent); }
 .lp-firms { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 8px; }
 .lp-firms span { padding: 8px 14px; border-radius: 22px; border: 1px solid var(--line-2); background: var(--surface); font-size: 13px; font-weight: 500; }
 .lp-firms .more { border-style: dashed; color: var(--muted); background: none; }
