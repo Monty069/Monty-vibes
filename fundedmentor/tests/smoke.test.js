@@ -420,7 +420,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
   t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '5000'); setv('cp-perDay', '3'); t.act('cp-save');
   let h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
-  ok(/Today’s target\s*0 of 3 trades \$331\.00/.test(h), 'today: dashboard shows today’s target ($100 + $110 + $121 = $331)');
+  ok(/Today’s target · day 1\s*0 of 3 trades \$331\.00/.test(h), 'today: dashboard shows today’s target ($100 + $110 + $121 = $331)');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '300'); t.act('cp-log-save');
   h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
   ok(/\+\$300\.00/.test(h) && /\$31\.00 left/.test(h), 'today: one big trade → $31 left of today’s target');
@@ -438,7 +438,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(/\$2,000 in 8 trading days/.test(out) && /10% a day, split over 3 trades/.test(out), 'daily: 1000 → 2000 at 10%/day = 8 days, whatever the trade count');
   ok(/Today’s target\s*\$100\.00/.test(out), 'daily: today’s target is 10% of the balance ($100), not 3 compounded trades');
   t.act('cp-save'); let h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
-  ok(/Today’s target\s*0 of 3 trades \$100\.00/.test(h), 'daily: dashboard card shows $100 for the day');
+  ok(/Today’s target · day 1\s*0 of 3 trades \$100\.00/.test(h), 'daily: dashboard card shows $100 for the day');
   ok(/aim \$33/.test(doc.querySelector('.next-btn').textContent) || /aim \$3\d/.test(doc.querySelector('.next-btn').textContent), 'daily: next trade aims for a third of the day ($33) ' + doc.querySelector('.next-btn').textContent);
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '60'); t.act('cp-log-save');
   h = doc.getElementById('root').textContent.replace(/\s+/g, ' '); ok(/\$40\.00 left/.test(h), 'daily: $60 made → $40 left today');
@@ -446,6 +446,21 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '40'); t.act('cp-log-save');
   ok(/Today’s target hit/.test(doc.querySelector('.next-btn').textContent), 'daily: target hit after 2 trades → stop');
   ok(!t.errors.length, 'daily: no errors ' + t.errors.join(' | ')); }
+
+// Y. Plan vs actual: yesterday's shortfall, plan for today, catch-up
+{ const yday = now - DAY;
+  const acct = { id: 'acct-cp', name: 'Compounding $2,500', firmId: 'personal', modelId: 'personal-compound', phase: 'live', initialBalance: 2500, currency: 'USD', platform: 'Other', purchaseTs: yday - DAY, riskProfile: 'balanced', instrument: 'XAUUSD', stopDistance: 5, goal: { type: 'pass', rr: 2 }, legs: [{ symbol: 'XAUUSD', stop: 5 }], commissionPerLot: 0, openPnl: 0, createdTs: yday - DAY,
+    trades: [{ id: 'y1', symbol: 'XAUUSD', side: 'buy', lots: 0.1, openTime: yday - 60000, closeTime: yday, profit: 190, commission: 0, swap: 0, source: 'manual' }],
+    compound: { basis: 'day', start: '2500', pct: '10', solve: 'days', days: '10', target: '', trades: '20', perDay: '2', rr: '2', cons: '', tiers: [], inst: 'XAUUSD', stop: '5' } };
+  const t = boot({ state: Object.assign(base(acct), { activeId: 'acct-cp' }) }); const doc = t.w.document;
+  const h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  ok(/Today’s target · day 2/.test(h), 'pva: today is day 2 of the plan');
+  ok(/Yesterday \(day 1\)\s*\+\$190\.00 of \$250\.00 \([−-]\$60\.00\)/.test(h), 'pva: yesterday shows $190 of $250 (−$60)');
+  ok(/Plan for day 2\s*\$275\.00/.test(h) && /From your balance\s*\$269\.00/.test(h), 'pva: plan says $275 today; from your real balance it’s $269');
+  ok(/To get back on plan\s*\$335\.00 \(\$60\.00 behind\)/.test(h), 'pva: catch-up is $335 ($60 behind)');
+  t.act('cp-daymode', { v: 'catchup' }); const h2 = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  ok(/\$335\.00\s*Catching up to your original plan/.test(h2), 'pva: Catch up mode makes $335 today’s target');
+  ok(!t.errors.length, 'pva: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

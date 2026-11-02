@@ -666,6 +666,16 @@
     if (!full.err && full.dayCap < Infinity) goal = Math.min(goal, full.dayCap);
     if (target != null) goal = Math.min(goal, Math.max(0, target - dsb));
     goal = Math.round(goal * 100) / 100;
+    // The original plan, fixed from the account's starting amount: where you were supposed to be by today.
+    const sched = compoundPlan(Object.assign({}, f, { start: String(a.initialBalance) }));
+    const todayK = dayKeyOf(Date.now()); const hist = cpHistory(a);
+    const pastDays = []; for (const t of hist) { const k = dayKeyOf(t.ts); if (k === todayK) continue; let d = pastDays[pastDays.length - 1]; if (!d || d.k !== k) { d = { k, made: 0 }; pastDays.push(d); } d.made += t.profit; }
+    const dayN = pastDays.length + 1; const planDay = !sched.err ? sched.days[dayN - 1] || null : null;
+    const prevPlan = !sched.err && dayN > 1 ? sched.days[dayN - 2] || null : null; const prevDay = pastDays[pastDays.length - 1] || null;
+    const plan = planDay ? { day: dayN, target: planDay.profit, open: planDay.open, close: planDay.close, catchUp: Math.max(0, planDay.close - dsb), behind: Math.max(0, planDay.open - dsb), ahead: Math.max(0, dsb - planDay.open) } : (sched.err ? null : { day: dayN, done: true });
+    const yesterday = prevPlan && prevDay ? { day: dayN - 1, target: prevPlan.profit, made: prevDay.made, diff: prevDay.made - prevPlan.profit } : null;
+    const mode = f.dayMode === 'catchup' && plan && !plan.done ? 'catchup' : 'actual';
+    if (mode === 'catchup') goal = Math.round(plan.catchUp * 100) / 100;
     const left = Math.max(0, goal - made); const hit = goal > 0 && made >= goal - 0.005;
     const tradesLeft = Math.max(0, per - trades);
     let status = day.err || '';
@@ -678,7 +688,7 @@
       else { const one = compoundPlan(Object.assign({}, f, { start: String(eq), solve: 'trades', trades: '1' })); aim = Math.min(one.err ? 0 : one.list[0].profit, left); }
       z = cpSize(f, aim, eq);
     }
-    return { goal, made, left, hit, reached, pct: goal > 0 ? Math.max(0, Math.min(100, made / goal * 100)) : 0, trades, per, tradesLeft, aim, z, rr, status, dsb };
+    return { goal, made, left, hit, reached, pct: goal > 0 ? Math.max(0, Math.min(100, made / goal * 100)) : 0, trades, per, tradesLeft, aim, z, rr, status, dsb, plan, yesterday, mode, ownGoal: Math.round((day.err ? 0 : day.end - dsb) * 100) / 100 };
   }
   function cpNextFor(a, c) {
     const f = a.compound; const t = cpToday(a, c); const stop = Number(f.stop) || 0;
@@ -686,13 +696,24 @@
     return { f, r: { err: t.status || null }, nx, t };
   }
   function todayCard(a, c) {
-    const t = cpToday(a, c);
-    return `<section class="panel" style="margin-bottom:16px"><div class="panel-h"><h2>Today’s target</h2><span class="chip ${t.hit ? 'ok' : 'nodot'}">${t.hit ? 'Hit' : `${t.trades} of ${t.per} trade${t.per === 1 ? '' : 's'}`}</span></div>
-      <div class="row between" style="align-items:flex-end;gap:12px"><div><div class="big num">${fmt$(t.goal)}</div><p class="hint">From today’s starting balance ${fmt$(t.dsb, 0)}</p></div>
+    const t = cpToday(a, c); const P = t.plan; const Y = t.yesterday;
+    const seg = P && !P.done ? `<div class="seg" role="group" aria-label="Today’s goal" style="margin:10px 0 2px"><button data-act="cp-daymode" data-v="actual" aria-pressed="${t.mode === 'actual'}">From my balance</button><button data-act="cp-daymode" data-v="catchup" aria-pressed="${t.mode === 'catchup'}">Catch up to plan</button></div>` : '';
+    const rows = [];
+    if (Y) rows.push(`<dt>Yesterday (day ${Y.day})</dt><dd><span class="${cls(Y.made)}">${sgn$(Y.made)}</span> of ${fmt$(Y.target)} <span class="${Y.diff >= 0 ? 'pos' : 'neg'}">(${sgn$(Y.diff)})</span></dd>`);
+    if (P && !P.done) {
+      rows.push(`<dt>Plan for day ${P.day}</dt><dd>${fmt$(P.target)}</dd>`);
+      rows.push(`<dt>From your balance</dt><dd>${fmt$(t.ownGoal)}</dd>`);
+      rows.push(`<dt>${P.behind > 0.005 ? 'To get back on plan' : 'To stay on plan'}</dt><dd>${fmt$(P.catchUp)}${P.behind > 0.005 ? ` <span class="neg">(${fmt$(P.behind)} behind)</span>` : P.ahead > 0.005 ? ` <span class="pos">(${fmt$(P.ahead)} ahead)</span>` : ''}</dd>`);
+    } else if (P && P.done) rows.push(`<dt>Plan</dt><dd>All planned days done</dd>`);
+    return `<section class="panel" style="margin-bottom:16px"><div class="panel-h"><h2>Today’s target${P && !P.done ? ` · day ${P.day}` : ''}</h2><span class="chip ${t.hit ? 'ok' : 'nodot'}">${t.hit ? 'Hit' : `${t.trades} of ${t.per} trade${t.per === 1 ? '' : 's'}`}</span></div>
+      <div class="row between" style="align-items:flex-end;gap:12px"><div><div class="big num">${fmt$(t.goal)}</div><p class="hint">${t.mode === 'catchup' ? 'Catching up to your original plan' : `From today’s starting balance ${fmt$(t.dsb, 0)}`}</p></div>
         <div style="text-align:right"><div class="${cls(t.made)} num" style="font-size:18px;font-weight:600">${sgn$(t.made)}</div><p class="hint">${t.hit ? 'Done for today' : fmt$(t.left) + ' left'}</p></div></div>
       <div class="bar acc" style="margin-top:12px"><i style="width:${t.pct.toFixed(1)}%"></i></div>
-      <p class="hint" style="margin-top:8px">${t.status ? esc(t.status) : `Next trade aims for ${fmt$(t.z.win != null ? t.z.win : t.aim)}${t.z.lots ? ' with ' + qty(t.z.lots, t.z.spec) + ' ' + esc(a.compound.inst) : t.aim > 0 ? ` (at your ${esc(a.compound.stop)} stop that’s below the minimum ${esc(a.compound.inst)} size; use a tighter stop or a lower reward:risk on the Compounding page)` : ''}.`}</p></section>`;
+      ${seg}
+      ${rows.length ? `<dl class="kv" style="margin-top:10px">${rows.join('')}</dl>` : ''}
+      <p class="hint" style="margin-top:8px">${t.status ? esc(t.status) : `Next trade aims for ${fmt$(t.z.win != null ? t.z.win : t.aim)}${t.z.lots ? ' with ' + qty(t.z.lots, t.z.spec) + ' ' + esc(a.compound.inst) : t.aim > 0 ? ` (at your ${esc(a.compound.stop)} stop that’s below the minimum ${esc(a.compound.inst)} size; use a tighter stop or a lower reward:risk on the Compounding page)` : ''}.`}${t.mode === 'catchup' && P && P.behind > 0.005 ? ' Catching up means bigger trades than your plan’s %. Only do it if your setup allows.' : ''}</p></section>`;
   }
+
   // The same three choices everywhere a next trade is shown: as planned, a different profit, or a loss.
   function logChoices(win, loss, L, p) {
     if (L.mode === 'profit' || L.mode === 'loss') return `<label class="field"><span>${L.mode === 'profit' ? 'Profit made ($)' : 'Loss taken ($)'}</span><input class="input num" id="${p}-log-amt" type="number" inputmode="decimal" min="0" step="any" data-${p === 'cp' ? 'cl' : 'nl'}="amt" value="${esc(L.amt)}"></label>
@@ -1936,6 +1957,7 @@
       case 'copy-code': { const code = el.dataset.code; try { if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(code).then(() => toast('Copied ' + code), () => toast('Code: ' + code)); return; } } catch (e) { /* clipboard unavailable */ } toast('Code: ' + code); return; }
       case 'more': ui.more = true; break;
       case 'cp-solve': cpTarget().solve = el.dataset.v; save(); break;
+      case 'cp-daymode': { const a = active(); if (a && a.compound) { a.compound.dayMode = el.dataset.v; if (ui.cpDraft && ui.cpDraft.id === a.id) ui.cpDraft.f.dayMode = el.dataset.v; save(); } break; }
       case 'cp-basis': { const T = cpTarget(); T.basis = el.dataset.v; if (T.basis === 'day' && T.solve === 'trades') T.solve = 'days'; save(); break; }
       case 'cp-tier-add': cpTarget().tiers.push({ at: '', pct: '' }); save(); break;
       case 'cp-tier-del': cpTarget().tiers.splice(Number(el.dataset.i), 1); save(); break;
