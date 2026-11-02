@@ -380,7 +380,7 @@
     return {
       profile: prof, riskPerTrade: money(riskPerTrade), dailyBudget: money(dailyBudget), maxTrades: prof.maxTrades,
       target: target == null ? null : money(target), progress: money(progress), remainingTarget: remainingTarget == null ? null : money(remainingTarget),
-      progressPct: target ? Math.max(0, Math.min(100, n(roundTo(div(mul(progress, 100), target), '0.1')))) : null,
+      progressPct: target ? Math.max(0, Math.min(100, n(roundTo(div(mul(progress, 100), target), '0.01')))) : null,
       dayCap: dayCap == null ? null : money(dayCap), scenarios, feasible, notes, example, dl, dd, td,
       stopIf: [
         dl.applicable ? `Today's loss reaches $${money(mul(fx(dl.remaining), prof.dailyShare)).toLocaleString('en-US')} (your daily budget), or 2 losses in a row.` : '2 losses in a row.',

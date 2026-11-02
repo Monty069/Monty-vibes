@@ -406,5 +406,14 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('go', { v: 'plan' }); ok(/Target/.test(t.root()) && /Still to make/.test(t.root()), 'cptarget: Daily Plan shows target for N-trades plan');
   ok(!t.errors.length, 'menu/cptarget: no errors ' + t.errors.join(' | ')); }
 
+// V. Ring shows small progress on a big target
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '150'); setv('cp-pct', '13'); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '40'); t.act('cp-save');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '103.62'); t.act('cp-log-save');
+  const mid = doc.querySelector('.bz-mid').textContent.replace(/\s+/g, ' ');
+  ok(/0\.\d\d ?%/.test(mid) && /\+\$104 made/.test(mid), 'ring: shows 0.xx% and profit made ' + mid);
+  ok(!t.errors.length, 'ring: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
