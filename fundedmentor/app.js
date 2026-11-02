@@ -611,12 +611,12 @@
     // Small progress on a big target still shows: 0.23% instead of 0%, and a visible sliver of arc.
     const vTxt = v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v > 0 ? v.toFixed(2) : '0'; const vArc = v > 0 ? Math.max(v, 1.5) : 0;
     const R = 72 * size / 228, C = 2 * Math.PI * R;
-    return `<div class="bezel" style="--bz:${size}px" role="img" aria-label="${has ? `${vTxt} percent of profit target reached, ${fmt$(p.remainingTarget, 0)} to go` : 'No profit target in this phase'}">
+    return `<div class="bezel" style="--bz:${size}px" role="img" aria-label="${has ? `${vTxt} percent of profit target reached, ${fmt$(p.remainingTarget, 0)} to go${c.s && c.s.equity != null ? `, balance ${fmt$(c.s.equity, 0)} of ${fmt$(c.s.equity + (p.remainingTarget || 0), 0)}` : ''}` : 'No profit target in this phase'}">
       <i class="bz-rim"></i><i class="bz-flute"></i><i class="bz-face"></i><i class="bz-min"></i><i class="bz-hr"></i>
       <svg viewBox="0 0 ${size} ${size}" aria-hidden="true"><defs><linearGradient id="bzarc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBF0D0"/><stop offset=".55" stop-color="#DCBE7D"/><stop offset="1" stop-color="#9C7A3B"/></linearGradient></defs>
         <circle cx="${size / 2}" cy="${size / 2}" r="${R.toFixed(1)}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="3"/>
         ${has ? `<circle class="bz-arc" cx="${size / 2}" cy="${size / 2}" r="${R.toFixed(1)}" fill="none" stroke="url(#bzarc)" stroke-width="3" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - Math.min(vArc, 100) / 100)).toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/>` : ''}</svg>
-      <div class="bz-mid">${has ? `<b>${vTxt}<small>%</small></b><span>of target</span><em>${p.remainingTarget === 0 ? 'Target reached' : (p.progress > 0 ? sgn$(p.progress, 0) + ' made · ' : '') + fmt$(p.remainingTarget, 0) + ' to go'}</em>` : `<b>—</b><span>no target</span>`}</div><i class="bz-gloss"></i></div>`;
+      <div class="bz-mid">${has ? `<b>${vTxt}<small>%</small></b><span>of target</span><em>${p.remainingTarget === 0 ? 'Target reached' : (p.progress > 0 ? sgn$(p.progress, 0) + ' made · ' : '') + fmt$(p.remainingTarget, 0) + ' to go'}</em>${c.s && c.s.equity != null ? `<u>${fmt$(c.s.equity, 0)} of ${fmt$(c.s.equity + (p.remainingTarget || 0), 0)}</u>` : ''}` : `<b>—</b><span>no target</span>`}</div><i class="bz-gloss"></i></div>`;
   }
 
   // ---------- next trade planner ----------
