@@ -414,7 +414,7 @@ td.r, th.r { text-align: right; }
 .tv-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-ink); animation: tvpulse 1.6s ease-in-out infinite; }
 @keyframes tvpulse { 50% { opacity: .25; } }
 .tv-wrap .tradingview-widget-container { flex: 1; min-width: 0; min-height: 46px; }
-.tv-wrap iframe { filter: sepia(.45) saturate(1.25) brightness(1.02); }
+.tv-wrap iframe { color-scheme: light; background: transparent; filter: sepia(.45) saturate(1.25) brightness(1.02); } /* light matches the widget document, so the browser does not paint an opaque white backdrop behind it */
 .tv-attr { margin: 0; padding: 3px 12px 5px; font-size: 10.5px; color: var(--muted); text-align: right; border-top: 1px solid color-mix(in srgb, var(--accent) 14%, transparent); }
 .tv-attr a { color: var(--accent); }
 .lp-firms { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 8px; }
