@@ -462,5 +462,15 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(/\$335\.00\s*Catching up to your original plan/.test(h2), 'pva: Catch up mode makes $335 today’s target');
   ok(!t.errors.length, 'pva: no errors ' + t.errors.join(' | ')); }
 
+// Z. Live market ticker (TradingView widget) on the dashboard
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const host = doc.getElementById('tv-ticker'); const sc = host && host.querySelector('script');
+  ok(host && sc && /embed-widget-ticker-tape\.js/.test(sc.src), 'ticker: TradingView widget mounted on the dashboard');
+  const cfg = sc ? JSON.parse(sc.text) : { symbols: [] };
+  ok(cfg.symbols[0].proName === 'OANDA:XAUUSD' && cfg.symbols.some((x) => x.proName === 'OANDA:NAS100USD'), 'ticker: account instrument first, then majors');
+  t.act('go', { v: 'calendar' }); t.act('go', { v: 'overview' }); ok(doc.querySelectorAll('#tv-ticker script').length === 1, 'ticker: mounted once, not duplicated on re-render');
+  ok(/Live prices by/.test(t.root()), 'ticker: attribution shown');
+  ok(!t.errors.length, 'ticker: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

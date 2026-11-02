@@ -378,6 +378,7 @@
       onBeforeElUpdated(from, to) {
         if (from.isEqualNode(to)) return false;
         if (from.id === 'gbtn' && from.dataset.mounted) return false;
+        if (from.id === 'tv-ticker' && from.dataset.mounted) return false; // live price widget keeps its iframe
         if (from.type === 'file') return false;
         if (from === document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(from.tagName)) {
           for (const { name, value } of to.attributes) if (name !== 'value' && from.getAttribute(name) !== value) from.setAttribute(name, value);
@@ -427,6 +428,25 @@
       ${ui.logoutAsk ? `<div class="overlay" data-act="logout-no"><div class="sheet" data-stop role="dialog" aria-label="Log out"><div class="sheet-h"><h2>Log out?</h2><button class="btn ghost sm" data-act="logout-no" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div><div class="sheet-b"><div class="stack" style="gap:14px"><p class="muted">Your accounts and trades stay saved to your Google sign-in. Sign in again any time to pick up where you left off.</p><div class="row"><button class="btn primary" data-act="logout-yes">Log out</button><button class="btn ghost" data-act="logout-no">Cancel</button></div></div></div></div></div>` : ''}
       ${ui.toast ? `<div class="toast" role="status">${esc(ui.toast)}</div>` : ''}`);
     if (ui.copilot) { const m = $('.msgs'); if (m) m.scrollTop = m.scrollHeight; }
+    mountTicker(acct);
+  }
+  // Live market prices: TradingView's free ticker-tape widget (no API key; prices stream inside their iframe).
+  const TV_SYM = { XAUUSD: 'OANDA:XAUUSD', US30: 'OANDA:US30USD', NAS100: 'OANDA:NAS100USD', GER40: 'OANDA:DE30EUR', ES: 'CME_MINI:ES1!', MES: 'CME_MINI:MES1!', NQ: 'CME_MINI:NQ1!', MNQ: 'CME_MINI:MNQ1!', YM: 'CBOT_MINI:YM1!', MYM: 'CBOT_MINI:MYM1!', GC: 'COMEX:GC1!', MGC: 'COMEX:MGC1!', CL: 'NYMEX:CL1!', MCL: 'NYMEX:MCL1!' };
+  const tvSym = (s) => TV_SYM[s] || (/^[A-Z]{6}$/.test(s) ? 'FX:' + s : null);
+  function tickerHTML() {
+    return `<div class="tv-wrap"><div class="tradingview-widget-container" id="tv-ticker"><div class="tradingview-widget-container__widget"></div></div><p class="tv-attr">Live prices by <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">TradingView</a></p></div>`;
+  }
+  function mountTicker(acct) {
+    const host = document.getElementById('tv-ticker'); if (!host || host.dataset.mounted || !/^https?:/.test(location.protocol)) return;
+    host.dataset.mounted = '1';
+    const mine = acct ? [...new Set(legsOf(acct).map((l) => l.symbol).concat(acct.instrument))].map(tvSym).filter(Boolean) : [];
+    const base = ['OANDA:XAUUSD', 'OANDA:NAS100USD', 'OANDA:US30USD', 'OANDA:SPX500USD', 'FX:EURUSD', 'FX:GBPUSD', 'FX:USDJPY', 'BITSTAMP:BTCUSD'];
+    const names = { 'OANDA:XAUUSD': 'Gold', 'OANDA:NAS100USD': 'Nasdaq 100', 'OANDA:US30USD': 'Dow 30', 'OANDA:SPX500USD': 'S&P 500', 'BITSTAMP:BTCUSD': 'Bitcoin' };
+    const symbols = [...new Set(mine.concat(base))].slice(0, 10).map((proName) => ({ proName, title: names[proName] || proName.split(':')[1] }));
+    const dark = state.theme === 'dark' || (state.theme !== 'light' && (!window.matchMedia || matchMedia('(prefers-color-scheme: dark)').matches));
+    const sc = document.createElement('script'); sc.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js'; sc.async = true;
+    sc.text = JSON.stringify({ symbols, showSymbolLogo: false, isTransparent: true, displayMode: 'adaptive', colorTheme: dark ? 'dark' : 'light', locale: 'en' });
+    host.appendChild(sc);
   }
 
   function applyTheme() { const r = document.documentElement; if (state.theme === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', state.theme); }
@@ -508,6 +528,7 @@
     const p = c.plan;
     const tgt = p.target != null;
     return `${pageHead(esc(a.name), `${esc(c.firm.name)} · ${esc(c.model.name)} · ${esc(phaseLabel(c))} · ${fmt$(a.initialBalance, 0)} account`, `${srcChip(c.src)}${statusChip(c.status)}${verChip(c.ver)}`)}
+      ${tickerHTML()}
       ${al.length ? `<div class="stack" style="gap:8px;margin-bottom:16px">${al.map(([k, t]) => `<div class="alert ${k}">${icon(k === 'ok' ? 'ok' : k === 'info' ? 'info' : 'warn')}<span>${t}</span></div>`).join('')}</div>` : ''}
       <section class="hero">
         <div class="hero-main">
@@ -1141,7 +1162,7 @@
     const dirty = linked && cpDirty(a);
     const num = (k, label, extra = '') => `<label class="field"><span>${label}</span><input class="input num" id="cp-${k}" type="number" inputmode="decimal" step="any" min="0" data-cp="${k}" value="${esc(f[k])}" ${extra}></label>`;
     const solves = [['target', 'Reach a target'], ['days', 'In N days'], ['trades', 'In N trades']];
-    return `${pageHead('Compounding Planner', 'Tell it what you have and your profit per trade. It works out the rest and sizes your next trade.')}
+    return `${pageHead('Compounding Planner', 'Tell it what you have and your profit per trade. It works out the rest and sizes your next trade.')}${tickerHTML()}
       <div class="grid g2">
         <section class="panel"><div class="stack" style="gap:14px">
           ${linked ? `<div class="alert info">${icon('info')}<span>Linked to <b>${esc(a.name)}</b>. Amount I have is its live balance. Change anything below to preview it, then press Update plan.</span></div>` : ''}
