@@ -445,7 +445,7 @@
     const symbols = [...new Set(mine.concat(base))].slice(0, 10).map((proName) => ({ proName, title: names[proName] || proName.split(':')[1] }));
     const dark = state.theme === 'dark' || (state.theme !== 'light' && (!window.matchMedia || matchMedia('(prefers-color-scheme: dark)').matches));
     const sc = document.createElement('script'); sc.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js'; sc.async = true;
-    sc.text = JSON.stringify({ symbols, showSymbolLogo: false, isTransparent: true, displayMode: 'adaptive', colorTheme: dark ? 'dark' : 'light', locale: 'en' });
+    sc.text = JSON.stringify({ symbols, showSymbolLogo: false, isTransparent: true, displayMode: 'adaptive', colorTheme: 'dark', locale: 'en' });
     host.appendChild(sc);
   }
 
@@ -700,6 +700,7 @@
     const left = Math.max(0, goal - made); const hit = goal > 0 && made >= goal - 0.005;
     const tradesLeft = Math.max(0, per - trades);
     let status = day.err || '';
+    if (!status && !f.weekends && isWeekend(new Date())) status = 'Weekend: your plan skips weekends. Next trading day is Monday.';
     if (!status && reached) status = 'Plan target reached.';
     else if (!status && hit) status = 'Today’s target hit. Stop for today.';
     else if (!status && !tradesLeft) status = `All ${per} trade${per === 1 ? '' : 's'} for today used, ${fmt$(left, 0)} short of today’s target. Stop for today.`;
@@ -1073,13 +1074,13 @@
           : `<span class="chip ok nodot" style="font-size:11px" title="${dayKeyOf(t.ts)}">Done</span><button class="btn ghost sm" style="padding:0 6px" data-act="cp-tr-edit" data-id="${esc(t.id)}" aria-label="Edit trade">${icon('edit', 'width="14" height="14"')}</button><button class="btn ghost sm" style="padding:0 6px" data-act="cp-tr-del" data-id="${esc(t.id)}" aria-label="Delete trade">${icon('x', 'width="14" height="14"')}</button>`;
         return `<tr><td>${i + 1}</td><td class="r num">${fmt$(t.open, 0)}</td>${pctTd(t.open ? t.profit / t.open * 100 : 0)}${prof}<td class="r num">${fmt$(editing ? t.open + (Number(ui.cpEditVal) || 0) : t.close, 0)}</td><td><span class="row" style="gap:4px;flex-wrap:nowrap;justify-content:flex-end">${act}</span></td></tr>`;
       });
-      const plan = cut(r.list).map((t) => t ? `<tr><td>${H.length + t.n}</td><td class="r num">${fmt$(t.open, 0)}</td>${pctTd(t.pct)}${money(t.profit)}<td class="r num">${fmt$(t.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px" title="Plan day ${t.d}">Plan</span></td></tr>` : gap(6));
+      const plan = cut(r.list).map((t) => t ? `<tr><td>${H.length + t.n}${t.date ? `<br><small class="muted">${shortDate(t.date)}</small>` : ''}</td><td class="r num">${fmt$(t.open, 0)}</td>${pctTd(t.pct)}${money(t.profit)}<td class="r num">${fmt$(t.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px" title="Plan day ${t.d}">Plan</span></td></tr>` : gap(6));
       rows = done.concat(plan);
     } else {
       head = '<th>Day</th><th class="r">Trades</th><th class="r">Start</th><th class="r">Profit</th><th class="r">End</th><th></th>';
       const g = []; for (const t of H) { const k = dayKeyOf(t.ts); let d = g[g.length - 1]; if (!d || d.k !== k) { d = { k, open: t.open, profit: 0, n: 0 }; g.push(d); } d.profit += t.profit; d.n++; d.close = t.close; }
       const done = g.map((d, i) => `<tr><td>${i + 1}</td><td class="r num">${d.n}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip ok nodot" style="font-size:11px">${d.k}</span></td></tr>`);
-      const plan = cut(r.days).map((d) => d ? `<tr><td>${g.length + d.d}</td><td class="r num">${d.trades}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px">Plan</span></td></tr>` : gap(6));
+      const plan = cut(r.days).map((d) => d ? `<tr><td>${g.length + d.d}${d.date ? `<br><small class="muted">${shortDate(d.date)}</small>` : ''}</td><td class="r num">${d.trades}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px">Plan</span></td></tr>` : gap(6));
       rows = done.concat(plan);
     }
     return `${seg}<div class="tw"><table><thead><tr>${head}</tr></thead><tbody>${rows.join('')}</tbody></table></div>${H.length && view === 'day' ? '<p class="hint">Switch to Per trade to edit or delete a logged trade.</p>' : ''}`;
@@ -1131,12 +1132,21 @@
           : `<p class="muted">${esc(status || 'No trades planned for today.')}</p>`}
       </section>`;
   }
+  // Calendar dates for plan days. Weekends are skipped unless the plan trades them (crypto, some CFD firms).
+  const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
+  function tradingDates(fromTs, n, weekends) {
+    const out = []; const d = new Date(fromTs); d.setHours(12, 0, 0, 0);
+    while (out.length < n) { if (weekends || !isWeekend(d)) out.push(new Date(d)); d.setDate(d.getDate() + 1); }
+    return out;
+  }
+  const shortDate = (d) => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  function datePlan(r, f, fromTs) { if (r.err) return r; const ds = tradingDates(fromTs || Date.now(), r.days.length, !!f.weekends); r.days.forEach((d, i) => { d.date = ds[i]; }); r.list.forEach((t) => { t.date = ds[t.d - 1]; }); r.endDate = ds[ds.length - 1]; return r; }
   function cpOut(f, hist) {
-    const r = compoundPlan(f);
+    const r = datePlan(compoundPlan(f), f);
     if (r.err) return `<p class="muted">${esc(r.err)}</p>`;
     const nx = cpNext(f, r); const dn = r.days.length;
     const head = r.byDay
-      ? `<h2>${fmt$(r.end, 0)} ${r.solve === 'target' ? 'in' : 'after'} ${dn}${hist && hist.length && r.solve === 'target' ? ' more' : ''} trading day${dn === 1 ? '' : 's'}</h2><p class="muted">${r.days[0].pct}% a day, split over ${r.perDay} trade${r.perDay === 1 ? '' : 's'}. Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%).</p>`
+      ? `<h2>${fmt$(r.end, 0)} ${r.solve === 'target' ? 'in' : 'after'} ${dn}${hist && hist.length && r.solve === 'target' ? ' more' : ''} trading day${dn === 1 ? '' : 's'}${r.endDate ? ' · ' + shortDate(r.endDate) : ''}</h2><p class="muted">${f.weekends ? 'Trading weekends. ' : 'Weekends skipped. '}${r.days[0].pct}% a day, split over ${r.perDay} trade${r.perDay === 1 ? '' : 's'}. Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%).</p>`
       : r.solve === 'target'
       ? `<h2>${fmt$(r.end, 0)} in ${r.trades}${hist && hist.length ? ' more' : ''} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">At up to ${r.perDay} trade${r.perDay === 1 ? '' : 's'} a day. Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%).</p>`
       : `<h2>${fmt$(r.end, 0)} after ${r.trades} winning trade${r.trades === 1 ? '' : 's'} · ${dn} day${dn === 1 ? '' : 's'}</h2><p class="muted">Profit ${fmt$(r.total, 0)} (+${(r.total / r.start * 100).toFixed(1)}%) from ${fmt$(r.start, 0)}.</p>`;
@@ -1167,6 +1177,7 @@
         <section class="panel"><div class="stack" style="gap:14px">
           ${linked ? `<div class="alert info">${icon('info')}<span>Linked to <b>${esc(a.name)}</b>. Amount I have is its live balance. Change anything below to preview it, then press Update plan.</span></div>` : ''}
           <div class="field"><span>Compound</span><div class="seg" role="group"><button data-act="cp-basis" data-v="day" aria-pressed="${f.basis === 'day'}">Per day</button><button data-act="cp-basis" data-v="trade" aria-pressed="${f.basis !== 'day'}">Per trade</button></div><span class="hint">${f.basis === 'day' ? 'Grow the balance by a set % each day. Your trades split that day’s target.' : 'Grow the balance by a set % on every trade.'}</span></div>
+          <div class="field"><span>Weekends</span><div class="seg" role="group"><button data-act="cp-weekends" data-v="0" aria-pressed="${!f.weekends}">Skip weekends</button><button data-act="cp-weekends" data-v="1" aria-pressed="${!!f.weekends}">Trade weekends</button></div></div>
           <div class="grid g2" style="gap:12px">${num('start', 'Amount I have ($)', linked ? 'readonly' : '')}${num('pct', f.basis === 'day' ? 'Profit per day (%)' : 'Profit per trade (%)')}</div>
           <div class="field"><span>Work out</span><div class="seg" role="group">${solves.filter(([k]) => !(f.basis === 'day' && k === 'trades')).map(([k, l]) => `<button data-act="cp-solve" data-v="${k}" aria-pressed="${f.solve === k}">${l}</button>`).join('')}</div></div>
           <div class="grid g2" style="gap:12px">${f.solve === 'target' ? num('target', 'Target balance ($)') : f.solve === 'days' ? num('days', 'Days') : num('trades', 'Total trades')}${num('perDay', 'Max trades a day', 'step="1" min="1"')}</div>
@@ -1783,14 +1794,15 @@
     if (w.cp_pct == null) w.cp_pct = '2'; if (w.cp_perDay == null) w.cp_perDay = '1';
     const num = (k, label, hint, extra = '') => `<label class="field"><span>${label}</span><input class="input num" id="w-${k}" type="number" min="0" step="any" inputmode="decimal" data-w="${k}" value="${esc(w[k] || '')}" ${extra}>${hint ? `<span class="hint">${hint}</span>` : ''}</label>`;
     return `<h2 style="margin-top:14px">Your compounding plan</h2><p class="muted">Account size above is the amount you have. Change the plan any time on the Compounding page.</p>
-      <div class="grid g2" style="gap:12px">${num('cp_pct', 'Profit per day (%)', 'Compounds daily; your trades split each day’s target')}${num('cp_target', 'Target balance ($)', 'Leave empty for no target')}${num('cp_perDay', 'Max trades a day', '', 'step="1" min="1"')}${num('cp_cons', 'Consistency rule (%)', 'Leave empty for none')}</div>`;
+      <div class="grid g2" style="gap:12px">${num('cp_pct', 'Profit per day (%)', 'Compounds daily; your trades split each day’s target')}${num('cp_target', 'Target balance ($)', 'Leave empty for no target')}${num('cp_perDay', 'Max trades a day', '', 'step="1" min="1"')}${num('cp_cons', 'Consistency rule (%)', 'Leave empty for none')}</div>
+      <div class="field" style="margin-top:12px"><span>Do you trade on weekends?</span><div class="seg" role="group"><button data-act="w-weekends" data-v="0" aria-pressed="${!w.cp_weekends}">No, skip weekends</button><button data-act="w-weekends" data-v="1" aria-pressed="${!!w.cp_weekends}">Yes (crypto etc.)</button></div><span class="hint">You can change this later on the Compounding page.</span></div>`;
   }
   function draftAccount(w) {
     const firm = FIRMS.find((f) => f.id === w.firmId);
     return { id: 'acct-' + uid(), name: w.aname.trim(), firmId: w.firmId, modelId: w.modelId, phase: w.phase, initialBalance: Number(w.size), currency: w.ccy || 'USD', platform: w.platform || 'MT5',
       purchaseTs: Date.parse(w.date || '') || Date.now(), riskProfile: w.profile || 'balanced', instrument: (w.legs && w.legs[0] ? w.legs[0].symbol : 'XAUUSD'), stopDistance: Number(w.legs && w.legs[0] ? w.legs[0].stop : 5), goal: Object.assign({}, w.goal || defaultGoal()), legs: (w.legs || []).map((l) => ({ symbol: l.symbol, stop: Number(l.stop) })), commissionPerLot: Number(w.comm ?? 7), openPnl: 0, createdTs: Date.now(),
       trades: w.csvRes ? w.csvRes.trades : [], timezone: firm.timezone,
-      ...(firm.personal ? { compound: { basis: 'day', start: String(Number(w.size)), pct: String(w.cp_pct || 2), solve: Number(w.cp_target) > Number(w.size) ? 'target' : 'days', target: String(w.cp_target || ''), days: '20', trades: '20', perDay: String(w.cp_perDay || 1), rr: String((w.goal && w.goal.rr) || 2), cons: String(w.cp_cons || ''), tiers: [], inst: (w.legs && w.legs[0] ? w.legs[0].symbol : 'XAUUSD'), stop: String(w.legs && w.legs[0] ? w.legs[0].stop : 5) } } : {}) };
+      ...(firm.personal ? { compound: { basis: 'day', weekends: !!w.cp_weekends, start: String(Number(w.size)), pct: String(w.cp_pct || 2), solve: Number(w.cp_target) > Number(w.size) ? 'target' : 'days', target: String(w.cp_target || ''), days: '20', trades: '20', perDay: String(w.cp_perDay || 1), rr: String((w.goal && w.goal.rr) || 2), cons: String(w.cp_cons || ''), tiers: [], inst: (w.legs && w.legs[0] ? w.legs[0].symbol : 'XAUUSD'), stop: String(w.legs && w.legs[0] ? w.legs[0].stop : 5) } } : {}) };
   }
 
   // ---------- copilot ----------
@@ -1979,6 +1991,8 @@
       case 'more': ui.more = true; break;
       case 'cp-solve': cpTarget().solve = el.dataset.v; save(); break;
       case 'cp-daymode': { const a = active(); if (a && a.compound) { a.compound.dayMode = el.dataset.v; if (ui.cpDraft && ui.cpDraft.id === a.id) ui.cpDraft.f.dayMode = el.dataset.v; save(); } break; }
+      case 'w-weekends': ui.wizard.cp_weekends = el.dataset.v === '1'; break;
+      case 'cp-weekends': cpTarget().weekends = el.dataset.v === '1'; save(); break;
       case 'cp-basis': { const T = cpTarget(); T.basis = el.dataset.v; if (T.basis === 'day' && T.solve === 'trades') T.solve = 'days'; save(); break; }
       case 'cp-tier-add': cpTarget().tiers.push({ at: '', pct: '' }); save(); break;
       case 'cp-tier-del': cpTarget().tiers.splice(Number(el.dataset.i), 1); save(); break;

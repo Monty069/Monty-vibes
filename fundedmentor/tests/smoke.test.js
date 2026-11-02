@@ -285,7 +285,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
   t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000');
   ok(/Save as account/.test(t.root()), 'cpacct: Save as account offered');
-  t.act('cp-save'); let st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts.find((x) => x.firmId === 'personal');
+  t.act('cp-weekends', { v: '1' }); t.act('cp-save'); let st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts.find((x) => x.firmId === 'personal');
   ok(a && a.initialBalance === 1000 && a.compound && a.compound.pct === '10' && st.activeId === a.id, 'cpacct: personal account created and active');
   ok(/Next trade/.test(t.root()) && /aim \$100/.test(t.root()), 'cpacct: overview next trade comes from the plan');
   ok(/50%|of target/.test(t.root()) || /\$1,000 to go/.test(t.root()), 'cpacct: target ring uses plan target');
@@ -311,7 +311,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 // O. Compounding account: Next trade asks how it went and updates the balance
 { const t = boot({ state: base(manual()) }); const doc = t.w.document;
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
-  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '5000'); setv('cp-pct', '3'); setv('cp-target', '6000'); t.act('cp-save');
+  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '5000'); setv('cp-pct', '3'); setv('cp-target', '6000'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
   const bal = () => { const st = JSON.parse(t.w.localStorage.getItem('passrate.v1')); const a = st.accounts.find((x) => x.id === st.activeId); return a.trades.reduce((m, x) => m + x.profit, a.initialBalance); };
   t.act('cp-log-open'); let h = t.root();
   ok(/Took it as planned/.test(h) && /Record a different profit/.test(h) && /Record a loss/.test(h), 'cplog: three choices shown');
@@ -325,7 +325,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 // P. Live table: logged trades first, then the plan; daily or per trade; edit and delete
 { const t = boot({ state: base(manual()) }); const doc = t.w.document;
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
-  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); t.act('cp-save');
+  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '100'); t.act('cp-log-save');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'loss' }); setv('cp-log-amt', '50'); t.act('cp-log-save');
   t.act('go', { v: 'compound' }); let h = t.root();
@@ -350,7 +350,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('next-open'); t.act('nt-log-mode', { m: 'loss' }); setv('nt-log-amt', '250'); t.act('nt-log-save'); ok(Math.abs(bal() - (b1 - 250)) < 0.01, 'ntlog: loss logged on prop account');
   t.act('next-open'); t.act('nt-log-mode', { m: 'profit' }); setv('nt-log-amt', ''); t.act('nt-log-save'); ok(/Enter an amount above 0/.test(t.root()), 'ntlog: validates amount');
   // compounding page button
-  t.act('next-close'); t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); t.act('cp-save'); t.act('go', { v: 'compound' });
+  t.act('next-close'); t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); t.act('cp-weekends', { v: '1' }); t.act('cp-save'); t.act('go', { v: 'compound' });
   ok(!!doc.querySelector('#cp-out [data-act="cp-log-open"]'), 'ntlog: Log this trade on the Compounding page');
   t.act('cp-log-open'); ok(/Took it as planned/.test(t.root()) && !/Open full plan/.test(t.root()), 'ntlog: opens the three choices from the planner');
   ok(!t.errors.length, 'ntlog: no errors ' + t.errors.join(' | ')); }
@@ -358,7 +358,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 // R. Daily Plan follows the compounding plan
 { const t = boot({ state: base(manual()) }); const doc = t.w.document;
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
-  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); setv('cp-perDay', '2'); t.act('cp-save');
+  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); setv('cp-perDay', '2'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
   t.act('go', { v: 'plan' }); let h = t.root(); const txt = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
   ok(/From your compounding plan: 10% per trade to \$2,000/.test(txt), 'cpday: Daily Plan uses the compounding plan');
   ok(/Today’s target\s*\$210\.00/.test(txt) && /Trades today\s*0 of 2 max/.test(txt), 'cpday: today’s target = 2 trades ($100 + $110 = $210)');
@@ -399,7 +399,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
   t.act('menu'); const menu = doc.querySelector('.menu');
   ok(menu && !menu.querySelector('.acct-pill') && menu.querySelector('.acct-pill-ic'), 'menu: switcher rows don\'t use the full-width pill (mobile layout)');
-  t.act('close-menu'); t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '3'); t.act('cp-save');
+  t.act('close-menu'); t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '3'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
   let h = t.root(); ok(!/no target/i.test(h) && /\$331 to go/.test(h), 'cptarget: N-trades plan shows its end balance as the target (1000 → 1331)');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '100'); t.act('cp-log-save');
   t.act('go', { v: 'compound' }); ok(/\$1,331 after 2 winning trades|after 2 winning trades/.test(doc.getElementById('cp-out').textContent), 'cptarget: trades count down after logging (2 left)');
@@ -409,7 +409,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 // V. Ring shows small progress on a big target
 { const t = boot({ state: base(manual()) }); const doc = t.w.document;
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
-  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '150'); setv('cp-pct', '13'); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '40'); t.act('cp-save');
+  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '150'); setv('cp-pct', '13'); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '40'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '103.62'); t.act('cp-log-save');
   const mid = doc.querySelector('.bz-mid').textContent.replace(/\s+/g, ' ');
   ok(/0\.\d\d ?%/.test(mid) && /\+\$104 made/.test(mid), 'ring: shows 0.xx% and profit made ' + mid);
@@ -418,7 +418,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 // W. Today's target leads the dashboard and the next trade
 { const t = boot({ state: base(manual()) }); const doc = t.w.document;
   const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
-  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '5000'); setv('cp-perDay', '3'); t.act('cp-save');
+  t.act('go', { v: 'compound' }); t.act('cp-basis', { v: 'trade' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '5000'); setv('cp-perDay', '3'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
   let h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
   ok(/Today’s target · day 1\s*0 of 3 trades \$331\.00/.test(h), 'today: dashboard shows today’s target ($100 + $110 + $121 = $331)');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '300'); t.act('cp-log-save');
@@ -437,7 +437,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   let out = doc.getElementById('cp-out').textContent;
   ok(/\$2,000 in 8 trading days/.test(out) && /10% a day, split over 3 trades/.test(out), 'daily: 1000 → 2000 at 10%/day = 8 days, whatever the trade count');
   ok(/Today’s target\s*\$100\.00/.test(out), 'daily: today’s target is 10% of the balance ($100), not 3 compounded trades');
-  t.act('cp-save'); let h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  t.act('cp-weekends', { v: '1' }); t.act('cp-save'); let h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
   ok(/Today’s target · day 1\s*0 of 3 trades \$100\.00/.test(h), 'daily: dashboard card shows $100 for the day');
   ok(/aim \$33/.test(doc.querySelector('.next-btn').textContent) || /aim \$3\d/.test(doc.querySelector('.next-btn').textContent), 'daily: next trade aims for a third of the day ($33) ' + doc.querySelector('.next-btn').textContent);
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '60'); t.act('cp-log-save');
@@ -451,7 +451,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 { const yday = now - DAY;
   const acct = { id: 'acct-cp', name: 'Compounding $2,500', firmId: 'personal', modelId: 'personal-compound', phase: 'live', initialBalance: 2500, currency: 'USD', platform: 'Other', purchaseTs: yday - DAY, riskProfile: 'balanced', instrument: 'XAUUSD', stopDistance: 5, goal: { type: 'pass', rr: 2 }, legs: [{ symbol: 'XAUUSD', stop: 5 }], commissionPerLot: 0, openPnl: 0, createdTs: yday - DAY,
     trades: [{ id: 'y1', symbol: 'XAUUSD', side: 'buy', lots: 0.1, openTime: yday - 60000, closeTime: yday, profit: 190, commission: 0, swap: 0, source: 'manual' }],
-    compound: { basis: 'day', start: '2500', pct: '10', solve: 'days', days: '10', target: '', trades: '20', perDay: '2', rr: '2', cons: '', tiers: [], inst: 'XAUUSD', stop: '5' } };
+    compound: { basis: 'day', weekends: true, start: '2500', pct: '10', solve: 'days', days: '10', target: '', trades: '20', perDay: '2', rr: '2', cons: '', tiers: [], inst: 'XAUUSD', stop: '5' } };
   const t = boot({ state: Object.assign(base(acct), { activeId: 'acct-cp' }) }); const doc = t.w.document;
   const h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
   ok(/Today’s target · day 2/.test(h), 'pva: today is day 2 of the plan');
@@ -471,6 +471,19 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('go', { v: 'calendar' }); t.act('go', { v: 'overview' }); ok(doc.querySelectorAll('#tv-ticker script').length === 1, 'ticker: mounted once, not duplicated on re-render');
   ok(/Live prices by/.test(t.root()), 'ticker: attribution shown');
   ok(!t.errors.length, 'ticker: no errors ' + t.errors.join(' | ')); }
+
+// AA. Weekends: skipped by default with dates, toggle, asked in setup; ticker is dark
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000');
+  let out = doc.getElementById('cp-out').textContent;
+  ok(/Weekends skipped/.test(out) && !/\b(Sat|Sun)\b/.test([...doc.querySelectorAll('#cp-out tbody small')].map((x) => x.textContent).join(' ')), 'weekends: skipped by default, no Sat/Sun dates in the plan');
+  t.act('cp-weekends', { v: '1' }); out = doc.getElementById('cp-out').textContent; ok(/Trading weekends/.test(out), 'weekends: can be switched on');
+  t.act('wizard'); t.act('w-firm', { id: 'personal' }); t.act('w-next'); t.act('w-model', { id: 'personal-compound' });
+  ok(/Do you trade on weekends\?/.test(t.root()), 'weekends: asked when setting up a Personal account');
+  t.act('w-close'); t.act('go', { v: 'overview' });
+  const sc = doc.querySelector('#tv-ticker script'); ok(sc && JSON.parse(sc.text).colorTheme === 'dark', 'ticker: dark theme to match the site');
+  ok(!t.errors.length, 'weekends: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
