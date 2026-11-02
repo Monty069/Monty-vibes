@@ -20,7 +20,8 @@ const PARTNERS = {
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const val = (r) => (r && typeof r === 'object' && 'value' in r ? r.value : r);
 const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
-const kSize = (z) => (z >= 1e6 ? '$' + (z / 1e6) + 'M' : '$' + (z / 1000) + 'K');
+const kSize = (z) => (z >= 1e6 ? '$' + (z / 1e6) + 'M' : z < 1000 ? '$' + z : '$' + (z / 1000) + 'K');
+const range = (a, b) => (a === b ? kSize(a) : kSize(a) + '–' + kSize(b));
 const DD = { static: 'Static', trailing_intraday: 'Trailing (intraday)', trailing_eod: 'Trailing (end of day)', trailing_balance: 'Trailing (balance)' };
 const pubModels = (f) => f.models.filter((m) => m.published !== false && m.sizes && m.sizes.length);
 
@@ -66,7 +67,7 @@ function firmPage(f) {
   const prices = ms.flatMap((m) => Object.values(m.prices || {}).filter((x) => x > 0)); const from = prices.length ? Math.min(...prices) : null;
   const anyVer = ms.some((m) => m.verifyLevel === 'official');
   const title = `${f.name} Rules ${YEAR}: Account Sizes, Profit Targets & Drawdown | FundedMentor`;
-  const desc = `${f.name} prop firm rules for ${YEAR}: ${ms.length} program${ms.length === 1 ? '' : 's'} (${ms.map((m) => m.name).slice(0, 4).join(', ')}${ms.length > 4 ? '…' : ''}), account sizes ${kSize(sizes[0])}–${kSize(sizes[sizes.length - 1])}${from ? ', from ' + money(from) : ''}. Profit targets, daily loss and max drawdown for every size, with sources.`;
+  const desc = `${f.name} prop firm rules for ${YEAR}: ${ms.length} program${ms.length === 1 ? '' : 's'} (${ms.map((m) => m.name).slice(0, 4).join(', ')}${ms.length > 4 ? '…' : ''}), account sizes ${range(sizes[0], sizes[sizes.length - 1])}${from ? ', from ' + money(from) : ''}. Profit targets, daily loss and max drawdown for every size, with sources.`;
   const faq = [];
   const sections = ms.map((m) => {
     const src = sourceOf(m); const phs = phaseKeys(m);
@@ -89,7 +90,7 @@ ${m.priceNote ? `<p class="mu" style="font-size:13px">${esc(m.priceNote)}</p>` :
   faq.push([`How do I track my ${f.name} challenge?`, `Add your ${f.name} account to FundedMentor for free. It turns these rules into a daily plan: daily loss left, drawdown left, position size for your next trade and progress to target.`]);
   const body = `<p class="crumb"><a href="/">Home</a> › <a href="/prop-firms">Prop firms</a> › ${esc(f.name)}</p>
 <h1>${esc(f.name)} rules ${YEAR}: every account, size and drawdown</h1>
-<p class="mu">${esc(f.market || 'Prop firm')} · ${ms.length} program${ms.length === 1 ? '' : 's'} · sizes ${kSize(sizes[0])}–${kSize(sizes[sizes.length - 1])}${from ? ' · from ' + money(from) : ''}. ${anyVer ? 'Rules marked Verified were confirmed on ' + esc(f.name) + '’s own site.' : 'These rules come from dated third-party sources: confirm with the firm before you buy.'}</p>
+<p class="mu">${esc(f.market || 'Prop firm')} · ${ms.length} program${ms.length === 1 ? '' : 's'} · sizes ${range(sizes[0], sizes[sizes.length - 1])}${from ? ' · from ' + money(from) : ''}. ${anyVer ? 'Rules marked Verified were confirmed on ' + esc(f.name) + '’s own site.' : 'These rules come from dated third-party sources: confirm with the firm before you buy.'}</p>
 ${deal}<div class="card"><b>Have a ${esc(f.name)} account?</b><p style="margin:6px 0 10px">FundedMentor turns these rules into your daily plan: how much you can lose today, drawdown left, lot size for the next trade and progress to target. Free.</p><a class="btn" href="/">Start tracking free</a></div>
 <h2>${esc(f.name)} account types</h2>${sections}
 <h2>${esc(f.name)} FAQ</h2>${faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}
@@ -103,7 +104,7 @@ ${deal}<div class="card"><b>Have a ${esc(f.name)} account?</b><p style="margin:6
 
 function indexPage() {
   const rows = FIRMS.map((f) => { const ms = pubModels(f); const sz = ms.flatMap((m) => m.sizes); const pr = ms.flatMap((m) => Object.values(m.prices || {}).filter((x) => x > 0));
-    return `<tr><td><a href="/prop-firms/${f.id}"><b>${esc(f.name)}</b></a>${PARTNERS[f.id] && PARTNERS[f.id].deal ? `<span class="chip ok">${esc(PARTNERS[f.id].deal)}</span>` : ''}</td><td>${esc(f.market || '')}</td><td>${ms.length}</td><td>${kSize(Math.min(...sz))}–${kSize(Math.max(...sz))}</td><td>${pr.length ? money(Math.min(...pr)) : '—'}</td><td>${ms.some((m) => m.verifyLevel === 'official') ? '<span class="chip ok">Verified</span>' : '<span class="chip wa">Sourced</span>'}</td></tr>`; }).join('');
+    return `<tr><td><a href="/prop-firms/${f.id}"><b>${esc(f.name)}</b></a>${PARTNERS[f.id] && PARTNERS[f.id].deal ? `<span class="chip ok">${esc(PARTNERS[f.id].deal)}</span>` : ''}</td><td>${esc(f.market || '')}</td><td>${ms.length}</td><td>${range(Math.min(...sz), Math.max(...sz))}</td><td>${pr.length ? money(Math.min(...pr)) : '—'}</td><td>${ms.some((m) => m.verifyLevel === 'official') ? '<span class="chip ok">Verified</span>' : '<span class="chip wa">Sourced</span>'}</td></tr>`; }).join('');
   const nP = FIRMS.reduce((n, f) => n + pubModels(f).length, 0);
   const title = `Funded Prop Firms ${YEAR}: Rules for ${FIRMS.length} Prop Firms Compared | FundedMentor`;
   const desc = `Compare ${FIRMS.length} funded prop firms and ${nP} challenge accounts: FTMO, Apex, Topstep, FundedNext, Funding Pips, The5ers and more. Profit targets, daily loss, max drawdown and prices for every account size, with sources.`;
