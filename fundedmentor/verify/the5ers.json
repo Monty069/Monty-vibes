@@ -112,6 +112,101 @@
      }
     }
    }
+  },
+  "t5-hyper-growth": {
+   "sourceType": "secondary",
+   "source": "https://fundedtrading.com/propfirm/the5ers/",
+   "checkedAt": "2026-11-02",
+   "name": "Hyper Growth",
+   "sizes": [
+    5000,
+    10000,
+    20000,
+    50000
+   ],
+   "prices": {
+    "5000": 52,
+    "10000": 98,
+    "20000": 189,
+    "50000": 329
+   },
+   "priceNote": "Prices per fundedtrading.com (affiliate review, 2026); confirm with The5ers.",
+   "notes": [
+    "Sources disagree on whether Hyper Growth has a daily loss limit (3% listed, 'no daily stop-loss' in the description)."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 10
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    }
+   }
+  },
+  "t5-bootcamp": {
+   "sourceType": "secondary",
+   "source": "https://fundedtrading.com/propfirm/the5ers/",
+   "checkedAt": "2026-11-02",
+   "name": "Bootcamp (3-Step)",
+   "sizes": [
+    20000,
+    100000
+   ],
+   "prices": {
+    "20000": 22,
+    "100000": 95
+   },
+   "priceNote": "Prices per fundedtrading.com (affiliate review, 2026); confirm with The5ers. Bootcamp has an extra fee when you get funded.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 6
+     }
+    },
+    "phase2": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 6
+     }
+    },
+    "phase3": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 6
+     }
+    },
+    "funded": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    }
+   }
   }
  }
 }

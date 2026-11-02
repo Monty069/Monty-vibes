@@ -266,16 +266,18 @@
     const all = fm.model.sizeRules || {};
     const sr = size != null && (all[size] || all[phaseKey + '@' + size]) ? Object.assign({}, all[size] || {}, all[phaseKey + '@' + size] || {}) : null;
     if (!sr) return {};
-    const ver = fm.model.verifiedAt;
+    const vs = fm.model.verifiedSizes; const ver = fm.model.verifiedAt && (!vs || vs.includes(Number(size))) ? fm.model.verifiedAt : null;
     const src = (fm.firm.sources && fm.firm.sources[0]) || {};
     const out = {};
     for (const k in sr) {
       if (sr[k] == null) continue;
       if (k === 'profitTargetAmount' && phaseKey === 'funded') continue;
-      out[k] = { value: sr[k], status: ver ? 'verified' : 'needs_verification', source: (ver && fm.model.verifySource) || src.url || null, checkedAt: ver || fm.firm.checkedAt, verifiedAt: ver || null, version: ver ? 2 : 1, notes: ver ? `Confirmed on the firm's official page on ${ver} for $${Number(size).toLocaleString()}.` : `Size-specific value for $${Number(size).toLocaleString()}.` };
+      out[k] = { value: sr[k], status: ver ? 'verified' : 'needs_verification', source: (ver && fm.model.verifySource) || (!ver && sourcedFrom(fm.model)) || src.url || null, checkedAt: ver || fm.firm.checkedAt, verifiedAt: ver || null, version: ver ? 2 : 1, notes: ver ? `Confirmed on the firm's official page on ${ver} for $${Number(size).toLocaleString()}.` : `Size-specific value for $${Number(size).toLocaleString()}.` };
     }
     return out;
   }
+  // The secondary page a sourced program's rules came from (first rule that names one).
+  function sourcedFrom(m) { for (const ph of Object.values(m.phases || {})) for (const r of Object.values(ph.rules || {})) if (r && r.sourceType === 'secondary' && r.source) return r.source; return null; }
   function phaseRecords(modelId, phaseKey, size) {
     const fm = findModel(modelId); if (!fm) return {};
     const base = (fm.model.phases[phaseKey] || {}).rules || {};
@@ -452,7 +454,7 @@
   function applyTheme() { const r = document.documentElement; if (state.theme === 'system') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', state.theme); }
   function phaseLabel(c) { return c && c.phase ? c.phase.label : '—'; }
   function statusChip(st) { return st === 'breached' ? '<span class="chip bad">Limit reached</span>' : st === 'passed' ? '<span class="chip ok">Target met</span>' : '<span class="chip info">Active</span>'; }
-  function verChip(ver) { return ver.confirmed ? '<span class="chip ok">Rules verified</span>' : '<span class="chip warn">Rules unverified</span>'; }
+  function verChip(ver) { return ver.confirmed ? '<span class="chip ok">Rules verified</span>' : '<span class="chip warn">Sourced rules · confirm</span>'; }
   function limitChip(r) { if (!r.applicable) return '<span class="chip">Not set</span>'; return { ok: '<span class="chip ok">Within limit</span>', warning: '<span class="chip warn">Approaching</span>', critical: '<span class="chip bad">Near limit</span>', breached: '<span class="chip bad">Breached</span>' }[r.status]; }
   function barClass(used) { return used >= 75 ? 'neg' : used >= 50 ? 'warn' : 'pos'; }
   function initials(a) { return (a.name.match(/\b\w/g) || ['A']).slice(0, 2).join('').toUpperCase(); }
@@ -1728,10 +1730,10 @@
     } else if (w.step === 'firm') {
       const q = (w.q || '').toLowerCase();
       body = `<h2>Which firm is your account with?</h2><input class="input" id="w-q" type="search" placeholder="Search firms" data-w="q" value="${esc(w.q || '')}">
-        <div class="pick">${PUB.filter((f) => !q || f.name.toLowerCase().includes(q)).map((f) => { const ok = pubModels(f).some((m) => m.rulesComplete) && f.status === 'active'; return `<button data-act="w-firm" data-id="${f.id}" aria-pressed="${w.firmId === f.id}" ${ok ? '' : 'disabled'}><b>${esc(f.name)}${partnerOf(f) ? ` <span class="chip ok nodot" style="font-size:11px">${dealLabel(partnerOf(f))}</span>` : ''}</b><span class="muted" style="font-size:12px">${ok ? esc(f.market) + ' · ' + pubModels(f).filter((m) => m.rulesComplete).length + ' verified program' + (pubModels(f).filter((m) => m.rulesComplete).length === 1 ? '' : 's') : f.status !== 'active' ? 'Status uncertain' : 'Rules not published yet'}</span>${f.riskFlag ? '<span class="warnc" style="font-size:11px">Trust warning</span>' : ''}</button>`; }).join('')}</div>`;
+        <div class="pick">${PUB.filter((f) => !q || f.name.toLowerCase().includes(q)).map((f) => { const ok = pubModels(f).some((m) => m.rulesComplete) && f.status === 'active'; return `<button data-act="w-firm" data-id="${f.id}" aria-pressed="${w.firmId === f.id}" ${ok ? '' : 'disabled'}><b>${esc(f.name)}${partnerOf(f) ? ` <span class="chip ok nodot" style="font-size:11px">${dealLabel(partnerOf(f))}</span>` : ''}</b><span class="muted" style="font-size:12px">${ok ? esc(f.market) + ' · ' + pubModels(f).filter((m) => m.rulesComplete).length + ' program' + (pubModels(f).filter((m) => m.rulesComplete).length === 1 ? '' : 's') + (pubModels(f).some((m) => m.verifyLevel === 'official') ? '' : ' · sourced rules') : f.status !== 'active' ? 'Status uncertain' : 'Rules not published yet'}</span>${f.riskFlag ? '<span class="warnc" style="font-size:11px">Trust warning</span>' : ''}</button>`; }).join('')}</div>`;
       canNext = !!(firm && pubModels(firm).some((m) => m.rulesComplete));
     } else if (w.step === 'model') {
-      body = `<h2>Which ${esc(firm.name)} account did you buy?</h2>${dealBox(firm)}${firm.riskFlag ? `<div class="alert bad">${icon('warn')}<span>${esc(firm.riskFlag)}</span></div>` : ''}<div class="pick">${pubModels(firm).map((m) => `<button data-act="w-model" data-id="${m.id}" aria-pressed="${w.modelId === m.id}" ${m.rulesComplete && !m.invitationOnly ? '' : 'disabled'}><b>${esc(m.name)}</b><span class="muted" style="font-size:12px">${esc(m.structure)}${m.invitationOnly ? ' · invitation only' : m.rulesComplete ? '' : ' · rules not published'}</span></button>`).join('')}</div>
+      body = `<h2>Which ${esc(firm.name)} account did you buy?</h2>${dealBox(firm)}${firm.riskFlag ? `<div class="alert bad">${icon('warn')}<span>${esc(firm.riskFlag)}</span></div>` : ''}<div class="pick">${pubModels(firm).map((m) => `<button data-act="w-model" data-id="${m.id}" aria-pressed="${w.modelId === m.id}" ${m.rulesComplete && !m.invitationOnly ? '' : 'disabled'}><b>${esc(m.name)}</b><span class="muted" style="font-size:12px">${esc(m.structure)}${m.invitationOnly ? ' · invitation only' : !m.rulesComplete ? ' · rules not published' : m.verifyLevel === 'sourced' ? ' · rules sourced, confirm with the firm' : m.verifiedSizes && m.verifiedSizes.length < m.sizes.length ? ' · verified for ' + m.verifiedSizes.map((z) => '$' + (z / 1000) + 'K').join(', ') : ' · verified'}</span></button>`).join('')}</div>
         ${model ? `<div class="field"><span>Account size</span>${model.sizes.length ? `<div class="pick">${model.sizes.map((s) => `<button data-act="w-size" data-v="${s}" aria-pressed="${Number(w.size) === s}"><b class="num">$${s.toLocaleString()}</b>${priceFor(model, s) != null ? `<span class="muted" style="font-size:12px">${model.priceCcy === 'EUR' ? '€' : '$'}${priceFor(model, s)}</span>` : ''}</button>`).join('')}</div>` : `<input class="input num" id="w-size" type="number" min="1000" step="1000" data-w="size" value="${esc(w.size || '')}" placeholder="e.g. 100000"><span class="hint">Sizes aren't published for this program. Enter the size you bought.</span>`}</div>
         <div class="field"><span>Current phase</span><div class="seg">${Object.values(model.phases).map((p) => `<button data-act="w-phase" data-k="${p.key}" aria-pressed="${w.phase === p.key}">${esc(p.label)}</button>`).join('')}</div></div>
         ${PR.verification(phaseRecords(model.id, w.phase || Object.keys(model.phases)[0], Number(w.size))).confirmed ? '' : `<div class="alert warn">${icon('info')}<span>These rules were checked on ${esc(firm.checkedAt || 'an earlier date')} from public sources and are not yet verified against the firm's own page. Review them in Firm Rules.</span></div>`}` : ''}`;

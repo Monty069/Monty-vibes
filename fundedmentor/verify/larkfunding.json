@@ -44,6 +44,63 @@
      }
     }
    }
+  },
+  "lark-3step": {
+   "sourceType": "secondary",
+   "source": "https://fundedtrading.com/propfirm/lark-funding/",
+   "checkedAt": "2026-11-02",
+   "name": "3-Step Evaluation",
+   "sizes": [
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "10000": 105,
+    "25000": 175,
+    "50000": 280,
+    "100000": 370
+   },
+   "priceNote": "Prices per fundedtrading.com; larkfunding.com lists 3-Step from $10K to $100K.",
+   "notes": [
+    "5% max drawdown is from larkfunding.com (type not stated, shown as static). No daily loss listed.",
+    "50:1 leverage."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 5
+     }
+    },
+    "phase2": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 4
+     }
+    },
+    "phase3": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 3
+     }
+    },
+    "funded": {
+     "rules": {
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   }
   }
  }
 }

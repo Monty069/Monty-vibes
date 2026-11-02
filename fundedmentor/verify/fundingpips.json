@@ -1,0 +1,282 @@
+{
+ "verifiedAt": "2026-09-16",
+ "sourceType": "secondary",
+ "sources": [
+  "https://www.proptradingvibes.com/blog/fundingpips-account-types",
+  "https://fundingpips.com"
+ ],
+ "models": {
+  "fp-1step-flex": {
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "5000": 66,
+    "10000": 99,
+    "25000": 211,
+    "50000": 313,
+    "100000": 533
+   },
+   "priceNote": "Prices from a 30 Jul 2026 snapshot; confirm at checkout.",
+   "payout": {
+    "splitPct": "80% bi-weekly"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 12,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 12
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 12,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "fp-2step-standard": {
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "5000": 36,
+    "10000": 66,
+    "25000": 177,
+    "50000": 299,
+    "100000": 522
+   },
+   "priceNote": "Prices from a 30 Jul 2026 snapshot; confirm at checkout.",
+   "payout": {
+    "splitPct": "60% weekly / 80% bi-weekly / 90% on demand / 100% monthly"
+   },
+   "notes": [
+    "Minimum 3 trading days per phase with the 5% daily loss (0 with the 3% daily-loss add-on)."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 8,
+      "minTradingDays": 3
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 3
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "fp-2step-flex": {
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "5000": 32,
+    "10000": 59,
+    "25000": 159,
+    "50000": 269,
+    "100000": 499
+   },
+   "priceNote": "Prices from a 30 Jul 2026 snapshot; confirm at checkout.",
+   "payout": {
+    "splitPct": "85% or 95% bi-weekly, chosen at purchase"
+   },
+   "notes": [
+    "Min 1 trading day per phase for new or reset accounts from 26 Aug 2026; 3 profitable days per phase on the 95% split."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 12,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 10,
+      "minTradingDays": 1
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 12,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 8,
+      "minTradingDays": 1
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 12,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 85
+     }
+    }
+   }
+  },
+  "fp-2step-pro": {
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "5000": 29,
+    "10000": 55,
+    "25000": 134,
+    "50000": 224,
+    "100000": 422
+   },
+   "priceNote": "Prices from a 30 Jul 2026 snapshot; confirm at checkout. $200K price not listed.",
+   "payout": {
+    "splitPct": "80% weekly"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 6,
+      "minTradingDays": 1
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 6,
+      "minTradingDays": 1
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "fp-zero": {
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "5000": 60,
+    "10000": 88,
+    "25000": 188,
+    "50000": 244,
+    "100000": 444
+   },
+   "priceNote": "Prices from a 30 Jul 2026 snapshot; confirm at checkout. $200K price not listed.",
+   "payout": {
+    "splitPct": "95% bi-weekly"
+   },
+   "notes": [
+    "Instant funding, no evaluation. Max loss trails the highest recorded equity.",
+    "Master rewards need 7 profitable days per rolling 30 days."
+   ],
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_higher",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "profitSplitPct": 95
+     }
+    }
+   }
+  }
+ }
+}

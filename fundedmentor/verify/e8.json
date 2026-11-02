@@ -1,0 +1,173 @@
+{
+ "verifiedAt": "2026-09-03",
+ "sourceType": "secondary",
+ "sources": [
+  "https://fundedtrading.com/propfirm/e8-markets/",
+  "https://e8markets.com"
+ ],
+ "models": {
+  "e8-one": {
+   "name": "E8 One",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000,
+    400000,
+    500000
+   ],
+   "prices": {
+    "5000": 48,
+    "10000": 88,
+    "25000": 188,
+    "50000": 288,
+    "100000": 488,
+    "200000": 798,
+    "400000": 1598,
+    "500000": 1998
+   },
+   "priceNote": "Prices per fundedtrading.com (checked 2026-09-03); E8 lets you change settings at checkout, which changes price and rules.",
+   "notes": [
+    "Default preset: 9% target, 4% daily, 6% dynamic drawdown. E8 lets you set drawdown from 4% to 14% (target = 1.5x drawdown); edit the rules to match your checkout."
+   ],
+   "payout": {
+    "splitPct": "80/90/100%, chosen at checkout"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "profitTargetPct": 9,
+      "minTradingDays": 1,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "consistencyPct": 40,
+      "consistencyDenominator": "total_profit",
+      "weekendHolding": true
+     }
+    }
+   }
+  },
+  "e8-signature": {
+   "name": "E8 Signature",
+   "structure": "One-step evaluation",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    150000
+   ],
+   "prices": {
+    "25000": 110,
+    "50000": 150,
+    "100000": 260,
+    "150000": 390
+   },
+   "priceNote": "Prices per fundedtrading.com (checked 2026-09-03); E8 lets you change settings at checkout, which changes price and rules.",
+   "notes": [
+    "Max drawdown is an end-of-day dynamic 3\u20134% depending on size; 4% shown, check your dashboard for your size.",
+    "Funded accounts have a soft daily pause instead of a hard daily loss."
+   ],
+   "payout": {
+    "splitPct": "80%"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "maxLossPct": 4,
+      "ddType": "trailing_eod",
+      "ddBasis": "equity",
+      "profitTargetPct": 6,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "maxLossPct": 4,
+      "ddType": "trailing_eod",
+      "ddBasis": "equity",
+      "consistencyPct": 35,
+      "consistencyDenominator": "total_profit",
+      "weekendHolding": true,
+      "profitSplitPct": 80
+     }
+    }
+   }
+  },
+  "e8-pro": {
+   "name": "E8 Pro",
+   "structure": "One-step evaluation",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000,
+    400000,
+    500000
+   ],
+   "prices": {
+    "5000": 32,
+    "10000": 68,
+    "25000": 148,
+    "50000": 228,
+    "100000": 488,
+    "200000": 998,
+    "400000": 2098,
+    "500000": 2598
+   },
+   "priceNote": "Prices per fundedtrading.com (checked 2026-09-03); E8 lets you change settings at checkout, which changes price and rules.",
+   "notes": [
+    "Target and daily loss are from E8 Pro Perpetual (8% target, 2.5% daily, 8% static); the source doesn't state forex values separately.",
+    "2% daily profit cap toward the target. Each payout releases 50% of accumulated profit."
+   ],
+   "payout": {
+    "splitPct": "80% or 100%, locked at purchase"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 2.5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 8
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 2.5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    }
+   }
+  }
+ }
+}

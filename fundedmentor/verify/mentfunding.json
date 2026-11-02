@@ -57,6 +57,100 @@
      }
     }
    }
+  },
+  "ment-futures": {
+   "sourceType": "secondary",
+   "source": "https://mentfunding.com",
+   "checkedAt": "2026-11-02",
+   "name": "Futures",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    200000,
+    400000
+   ],
+   "prices": {},
+   "priceNote": "Prices not listed on mentfunding.com; see checkout.",
+   "notes": [
+    "Read from mentfunding.com, but the page doesn't label which size list belongs to which program, so sizes are matched by order. 90-day evaluation window (365 days on $400K)."
+   ],
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 10
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity"
+     }
+    }
+   }
+  },
+  "ment-equities": {
+   "sourceType": "secondary",
+   "source": "https://mentfunding.com",
+   "checkedAt": "2026-11-02",
+   "name": "Equities (static)",
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {},
+   "priceNote": "Prices not listed on mentfunding.com; see checkout.",
+   "notes": [
+    "Static version shown (15% target, 6% static). A trailing version has a 10% target with 6% trailing.",
+    "Needs 3 separate days of 0.5%+ gain. 33% consistency on static accounts. Payouts every 14 days, $100 minimum."
+   ],
+   "payout": {
+    "splitPct": "80% (90% add-on)"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 15,
+      "minProfitableDays": 3
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "consistencyPct": 33,
+      "consistencyDenominator": "total_profit",
+      "profitSplitPct": 80
+     }
+    }
+   }
   }
  }
 }

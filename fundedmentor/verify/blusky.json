@@ -1,0 +1,51 @@
+{
+ "verifiedAt": "2026-08-23",
+ "sourceType": "secondary",
+ "sources": [
+  "https://tradingfunder.com/firms/blusky/",
+  "https://bluskytrading.com"
+ ],
+ "models": {
+  "bs-launch": {
+   "name": "Launch",
+   "sizes": [
+    100000
+   ],
+   "prices": {},
+   "priceNote": "Subscription; price not listed by the source. Post-pass fee due within 14 days of passing.",
+   "notes": [
+    "Only the 100K size is sourced so far. Buffer Zone after passing: $3,500 target, 34% consistency.",
+    "Payouts: $250 minimum, $3,000 cap per 7 days, one profitable day between requests."
+   ],
+   "payout": {
+    "splitPct": "90/10"
+   },
+   "phases": {
+    "phase1": {
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 50,
+      "consistencyDenominator": "total_profit"
+     }
+    },
+    "funded": {
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "profitSplitPct": 90
+     }
+    }
+   },
+   "sizeRules": {
+    "100000": {
+     "maxLossAmount": 2500,
+     "maxLots": 10
+    },
+    "phase1@100000": {
+     "profitTargetAmount": 6000
+    }
+   }
+  }
+ }
+}

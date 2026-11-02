@@ -169,6 +169,60 @@
      "profitTargetAmount": 9000
     }
    }
+  },
+  "lucid-direct": {
+   "sourceType": "secondary",
+   "source": "https://proptradingvibes.com/blog/lucid-trading-luciddirect-account",
+   "checkedAt": "2026-10-19",
+   "name": "LucidDirect",
+   "sizes": [
+    25000,
+    50000,
+    100000,
+    150000
+   ],
+   "prices": {
+    "25000": 329,
+    "50000": 515,
+    "100000": 700,
+    "150000": 836
+   },
+   "priceNote": "Per proptradingvibes.com (updated 2026-10-19); confirm on Lucid's site.",
+   "notes": [
+    "Direct to funded, no evaluation. First payout needs a cycle profit of $1,500 / $3,000 / $6,000 / $9,000 (25K/50K/100K/150K).",
+    "Daily loss is a soft breach: it locks you out for the session; the max loss is the hard floor."
+   ],
+   "payout": {
+    "splitPct": "90/10 from the first dollar"
+   },
+   "phases": {
+    "funded": {
+     "rules": {
+      "ddType": "trailing_eod",
+      "ddBasis": "balance",
+      "consistencyPct": 20,
+      "consistencyDenominator": "total_profit",
+      "profitSplitPct": 90
+     }
+    }
+   },
+   "sizeRules": {
+    "25000": {
+     "maxLossAmount": 1000
+    },
+    "50000": {
+     "maxLossAmount": 2000,
+     "dailyLossAmount": 1200
+    },
+    "100000": {
+     "maxLossAmount": 3500,
+     "dailyLossAmount": 2100
+    },
+    "150000": {
+     "maxLossAmount": 5000,
+     "dailyLossAmount": 3000
+    }
+   }
   }
  }
 }

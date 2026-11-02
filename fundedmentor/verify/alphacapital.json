@@ -1,0 +1,96 @@
+{
+ "verifiedAt": "2026-11-02",
+ "sourceType": "secondary",
+ "sources": [
+  "https://alphacapitalgroup.uk",
+  "https://tradingfunder.com/firms/alpha-capital-group/"
+ ],
+ "models": {
+  "acg-alpha-one": {
+   "patch": true,
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "5000": 50,
+    "10000": 97,
+    "25000": 197,
+    "50000": 297,
+    "100000": 497,
+    "200000": 997
+   },
+   "priceNote": "Sizes and prices from alphacapitalgroup.uk (checked 2026-11-02). Rules from tradingfunder.com; confirm on the firm's site."
+  },
+  "acg-alpha-pro-10": {
+   "patch": true,
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "5000": 50,
+    "10000": 97,
+    "25000": 197,
+    "50000": 297,
+    "100000": 497,
+    "200000": 997
+   },
+   "priceNote": "Sizes and prices from alphacapitalgroup.uk (checked 2026-11-02). Rules from tradingfunder.com; confirm on the firm's site."
+  },
+  "acg-alpha-pro-8": {
+   "patch": true,
+   "sizes": [
+    5000,
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {},
+   "priceNote": "Alpha Pro sizes per alphacapitalgroup.uk; 8% variant price not listed, see checkout."
+  },
+  "acg-alpha-swing": {
+   "patch": true,
+   "sizes": [
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "10000": 147,
+    "25000": 247,
+    "50000": 357,
+    "100000": 577,
+    "200000": 1097
+   },
+   "priceNote": "Sizes and prices from alphacapitalgroup.uk (checked 2026-11-02). Rules from tradingfunder.com; confirm on the firm's site.",
+   "notes": [
+    "The $200K Swing is a 3-phase account with 6% max loss and 4% daily loss (per alphacapitalgroup.uk)."
+   ]
+  },
+  "acg-alpha-three": {
+   "patch": true,
+   "sizes": [
+    10000,
+    25000
+   ],
+   "prices": {
+    "10000": 67,
+    "25000": 157
+   },
+   "priceNote": "Sizes and prices from alphacapitalgroup.uk (checked 2026-11-02). Rules from tradingfunder.com; confirm on the firm's site."
+  }
+ }
+}

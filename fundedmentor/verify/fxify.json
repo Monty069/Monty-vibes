@@ -1,0 +1,495 @@
+{
+ "verifiedAt": "2026-09-24",
+ "sourceType": "secondary",
+ "sources": [
+  "https://fundedtrading.com/propfirm/fxify/",
+  "https://fxify.com"
+ ],
+ "models": {
+  "fx-1phase": {
+   "name": "One Phase",
+   "type": "1-step",
+   "structure": "One-step evaluation",
+   "sizes": [
+    5000,
+    10000,
+    15000,
+    25000,
+    50000,
+    100000,
+    200000,
+    400000
+   ],
+   "prices": {
+    "5000": 59,
+    "10000": 89,
+    "15000": 119,
+    "25000": 199,
+    "50000": 379,
+    "100000": 549,
+    "200000": 1049,
+    "400000": 2950
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "profitTargetPct": 10,
+      "minTradingDays": 5,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 6,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "weekendHolding": true
+     }
+    }
+   },
+   "notes": [],
+   "payout": {
+    "splitPct": "Up to 90%"
+   }
+  },
+  "fx-2phase": {
+   "name": "Two Phase (Standard)",
+   "type": "2-step",
+   "structure": "Two-step evaluation",
+   "sizes": [
+    5000,
+    10000,
+    15000,
+    25000,
+    50000,
+    100000,
+    200000,
+    400000
+   ],
+   "prices": {
+    "5000": 59,
+    "10000": 89,
+    "15000": 119,
+    "25000": 199,
+    "50000": 379,
+    "100000": 549,
+    "200000": 1049,
+    "400000": 2950
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "profitTargetPct": 10,
+      "minTradingDays": 5,
+      "weekendHolding": true
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 5,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "weekendHolding": true
+     }
+    }
+   },
+   "notes": [],
+   "payout": {
+    "splitPct": "Up to 90%"
+   }
+  },
+  "fx-2phase-classic": {
+   "name": "Two Phase (Classic)",
+   "type": "2-step",
+   "structure": "Two-step evaluation",
+   "sizes": [
+    5000,
+    10000,
+    15000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "5000": 59,
+    "10000": 89,
+    "15000": 119,
+    "25000": 199,
+    "50000": 379,
+    "100000": 549
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 4
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 10,
+      "minTradingDays": 4
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 10,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "consistencyPct": 25,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "notes": [],
+   "payout": {
+    "splitPct": "Up to 100%"
+   }
+  },
+  "fx-2phase-pro": {
+   "name": "Two Phase Pro",
+   "type": "2-step",
+   "structure": "Two-step evaluation",
+   "sizes": [
+    10000,
+    25000,
+    50000,
+    100000,
+    200000
+   ],
+   "prices": {
+    "10000": 129,
+    "25000": 225,
+    "50000": 375,
+    "100000": 599,
+    "200000": 1099
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 4,
+      "minTradingDays": 3
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 8,
+      "minTradingDays": 3
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 4,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 8,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitSplitPct": 80
+     }
+    }
+   },
+   "notes": [],
+   "payout": {
+    "splitPct": "80%, payouts every 10 days"
+   }
+  },
+  "fx-3phase": {
+   "name": "Three Phase",
+   "type": "3-step",
+   "structure": "Three-step evaluation",
+   "sizes": [
+    5000,
+    10000,
+    15000,
+    25000,
+    50000,
+    100000,
+    200000,
+    400000
+   ],
+   "prices": {
+    "5000": 39,
+    "10000": 59,
+    "15000": 79,
+    "25000": 149,
+    "50000": 249,
+    "100000": 399,
+    "200000": 799,
+    "400000": 1599
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 5,
+      "weekendHolding": true
+     }
+    },
+    "phase2": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 5,
+      "weekendHolding": true
+     }
+    },
+    "phase3": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 5,
+      "weekendHolding": true
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 5,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 5,
+      "ddType": "static",
+      "ddBasis": "equity",
+      "weekendHolding": true
+     }
+    }
+   },
+   "notes": [],
+   "payout": {
+    "splitPct": "Up to 90%"
+   }
+  },
+  "fx-lightning": {
+   "name": "Lightning Challenge",
+   "type": "1-step",
+   "structure": "One-step evaluation (MT5)",
+   "sizes": [
+    10000,
+    25000,
+    50000,
+    100000
+   ],
+   "prices": {
+    "10000": 59,
+    "25000": 149,
+    "50000": 249,
+    "100000": 399
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "phase1": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 4,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "profitTargetPct": 5,
+      "minTradingDays": 3
+     }
+    },
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 4,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "consistencyPct": 30,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "notes": [
+    "Sources disagree on the time limit (5 or 7 days) and first payout timing; check your dashboard."
+   ],
+   "payout": {
+    "splitPct": "Up to 90%"
+   }
+  },
+  "fx-instant": {
+   "name": "Instant Funding (Standard)",
+   "type": "instant",
+   "structure": "Instant funding, no evaluation",
+   "sizes": [
+    1000,
+    2500,
+    5000,
+    10000,
+    25000,
+    50000,
+    75000,
+    100000
+   ],
+   "prices": {
+    "1000": 69,
+    "2500": 119,
+    "5000": 229,
+    "10000": 449,
+    "25000": 899,
+    "50000": 1749,
+    "75000": 2499,
+    "100000": 4249
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": 8,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 8,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity"
+     }
+    }
+   },
+   "notes": [
+    "First payout after 14 days, then every 14 days."
+   ],
+   "payout": {
+    "splitPct": "Up to 90%"
+   }
+  },
+  "fx-instant-lite": {
+   "name": "Instant Funding (Lite)",
+   "type": "instant",
+   "structure": "Instant funding, no evaluation",
+   "sizes": [
+    2500,
+    5000,
+    10000,
+    25000,
+    50000
+   ],
+   "prices": {
+    "2500": 19,
+    "5000": 44,
+    "10000": 89,
+    "25000": 169,
+    "50000": 289
+   },
+   "priceNote": "'From' prices per fundedtrading.com (checked 2026-09-24); add-ons change the total. Confirm at checkout.",
+   "phases": {
+    "funded": {
+     "rules": {
+      "dailyLossPct": 3,
+      "dailyLossBasis": "initial",
+      "dailyLossReference": "day_start_balance",
+      "dailyLossIncludesUnrealized": true,
+      "maxLossPct": 4,
+      "ddType": "trailing_intraday",
+      "ddBasis": "equity",
+      "consistencyPct": 20,
+      "consistencyDenominator": "total_profit"
+     }
+    }
+   },
+   "notes": [
+    "Payouts every 10 days."
+   ],
+   "payout": {
+    "splitPct": "Up to 90%"
+   }
+  }
+ }
+}

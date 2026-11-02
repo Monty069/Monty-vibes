@@ -376,7 +376,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('wizard'); const tb = doc.querySelector('[data-act="w-firm"][data-id="topstep"]');
   ok(tb && /15% off/.test(tb.textContent), 'partner: Topstep 15% off tag in Add account');
   const wb = doc.querySelector('[data-act="w-firm"][data-id="wemastertrade"]'); ok(wb && /35% off/.test(wb.textContent), 'partner: WeMasterTrade (verified) shows 35% off');
-  ok(!doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'), 'partner: unverified firms are not listed, even with a partner deal');
+  const fb = doc.querySelector('[data-act="w-firm"][data-id="fundingpips"]'); ok(fb && /sourced rules/.test(fb.textContent), 'partner: firms with only sourced rules are listed and labelled');
   t.act('w-firm', { id: 'topstep' }); t.act('w-next'); let h = t.root();
   ok(/TS-7AUMKSO2JXGXT/.test(h) && /may earn a commission/.test(h), 'partner: code and disclosure on the program step');
   t.act('w-close'); t.act('go', { v: 'rules' }); t.act('rule-firm', { id: 'topstep' }); h = t.root();
@@ -388,7 +388,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 // T. Verified-only catalogue
 { const t = boot({ state: base(manual()) }); const F = t.w.FIRMS;
   const pub = F.filter((f) => !f.custom && f.published); const progs = pub.flatMap((f) => f.models.filter((m) => m.published));
-  ok(progs.length > 0 && progs.every((m) => Object.values(m.phases).every((p) => Object.values(p.rules).every((r) => r.status === 'verified' && /^https?:/.test(r.source)))), 'verified: every listed rule is verified with a source link (' + progs.length + ' programs)');
+  ok(progs.length > 0 && progs.every((m) => Object.values(m.phases).every((p) => Object.values(p.rules).every((r) => (m.verifyLevel === 'sourced' ? r.status === 'needs_verification' : r.status === 'verified') && /^https?:/.test(r.source)))), 'catalogue: every listed rule has a source link; verified programs verified, sourced ones flagged (' + progs.length + ' programs)');
   t.act('wizard'); const listed = [...t.w.document.querySelectorAll('[data-act="w-firm"]')].map((b) => b.dataset.id).filter((id) => !['custom', 'personal'].includes(id));
   ok(listed.every((id) => pub.some((f) => f.id === id)) && listed.length === pub.length, 'verified: Add account lists only verified firms');
   t.act('w-close'); t.act('go', { v: 'rules' }); ok(!/unverified|Sourced · confirm|Needs verification/i.test(t.root().replace(/data-[a-z-]+="[^"]*"/g, '')), 'verified: Firm Rules shows no unverified values');
@@ -504,6 +504,19 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(dates.length && !dates.includes(today), 'fxday: plan does not repeat today once trades are logged ' + dates[0] + ' vs ' + today);
   ok(/Today · /.test(doc.getElementById('cp-out').textContent), 'fxday: today’s logged row is marked Today');
   ok(!t.errors.length, 'fxday: no errors ' + t.errors.join(' | ')); }
+
+// AD. Full catalogue: sourced programs listed and labelled; mixed sizes verified per size
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document; const F = t.w.FIRMS;
+  const apex = F.find((f) => f.id === 'apex'); const intra = apex.models.find((m) => m.id === 'apex-intraday');
+  ok(intra.sizes.length >= 4 && intra.verifiedSizes.includes(150000), 'catalogue: Apex Intraday lists every size, 150K verified');
+  t.act('wizard'); t.act('w-firm', { id: 'fxify' }); t.act('w-next');
+  const picks = [...doc.querySelectorAll('[data-act="w-model"]')].map((b) => b.textContent);
+  ok(picks.length >= 8 && picks.every((x) => /sourced, confirm/.test(x)), 'catalogue: FXIFY shows all 8 programs, labelled sourced');
+  t.act('w-close'); t.act('wizard'); t.act('w-firm', { id: 'apex' }); t.act('w-next');
+  ok(/verified for \$150K/.test(t.root()), 'catalogue: partly verified program says which sizes are verified');
+  t.act('w-close'); t.act('go', { v: 'rules' }); t.act('go', { v: 'find' });
+  ok(!doc.querySelector('[data-act="w-firm"][data-id="thefundedtrader"]'), 'catalogue: deactivated firm stays hidden');
+  ok(!t.errors.length, 'catalogue: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
