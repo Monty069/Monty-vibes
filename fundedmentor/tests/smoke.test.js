@@ -361,13 +361,13 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '2000'); setv('cp-perDay', '2'); t.act('cp-save');
   t.act('go', { v: 'plan' }); let h = t.root(); const txt = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
   ok(/From your compounding plan: 10% per trade to \$2,000/.test(txt), 'cpday: Daily Plan uses the compounding plan');
-  ok(/Aim for today\s*\$210\.00/.test(txt) && /Trades today\s*0 of 2/.test(txt), 'cpday: today = 2 trades');
+  ok(/Today’s target\s*\$210\.00/.test(txt) && /Trades today\s*0 of 2 max/.test(txt), 'cpday: today’s target = 2 trades ($100 + $110 = $210)');
   ok(/Today’s trades/.test(txt) && /\$1,100/.test(txt) && /\$1,210/.test(txt), 'cpday: lists today’s trades from live balance');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '100'); t.act('cp-log-save');
   t.act('go', { v: 'plan' }); const t2 = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
-  ok(/Trades today\s*1 of 2/.test(t2) && /Aim for today\s*\$110\.00/.test(t2), 'cpday: re-plans after a logged trade');
+  ok(/Trades today\s*1 of 2/.test(t2) && /Left today\s*\$110\.00/.test(t2) && /Made today\s*\+\$100\.00/.test(t2), 'cpday: re-plans after a logged trade');
   t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '110'); t.act('cp-log-save');
-  t.act('go', { v: 'plan' }); ok(/Done for today/.test(doc.getElementById('root').textContent), 'cpday: done for today after 2 trades');
+  t.act('go', { v: 'plan' }); ok(/target hit/i.test(doc.getElementById('root').textContent), 'cpday: today’s target hit after $210');
   const t3 = boot({ state: base(manual()) }); t3.act('go', { v: 'plan' }); ok(/Risk per trade/.test(t3.root()), 'cpday: prop accounts keep the normal Daily Plan');
   ok(!t.errors.length && !t3.errors.length, 'cpday: no errors ' + t.errors.join(' | ')); }
 
@@ -414,6 +414,20 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   const mid = doc.querySelector('.bz-mid').textContent.replace(/\s+/g, ' ');
   ok(/0\.\d\d ?%/.test(mid) && /\+\$104 made/.test(mid), 'ring: shows 0.xx% and profit made ' + mid);
   ok(!t.errors.length, 'ring: no errors ' + t.errors.join(' | ')); }
+
+// W. Today's target leads the dashboard and the next trade
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '5000'); setv('cp-perDay', '3'); t.act('cp-save');
+  let h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  ok(/Today’s target\s*0 of 3 trades \$331\.00/.test(h), 'today: dashboard shows today’s target ($100 + $110 + $121 = $331)');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '300'); t.act('cp-log-save');
+  h = doc.getElementById('root').textContent.replace(/\s+/g, ' ');
+  ok(/\+\$300\.00/.test(h) && /\$31\.00 left/.test(h), 'today: one big trade → $31 left of today’s target');
+  ok(/aim \$3\d/.test(doc.querySelector('.next-btn').textContent) || /Open plan/.test(doc.querySelector('.next-btn').textContent), 'today: next trade aims only for what’s left today ' + doc.querySelector('.next-btn').textContent);
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '40'); t.act('cp-log-save');
+  ok(/Today’s target hit/.test(doc.querySelector('.next-btn').textContent), 'today: target hit after 2 of 3 trades → stop, even with a trade left');
+  ok(!t.errors.length, 'today: no errors ' + t.errors.join(' | ')); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

@@ -523,6 +523,7 @@
         </div>
         <div class="hero-dial">${bezel(c, 228)}${nextBtn(a, c)}</div>
       </section>
+      ${a.compound ? todayCard(a, c) : ''}
       <div class="grid g2" style="margin-bottom:16px">
         <section class="panel limits">
           <div class="lim"><div class="row between"><span>Daily loss left</span><b class="num">${c.dl.applicable ? fmt$(c.dl.remaining, 0) : '—'}</b></div>${c.dl.applicable ? `<div class="thread"><i class="${barClass(c.dl.usedPct)}" style="width:${Math.max(0, 100 - c.dl.usedPct)}%"></i></div><span class="hint">${pct(Math.max(0, 100 - c.dl.usedPct), 0)} of ${fmt$(c.dl.limit, 0)} · resets ${c.firm.resetHour != null ? String(c.firm.resetHour).padStart(2, '0') + ':00 ' + esc(c.firm.timezone === 'UTC' ? 'UTC' : 'firm time') : 'daily'}</span>` : '<span class="hint">No daily limit in this phase</span>'}</div>
@@ -650,7 +651,44 @@
     if (f.solve === 'days') out.days = String(Math.max(1, Math.floor(Number(f.days) || 0) - new Set(cpHistory(a).map((t) => dayKeyOf(t.ts))).size));
     return out;
   }
-  function cpNextFor(a, c) { const f = cpLive(a.compound, a, c); const r = compoundPlan(f); return { f, r, nx: r.err ? null : cpNext(f, r) }; }
+  // Today's target leads: it is the plan's first day from the day-start balance (with % steps, consistency cap and
+  // overall target applied). Each trade aims for the smaller of the plan's per-trade % and what's left of today's
+  // target; max trades a day is a safety cap, not the goal.
+  function cpToday(a, c) {
+    const f = a.compound; const per = Math.max(1, Math.floor(Number(f.perDay) || 1)); const rr = Number(f.rr) > 0 ? Number(f.rr) : 2;
+    const dsb = Number(c.s.dayStartBalance) || c.s.balance; const eq = c.s.equity; const made = c.s.todayPnl;
+    const trades = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length;
+    const target = c.plan && c.plan.target != null ? Number(a.initialBalance) + c.plan.target : null;
+    const reached = target != null && eq >= target - 0.005;
+    const day = compoundPlan(Object.assign({}, f, { start: String(dsb), solve: 'trades', trades: String(per) }));
+    let goal = day.err ? 0 : day.end - dsb;
+    const full = compoundPlan(Object.assign({}, cpLive(f, a, c), { start: String(dsb) }));
+    if (!full.err && full.dayCap < Infinity) goal = Math.min(goal, full.dayCap);
+    if (target != null) goal = Math.min(goal, Math.max(0, target - dsb));
+    goal = Math.round(goal * 100) / 100;
+    const left = Math.max(0, goal - made); const hit = goal > 0 && made >= goal - 0.005;
+    const tradesLeft = Math.max(0, per - trades);
+    let status = day.err || '';
+    if (!status && reached) status = 'Plan target reached.';
+    else if (!status && hit) status = 'Today’s target hit. Stop for today.';
+    else if (!status && !tradesLeft) status = `All ${per} trade${per === 1 ? '' : 's'} for today used, ${fmt$(left, 0)} short of today’s target. Stop for today.`;
+    let aim = 0, z = { risk: 0 };
+    if (!status) { const one = compoundPlan(Object.assign({}, f, { start: String(eq), solve: 'trades', trades: '1' })); aim = Math.min(one.err ? 0 : one.list[0].profit, left); z = cpSize(f, aim, eq); }
+    return { goal, made, left, hit, reached, pct: goal > 0 ? Math.max(0, Math.min(100, made / goal * 100)) : 0, trades, per, tradesLeft, aim, z, rr, status, dsb };
+  }
+  function cpNextFor(a, c) {
+    const f = a.compound; const t = cpToday(a, c); const stop = Number(f.stop) || 0;
+    const nx = t.status ? null : { lots: t.z.lots, spec: t.z.spec, stop, tp: stop * t.rr, rr: t.rr, actual: t.z.lots ? t.z.risk : null, risk: t.z.risk, profit: t.aim, note: t.z.note };
+    return { f, r: { err: t.status || null }, nx, t };
+  }
+  function todayCard(a, c) {
+    const t = cpToday(a, c);
+    return `<section class="panel" style="margin-bottom:16px"><div class="panel-h"><h2>Today’s target</h2><span class="chip ${t.hit ? 'ok' : 'nodot'}">${t.hit ? 'Hit' : `${t.trades} of ${t.per} trade${t.per === 1 ? '' : 's'}`}</span></div>
+      <div class="row between" style="align-items:flex-end;gap:12px"><div><div class="big num">${fmt$(t.goal)}</div><p class="hint">From today’s starting balance ${fmt$(t.dsb, 0)}</p></div>
+        <div style="text-align:right"><div class="${cls(t.made)} num" style="font-size:18px;font-weight:600">${sgn$(t.made)}</div><p class="hint">${t.hit ? 'Done for today' : fmt$(t.left) + ' left'}</p></div></div>
+      <div class="bar acc" style="margin-top:12px"><i style="width:${t.pct.toFixed(1)}%"></i></div>
+      <p class="hint" style="margin-top:8px">${t.status ? esc(t.status) : `Next trade aims for ${fmt$(t.z.win != null ? t.z.win : t.aim)}${t.z.lots ? ' with ' + qty(t.z.lots, t.z.spec) + ' ' + esc(a.compound.inst) : ''}.`}</p></section>`;
+  }
   // The same three choices everywhere a next trade is shown: as planned, a different profit, or a loss.
   function logChoices(win, loss, L, p) {
     if (L.mode === 'profit' || L.mode === 'loss') return `<label class="field"><span>${L.mode === 'profit' ? 'Profit made ($)' : 'Loss taken ($)'}</span><input class="input num" id="${p}-log-amt" type="number" inputmode="decimal" min="0" step="any" data-${p === 'cp' ? 'cl' : 'nl'}="amt" value="${esc(L.amt)}"></label>
@@ -669,7 +707,7 @@
   function cpLogSheet(a, c) {
     const { f, r, nx } = cpNextFor(a, c); const L = ui.cpLog;
     const win = nx ? (nx.actual != null ? nx.actual * nx.rr : nx.profit) : 0; const loss = nx ? (nx.actual != null ? nx.actual : nx.risk) : 0;
-    const plan = r.err ? `<p class="muted">${esc(r.err)}</p>` : `<div class="panel"><span class="label">Planned trade</span><p style="margin:6px 0">${nx.lots ? `<b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})` : esc(nx.note || '')}</p><dl class="kv"><dt>Win</dt><dd class="pos">${sgn$(win)}</dd><dt>Loss</dt><dd class="neg">${sgn$(-loss)}</dd><dt>Balance now</dt><dd>${fmt$(c.s.equity)}</dd></dl></div>`;
+    const plan = r.err ? `<div class="alert ${cpToday(a, c).hit ? 'ok' : 'info'}">${icon(cpToday(a, c).hit ? 'ok' : 'info')}<span>${esc(r.err)} You can still record a trade below.</span></div>` : `<div class="panel"><span class="label">Planned trade</span><p style="margin:6px 0">${nx.lots ? `<b class="num">${qty(nx.lots, nx.spec)} ${esc(f.inst)}</b> · stop ${nx.stop} · take profit ${+nx.tp.toFixed(4)} (1:${nx.rr})` : esc(nx.note || '')}</p><dl class="kv"><dt>Win</dt><dd class="pos">${sgn$(win)}</dd><dt>Loss</dt><dd class="neg">${sgn$(-loss)}</dd><dt>Today’s target</dt><dd>${sgn$(cpToday(a, c).made)} of ${fmt$(cpToday(a, c).goal)}</dd><dt>Balance now</dt><dd>${fmt$(c.s.equity)}</dd></dl></div>`;
     const body = logChoices(r.err ? 0 : win, loss, L, 'cp') + (L.mode === 'menu' && state.view !== 'compound' ? '<button class="btn ghost sm" data-act="go" data-v="compound" style="margin-top:10px">Open full plan</button>' : '');
     return `<div class="overlay" data-act="cp-log-close"><div class="sheet" data-stop role="dialog" aria-label="Next trade">
       <div class="sheet-h"><div><h2>Next trade</h2><small class="muted">How did it go? Your balance and plan update right away.</small></div><button class="btn ghost sm" data-act="cp-log-close" aria-label="Close">${icon('x', 'width="16" height="16"')}</button></div>
@@ -681,10 +719,8 @@
   }
   function nextBtn(a, c) {
     if (a.compound) {
-      const f = cpLive(a.compound, a, c); const r = compoundPlan(f);
-      const today = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
-      const nx = r.err ? null : cpNext(f, r);
-      const v = r.err ? esc(r.err) : f.solve === 'target' && c.s.equity >= Number(f.target) ? 'Target reached' : today >= per ? 'Done for today' : nx.lots ? `${qty(nx.lots, nx.spec)} ${esc(f.inst)} · aim ${fmt$(nx.profit, 0)}` : 'Open plan';
+      const t = cpToday(a, c); const f = a.compound;
+      const v = t.reached ? 'Plan target reached' : t.hit ? 'Today’s target hit' : t.status ? 'Done for today' : t.z.lots ? `${qty(t.z.lots, t.z.spec)} ${esc(f.inst)} · aim ${fmt$(t.z.win != null ? t.z.win : t.aim, 0)}` : 'Open plan';
       return `<button class="next-btn" data-act="cp-log-open"><span class="next-l">Next trade</span><span class="next-v">${v}</span>${icon('chev', 'width="14" height="14" style="transform:rotate(-90deg)"')}</button>`;
     }
     const rec = bestMode(a, c); const t = nextTrade(a, c, rec);
@@ -987,25 +1023,25 @@
   }
   function compoundDailyPlan(a, c) {
     const f = a.compound; const eq = c.s.equity; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
-    const doneToday = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const left = Math.max(0, per - doneToday);
-    const target = f.solve === 'target' ? Number(f.target) : (c.plan && c.plan.target != null ? Number(a.initialBalance) + c.plan.target : null); const reached = target && eq >= target;
+    const T = cpToday(a, c); const doneToday = T.trades;
+    const target = c.plan && c.plan.target != null ? Number(a.initialBalance) + c.plan.target : null; const reached = T.reached;
     const full = compoundPlan(cpLive(f, a, c));
-    const cap = full.dayCap && full.dayCap < Infinity ? Math.max(0, full.dayCap - Math.max(0, c.s.todayPnl)) : null;
-    const today = []; let bal = eq, room = cap;
-    if (!full.err && !reached) for (let i = 0; i < left; i++) {
-      let p = full.list[i] ? bal * full.list[i].pct / 100 : 0;
-      if (room != null) p = Math.min(p, room); if (target) p = Math.min(p, target - bal);
-      if (!(p > 0.005)) break;
-      const z = cpSize(f, p, bal); const w = z.win != null ? z.win : p; today.push({ n: doneToday + i + 1, open: bal, aim: w, z }); bal += w; if (room != null) room -= w;
+    const cap = null;
+    const today = []; let bal = eq, rem = T.left;
+    if (!T.status) for (let i = 0; i < T.tradesLeft && rem > 0.005; i++) {
+      const one = compoundPlan(Object.assign({}, f, { start: String(bal), solve: 'trades', trades: '1' })); if (one.err) break;
+      const p = Math.min(one.list[0].profit, rem); const z = cpSize(f, p, bal); const w = z.win != null ? z.win : p;
+      today.push({ n: doneToday + i + 1, open: bal, aim: w, z }); bal += w; rem -= w;
     }
     const dayAim = today.reduce((m, t) => m + t.aim, 0); const H = cpHistory(a); const prof = eq - Number(a.initialBalance);
     const prog = target ? Math.max(0, Math.min(100, prof / (target - Number(a.initialBalance)) * 100)) : null;
-    const status = full.err ? full.err : reached ? 'Target reached. No more trades needed on this plan.' : !left ? `You have taken ${doneToday} of ${per} trade${per === 1 ? '' : 's'} today. Done for today.` : !today.length ? 'Today’s consistency room is used up. Stop for today.' : '';
+    const status = full.err ? full.err : T.status;
     return `${pageHead('Daily Plan', `From your compounding plan: ${esc(f.pct)}% per trade${target ? ' to ' + fmt$(target, 0) : ''}, up to ${per} trade${per === 1 ? '' : 's'} a day. Updates with every trade you log.`, `<button class="btn" data-act="go" data-v="compound">Edit plan</button>`)}
       <div class="grid g3" style="margin-bottom:16px">
         <section class="panel"><div class="panel-h"><h2>Today</h2><span class="chip nodot">Live</span></div>
-          <div class="label">Aim for today</div><div class="big" style="margin:4px 0 12px">${status ? '—' : fmt$(dayAim)}</div>
-          <dl class="kv"><dt>Trades today</dt><dd>${doneToday} of ${per}</dd><dt>Today’s P&amp;L</dt><dd class="${cls(c.s.todayPnl)}">${sgn$(c.s.todayPnl)}</dd>
+          <div class="label">Today’s target</div><div class="big" style="margin:4px 0 12px">${fmt$(T.goal)}</div>
+          <div class="bar acc" style="margin-bottom:12px"><i style="width:${T.pct.toFixed(1)}%"></i></div>
+          <dl class="kv"><dt>Made today</dt><dd class="${cls(T.made)}">${sgn$(T.made)}</dd><dt>Left today</dt><dd>${T.hit ? 'Target hit' : fmt$(T.left)}</dd><dt>Trades today</dt><dd>${doneToday} of ${per} max</dd>
             ${cap != null ? `<dt>Consistency room left</dt><dd>${fmt$(cap)}</dd>` : ''}<dt>Balance now</dt><dd>${fmt$(eq)}</dd></dl>
           <button class="btn primary" style="margin-top:12px;width:100%" data-act="cp-log-open">Log a trade</button></section>
         <section class="panel"><div class="panel-h"><h2>Where you stand</h2><span class="chip nodot">History</span></div>
