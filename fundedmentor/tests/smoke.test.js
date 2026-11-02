@@ -210,7 +210,7 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
 { const raw = read('index.html');
   const noJs = new JSDOM(raw.replace(/<script[\s\S]*?<\/script>/g, ''), { url: 'https://fundedmentor.com/' });
   const d = noJs.window.document; const txt = d.body.textContent.replace(/\s+/g, ' ');
-  ok(/<title>FundedMentor · Plan, trade, pass your prop challenge<\/title>/.test(raw), 'static: full <title>');
+  ok(/<title>FundedMentor · Funded Prop Firm Rules, Challenge Tracker & Lot Size Calculator<\/title>/.test(raw), 'static: full <title>');
   ok(!!d.getElementById('lp-static') && /Pass your challenge\. Keep your account\./.test(txt), 'static: hero visible without JS');
   for (const id of ['how', 'features', 'compare', 'who', 'pricing', 'faq', 'contact']) ok(!!d.getElementById(id), `static: section #${id} present without JS`);
   ok(/Is it connected to Ment Funding\?/.test(txt) && /no affiliation to Ment Funding/.test(txt), 'static: Ment Funding FAQ present');
@@ -517,6 +517,14 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('w-close'); t.act('go', { v: 'rules' }); t.act('go', { v: 'find' });
   ok(!doc.querySelector('[data-act="w-firm"][data-id="thefundedtrader"]'), 'catalogue: deactivated firm stays hidden');
   ok(!t.errors.length, 'catalogue: no errors ' + t.errors.join(' | ')); }
+
+// AE. SEO pages: one crawlable page per listed firm, in the sitemap, linked from the landing page
+{ const t = boot(); const F = t.w.FIRMS.filter((f) => !f.custom && f.published && f.id !== 'personal');
+  const missing = F.filter((f) => !fs.existsSync(path.join(DIR, 'prop-firms', f.id + '.html')));
+  ok(!missing.length, 'seo: page for every listed firm ' + missing.map((f) => f.id).join(','));
+  const sm = read('sitemap.xml'); ok(F.every((f) => sm.includes('/prop-firms/' + f.id + '<')), 'seo: every firm page in sitemap');
+  ok(/href="\/prop-firms"/.test(read('index.html')) && /application\/ld\+json/.test(read('index.html')), 'seo: landing links to firm pages and has structured data');
+  const ap = read('prop-firms/apex.html'); ok(/<h1>Apex Trader Funding rules/.test(ap) && /FAQPage/.test(ap) && /rel="canonical"/.test(ap), 'seo: firm page has h1, FAQ schema, canonical'); }
 
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

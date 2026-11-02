@@ -60,7 +60,8 @@ for (const firm of firms) {
     const baseSizes = m.sizes || []; const baseSR = m.sizeRules || {};
     m.sizeRules = Object.assign({}, mo.sizeRules || {});
     if (mo.sizes) {
-      const extra = baseSizes.filter((z) => !mo.sizes.includes(z) && (baseSR[z] || !Object.keys(baseSR).length));
+      const hasLoss = (z) => ['maxLossAmount', 'maxLossPct'].some((k) => (baseSR[z] && baseSR[z][k] != null)) || Object.values(m.phases || {}).some((ph) => ph.rules && ph.rules.maxLossPct != null);
+      const extra = sec ? [] : baseSizes.filter((z) => !mo.sizes.includes(z) && hasLoss(z));
       for (const z of extra) { if (baseSR[z]) m.sizeRules[z] = baseSR[z]; for (const k of Object.keys(baseSR)) if (k.endsWith('@' + z)) m.sizeRules[k] = baseSR[k]; }
       m.verifiedSizes = mo.sizes.slice();
       m.sizes = [...new Set(mo.sizes.concat(extra))].sort((x, y) => x - y);
