@@ -493,5 +493,17 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   ok(PR.firmDayKey(sunAm, 'America/New_York', 17) === '2026-11-01', 'fx: Sunday morning is still Sunday (market closed)');
   ok(!t.errors.length, 'fx: no errors'); }
 
+// AC. Trades logged today: today shows once (as done), the plan continues from the next trading day
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); setv('cp-target', '3000'); t.act('cp-weekends', { v: '1' }); t.act('cp-save');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '50'); t.act('cp-log-save'); t.act('cp-log-close');
+  t.act('go', { v: 'compound' }); t.act('cp-view', { v: 'day' });
+  const fx = t.w.PR.firmDayKey(Date.now(), 'America/New_York', 17); const today = new Date(fx + 'T12:00:00Z').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const dates = [...doc.querySelectorAll('#cp-out tbody small')].map((x) => x.textContent);
+  ok(dates.length && !dates.includes(today), 'fxday: plan does not repeat today once trades are logged ' + dates[0] + ' vs ' + today);
+  ok(/Today · /.test(doc.getElementById('cp-out').textContent), 'fxday: today’s logged row is marked Today');
+  ok(!t.errors.length, 'fxday: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();

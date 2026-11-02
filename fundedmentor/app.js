@@ -1083,7 +1083,7 @@
     } else {
       head = '<th>Day</th><th class="r">Trades</th><th class="r">Start</th><th class="r">Profit</th><th class="r">End</th><th></th>';
       const g = []; for (const t of H) { const k = dayKeyOf(t.ts); let d = g[g.length - 1]; if (!d || d.k !== k) { d = { k, open: t.open, profit: 0, n: 0 }; g.push(d); } d.profit += t.profit; d.n++; d.close = t.close; }
-      const done = g.map((d, i) => `<tr><td>${i + 1}</td><td class="r num">${d.n}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip ok nodot" style="font-size:11px">${d.k}</span></td></tr>`);
+      const done = g.map((d, i) => `<tr><td>${i + 1}</td><td class="r num">${d.n}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip ok nodot" style="font-size:11px">${d.k === dayKeyOf(Date.now()) ? 'Today · ' + d.k : d.k}</span></td></tr>`);
       const plan = cut(r.days).map((d) => d ? `<tr><td>${g.length + d.d}${d.date ? `<br><small class="muted">${shortDate(d.date)}</small>` : ''}</td><td class="r num">${d.trades}</td><td class="r num">${fmt$(d.open, 0)}</td>${money(d.profit)}<td class="r num">${fmt$(d.close, 0)}</td><td class="r"><span class="chip nodot" style="font-size:11px">Plan</span></td></tr>` : gap(6));
       rows = done.concat(plan);
     }
@@ -1138,15 +1138,18 @@
   }
   // Calendar dates for plan days. Weekends are skipped unless the plan trades them (crypto, some CFD firms).
   const isWeekend = (d) => d.getUTCDay() === 0 || d.getUTCDay() === 6; // d is a forex trading date (UTC noon)
-  function tradingDates(fromTs, n, weekends) {
-    const out = []; const d = fxDate(fromTs);
+  function tradingDates(fromTs, n, weekends, skipFirst) {
+    const out = []; const d = fxDate(fromTs); if (skipFirst) d.setUTCDate(d.getUTCDate() + 1);
     while (out.length < n) { if (weekends || !isWeekend(d)) out.push(new Date(d)); d.setUTCDate(d.getUTCDate() + 1); }
     return out;
   }
   const shortDate = (d) => d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
-  function datePlan(r, f, fromTs) { if (r.err) return r; const ds = tradingDates(fromTs || Date.now(), r.days.length, !!f.weekends); r.days.forEach((d, i) => { d.date = ds[i]; }); r.list.forEach((t) => { t.date = ds[t.d - 1]; }); r.endDate = ds[ds.length - 1]; return r; }
+  function datePlan(r, f, fromTs, skipFirst) { if (r.err) return r; const ds = tradingDates(fromTs || Date.now(), r.days.length, !!f.weekends, skipFirst); r.days.forEach((d, i) => { d.date = ds[i]; }); r.list.forEach((t) => { t.date = ds[t.d - 1]; }); r.endDate = ds[ds.length - 1]; return r; }
+  // Trades already logged in today's forex day (5 PM New York to 5 PM New York) make today a done row,
+  // so the plan picks up from the next trading day instead of listing today twice.
+  const tradedToday = (hist) => !!(hist && hist.some((t) => fxKey(t.ts) === fxKey(Date.now())));
   function cpOut(f, hist) {
-    const r = datePlan(compoundPlan(f), f);
+    const r = datePlan(compoundPlan(f), f, Date.now(), tradedToday(hist));
     if (r.err) return `<p class="muted">${esc(r.err)}</p>`;
     const nx = cpNext(f, r); const dn = r.days.length;
     const head = r.byDay
@@ -1165,7 +1168,7 @@
         : `<div class="alert warn">${icon('warn')}<span>Best day would be ${r.share.toFixed(1)}% of total profit, over your ${r.cons}% rule. Switch to “Reach a target” to cap each day, or lower the % per trade.</span></div>`;
     const tierNote = r.tiers.length ? `<p class="hint" style="margin-bottom:8px">Steps: ${r.tiers.map((t) => `${t.pct}% from ${fmt$(t.at, 0)}`).join(' · ')}.</p>` : '';
     const H = hist || []; const doneNet = H.reduce((m, t) => m + t.profit, 0);
-    const prog = H.length ? `<p class="muted" style="margin-top:6px">So far: ${H.length} trade${H.length === 1 ? '' : 's'} logged · <span class="${doneNet >= 0 ? 'pos' : 'neg'}">${sgn$(doneNet)}</span> since ${fmt$(H[0].open, 0)}. The plan below starts from today’s ${fmt$(r.start, 0)}.</p>` : '';
+    const prog = H.length ? `<p class="muted" style="margin-top:6px">So far: ${H.length} trade${H.length === 1 ? '' : 's'} logged · <span class="${doneNet >= 0 ? 'pos' : 'neg'}">${sgn$(doneNet)}</span> since ${fmt$(H[0].open, 0)}. The plan below starts from ${tradedToday(H) ? 'the next trading day at' : 'today’s'} ${fmt$(r.start, 0)}.</p>` : '';
     return `${head}${prog}${next}${cons}${tierNote}${cpTable(r, H)}<p class="hint">Planned rows assume every trade wins at your %. At 1:${nx.rr}, one loss wipes out ${(100 / nx.rr).toFixed(0)}% of a win.${hist ? ' Log each trade from Next trade and everything recalculates.' : ''}</p>`;
   }
   VIEWS.compound = (a, c) => {
