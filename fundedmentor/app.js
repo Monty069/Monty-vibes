@@ -319,7 +319,12 @@
     const records = phaseRecords(acct.modelId, acct.phase, acct.initialBalance);
     if (acct.compound) {
       const ur = (value) => ({ value, status: 'user_configured', source: null, verifiedAt: null, effective: null, version: 1, notes: 'From your compounding plan.' });
-      const tg = Number(acct.compound.target); if (acct.compound.solve === 'target' && tg > acct.initialBalance) records.profitTargetAmount = ur(tg - acct.initialBalance);
+      const tg = Number(acct.compound.target);
+      if (acct.compound.solve === 'target' && tg > acct.initialBalance) records.profitTargetAmount = ur(tg - acct.initialBalance);
+      else if (acct.compound.solve !== 'target') { // "in N days / N trades": the goal is where the plan ends from the starting balance
+        const pr = compoundPlan(Object.assign({}, acct.compound, { start: String(acct.initialBalance) }));
+        if (!pr.err && pr.end > acct.initialBalance) records.profitTargetAmount = ur(Math.round((pr.end - acct.initialBalance) * 100) / 100);
+      }
       if (Number(acct.compound.cons) > 0) records.consistencyPct = ur(Number(acct.compound.cons));
     }
     const rv = Object.assign(PR.ruleValues(records), { timezone: firm.timezone, resetHour: firm.resetHour, currency: acct.currency });
@@ -438,7 +443,7 @@
   }
   function acctMenu() {
     return `<div class="overlay" data-act="close-menu" style="background:transparent;place-items:start"><div class="menu" style="top:calc(58px + env(safe-area-inset-top,0px));left:16px" data-stop>
-      ${state.accounts.map((a) => { const c = compute(a); return `<button data-act="switch" data-id="${a.id}"><span class="acct-pill" style="border:0;padding:0;background:none"><span class="ic">${initials(a)}</span></span><span style="flex:1;min-width:0"><b style="display:block">${esc(a.name)}</b><small class="muted">${c ? esc(c.firm.name) + ' · ' + esc(phaseLabel(c)) + ' · ' + fmt$(c.s.balance, 0) : ''}</small></span>${a.id === state.activeId ? icon('ok', 'width="14" height="14"') : ''}</button>`; }).join('')}
+      ${state.accounts.map((a) => { const c = compute(a); return `<button data-act="switch" data-id="${a.id}"><span class="acct-pill-ic">${initials(a)}</span><span style="flex:1;min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.name)}</b><small class="muted" style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c ? esc(c.firm.name) + ' · ' + esc(phaseLabel(c)) + ' · ' + fmt$(c.s.balance, 0) : ''}</small></span>${a.id === state.activeId ? icon('ok', 'width="14" height="14"') : ''}</button>`; }).join('')}
       <div style="height:1px;background:var(--line);margin:6px 0"></div>
       <button data-act="wizard">${icon('plus', 'width="16" height="16"')}Add an account</button>
       <button data-act="go" data-v="accounts">${icon('accounts', 'width="16" height="16"')}Manage accounts</button></div></div>`;
@@ -636,7 +641,14 @@
     return opts.reduce((m, x) => (x.actual < m.actual ? x : m)).mode;
   }
   // Compounding account: after the next trade, record how it went so the balance and plan update.
-  function cpNextFor(a, c) { const f = Object.assign({}, a.compound, { start: String(c.s.equity) }); const r = compoundPlan(f); return { f, r, nx: r.err ? null : cpNext(f, r) }; }
+  // A linked plan continues from today: live balance, and "N trades / N days" counts down as you trade.
+  function cpLive(f, a, c) {
+    const out = Object.assign({}, f, { start: String(c.s.equity) });
+    if (f.solve === 'trades') out.trades = String(Math.max(1, Math.floor(Number(f.trades) || 0) - cpHistory(a).length));
+    if (f.solve === 'days') out.days = String(Math.max(1, Math.floor(Number(f.days) || 0) - new Set(cpHistory(a).map((t) => dayKeyOf(t.ts))).size));
+    return out;
+  }
+  function cpNextFor(a, c) { const f = cpLive(a.compound, a, c); const r = compoundPlan(f); return { f, r, nx: r.err ? null : cpNext(f, r) }; }
   // The same three choices everywhere a next trade is shown: as planned, a different profit, or a loss.
   function logChoices(win, loss, L, p) {
     if (L.mode === 'profit' || L.mode === 'loss') return `<label class="field"><span>${L.mode === 'profit' ? 'Profit made ($)' : 'Loss taken ($)'}</span><input class="input num" id="${p}-log-amt" type="number" inputmode="decimal" min="0" step="any" data-${p === 'cp' ? 'cl' : 'nl'}="amt" value="${esc(L.amt)}"></label>
@@ -667,7 +679,7 @@
   }
   function nextBtn(a, c) {
     if (a.compound) {
-      const f = Object.assign({}, a.compound, { start: String(c.s.equity) }); const r = compoundPlan(f);
+      const f = cpLive(a.compound, a, c); const r = compoundPlan(f);
       const today = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
       const nx = r.err ? null : cpNext(f, r);
       const v = r.err ? esc(r.err) : f.solve === 'target' && c.s.equity >= Number(f.target) ? 'Target reached' : today >= per ? 'Done for today' : nx.lots ? `${qty(nx.lots, nx.spec)} ${esc(f.inst)} · aim ${fmt$(nx.profit, 0)}` : 'Open plan';
@@ -974,8 +986,8 @@
   function compoundDailyPlan(a, c) {
     const f = a.compound; const eq = c.s.equity; const per = Math.max(1, Math.floor(Number(f.perDay) || 1));
     const doneToday = c.s.balSeries.filter((b) => b.dayKey === c.s.todayKey).length; const left = Math.max(0, per - doneToday);
-    const target = f.solve === 'target' ? Number(f.target) : null; const reached = target && eq >= target;
-    const full = compoundPlan(Object.assign({}, f, { start: String(eq) }));
+    const target = f.solve === 'target' ? Number(f.target) : (c.plan && c.plan.target != null ? Number(a.initialBalance) + c.plan.target : null); const reached = target && eq >= target;
+    const full = compoundPlan(cpLive(f, a, c));
     const cap = full.dayCap && full.dayCap < Infinity ? Math.max(0, full.dayCap - Math.max(0, c.s.todayPnl)) : null;
     const today = []; let bal = eq, room = cap;
     if (!full.err && !reached) for (let i = 0; i < left; i++) {
@@ -1054,7 +1066,7 @@
             <span class="hint">Example: from $15,000 drop to 1% per trade to protect gains.</span></div>
         ${linked ? `<div class="row" style="gap:8px"><button class="btn primary" data-act="cp-update" ${dirty ? '' : 'disabled'}>Update plan</button>${dirty ? '<button class="btn ghost" data-act="cp-discard">Discard changes</button><span class="hint warnc">Previewing unsaved changes</span>' : '<span class="hint">Plan saved</span>'}</div>` : ''}
         </div></section>
-        <section class="panel"><div id="cp-out">${cpOut(f, linked ? cpHistory(a) : null)}</div>${linked ? '' : `<div class="row" style="margin-top:12px"><button class="btn primary" data-act="cp-save">${icon('plus', 'width="14" height="14"')}Save as account</button><span class="hint">Track it like any account: log trades and the plan follows your balance.</span></div>`}</section>
+        <section class="panel"><div id="cp-out">${cpOut(linked ? cpLive(f, a, c) : f, linked ? cpHistory(a) : null)}</div>${linked ? '' : `<div class="row" style="margin-top:12px"><button class="btn primary" data-act="cp-save">${icon('plus', 'width="14" height="14"')}Save as account</button><span class="hint">Track it like any account: log trades and the plan follows your balance.</span></div>`}</section>
       </div>`;
   };
   const cpTarget = () => { const a = active(); return a && a.compound ? (ui.cpDraft && ui.cpDraft.id === a.id ? ui.cpDraft.f : a.compound) : state.compound; };

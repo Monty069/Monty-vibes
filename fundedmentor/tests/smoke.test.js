@@ -394,5 +394,17 @@ const VIEWS = ['overview', 'calendar', 'finder', 'accounts', 'plan', 'calc', 'co
   t.act('w-close'); t.act('go', { v: 'rules' }); ok(!/unverified|Sourced · confirm|Needs verification/i.test(t.root().replace(/data-[a-z-]+="[^"]*"/g, '')), 'verified: Firm Rules shows no unverified values');
   ok(!t.errors.length, 'verified: no errors ' + t.errors.join(' | ')); }
 
+// U. Account switcher markup (mobile) and "N trades" compounding target
+{ const t = boot({ state: base(manual()) }); const doc = t.w.document;
+  const setv = (id, v) => { const el = doc.getElementById(id); el.value = v; el.dispatchEvent(new t.w.Event('input', { bubbles: true })); };
+  t.act('menu'); const menu = doc.querySelector('.menu');
+  ok(menu && !menu.querySelector('.acct-pill') && menu.querySelector('.acct-pill-ic'), 'menu: switcher rows don\'t use the full-width pill (mobile layout)');
+  t.act('close-menu'); t.act('go', { v: 'compound' }); setv('cp-start', '1000'); setv('cp-pct', '10'); t.act('cp-solve', { v: 'trades' }); setv('cp-trades', '3'); t.act('cp-save');
+  let h = t.root(); ok(!/no target/i.test(h) && /\$331 to go/.test(h), 'cptarget: N-trades plan shows its end balance as the target (1000 → 1331)');
+  t.act('cp-log-open'); t.act('cp-log-mode', { m: 'profit' }); setv('cp-log-amt', '100'); t.act('cp-log-save');
+  t.act('go', { v: 'compound' }); ok(/\$1,331 after 2 winning trades|after 2 winning trades/.test(doc.getElementById('cp-out').textContent), 'cptarget: trades count down after logging (2 left)');
+  t.act('go', { v: 'plan' }); ok(/Target/.test(t.root()) && /Still to make/.test(t.root()), 'cptarget: Daily Plan shows target for N-trades plan');
+  ok(!t.errors.length, 'menu/cptarget: no errors ' + t.errors.join(' | ')); }
+
 console.log(`\n${passes} passed, ${fails} failed`); process.exit(fails ? 1 : 0);
 })();
